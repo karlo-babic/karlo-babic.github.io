@@ -114,7 +114,7 @@ function notxbot_start()
 		    if ( Math.abs(angle_speed_diff) > Math.PI/1.5 )
 			engine = true;
 		}
-		else // travel towards mouse
+		else if ( distanceMouse - ship_speed*10 > 100 && ship_speed < 10 ) // travel towards mouse
 		{
 		    // orient towards mouse
 		    if (angle_diff > 0)  { if (rotate_speed < 5)  rotate_speed += Math.min( 1/(distanceMouse/10) *100, 0.5); }
@@ -122,10 +122,7 @@ function notxbot_start()
 
 		    if ( Math.abs(angle_diff) < Math.PI/2 ) // if oriented towards mouse
 		    {
-			if ( distanceMouse - ship_speed*10 > 100 && ship_speed < 10 )
-			{
-			    engine = true;
-			}
+			engine = true;
 		    }
 		}
 	    }
@@ -153,10 +150,12 @@ function notxbot_start()
 	}
 	x += xSpeed;
 	y += ySpeed;
-	if (x < 0) x = screenWidth-5;
+	/*if (x < 0) x = screenWidth-5;
 	else if (x > screenWidth) x = 5;
 	if (y < 0) y = screenHeight-5;
-	else if (y > screenHeight) y = 5;
+	else if (y > screenHeight) y = 5;*/
+	if (x < 0 || x > screenWidth-20)  { x -= xSpeed; xSpeed = 0; }
+	if (y < 0 || y > screenHeight-30) { y -= ySpeed; ySpeed = 0; }
 
 	botDisplay();
 
