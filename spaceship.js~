@@ -1,0 +1,310 @@
+var botSize = 20;
+var x = document.getElementById("notxbot").getBoundingClientRect().left+botSize/2;
+var y = document.getElementById("notxbot").getBoundingClientRect().top+botSize/2;
+var speed = 0;
+var screenWidth = Math.max(window.innerWidth, document.body.getBoundingClientRect().width);
+var screenHeight = Math.max(window.innerHeight, document.body.getBoundingClientRect().height+25);
+var state = 0;
+var destination = false;
+var text = "";
+var textWidth = 0;
+var textTop = 0;
+var holdingClick = false;
+var mouseSpeed = 0;
+var pressedKey = false;
+
+document.getElementById("notxbot").ondragstart = function() { return false; };
+
+function notxbot_start()
+{
+    state = 1;
+    mouse.init();
+    keyboard.init();
+    mouse.x = 0;
+    mouse.y = 0;
+    var bot = document.getElementById("notxbot");
+    bot.innerHTML = '<img src="img/favicon.ico" width="'+botSize+'">';
+    var xSpeed = 0, ySpeed = 0;
+    var mousePrevXY = [mouse.x, mouse.y];
+
+    var loop = 0;
+    var mainloop = setInterval(frame, 50); // 50 ms -> 20 f/s   old 10
+    function frame()
+    {
+	screenWidth = Math.max(window.innerWidth, document.body.getBoundingClientRect().width);
+	screenHeight = Math.max(window.innerHeight, document.body.getBoundingClientRect().height+25);
+
+	var mouseSpeedX = mousePrevXY[0] - mouse.x;
+	var mouseSpeedY = mousePrevXY[1] - mouse.y;
+	mouseSpeed = Math.sqrt(mouseSpeedX**2 + mouseSpeedY**2);
+	mousePrevXY = [mouse.x, mouse.y];
+
+	var xDistanceMouse = mouse.x - x;
+	var yDistanceMouse = mouse.y - y;
+	var distanceMouse = Math.sqrt( xDistanceMouse**2 + yDistanceMouse**2 );
+
+	clickedOnBot(distanceMouse); // change state if clicked, and other stuff
+
+	if (state == 1) // moving
+	{
+	    // if clicked anywhere
+	    if (mouse.clickX)
+	    {
+		if (destination[2] != "element") destination = [mouse.clickX, mouse.clickY, "click"];
+		text = "";
+		ball.lastTouched = "nobody";
+	    }
+	    if (destination) // send to destination
+	    {
+		var xDistanceDest = destination[0] - x;
+		var yDistanceDest = destination[1] - y;
+		var distanceDest = Math.sqrt( xDistanceDest**2 + yDistanceDest**2 );
+		if (destination[2] == "ball")
+		    speed = 8;
+		else
+		    speed = distanceDest / 20; // old 100
+		speed = Math.min(10, speed); // old 2
+		if (distanceDest)
+		{
+		    xSpeed = speed * xDistanceDest / distanceDest;
+		    ySpeed = speed * yDistanceDest / distanceDest;
+		}
+		// stop going towards destination when there
+		if (x >= destination[0]-10 && x <= destination[0]+10 &&
+		    y >= destination[1]-10 && y <= destination[1]+10)
+		    destination = false;
+		// run away from mouse if it gets too close
+		var xDistanceMouse = mouse.x - x;
+		var yDistanceMouse = mouse.y - y;
+		var distanceMouse = Math.sqrt( xDistanceMouse**2 + yDistanceMouse**2 );
+		if (destination[2] == "click" && distanceMouse < 50) destination = false;
+	    }
+	    else  // follow or run from mouse
+	    {
+		if (mouseSpeed > 10)
+		{
+		    speed = (distanceMouse - 300) / 40; // old 200
+		    speed = Math.min(10, speed); // old 2
+		    if (distanceMouse)
+		    {
+			xSpeed = speed * xDistanceMouse / distanceMouse;
+			ySpeed = speed * yDistanceMouse / distanceMouse;
+		    }
+		}
+		// slowing down
+		xSpeed /= 1.01;
+		ySpeed /= 1.01;
+		if (Math.abs(xSpeed) < 0.01) xSpeed = 0;
+		if (Math.abs(ySpeed) < 0.01) ySpeed = 0;
+	    }
+	    if (ball.isLive && ball.lastTouched == "human") // play with ball
+	    {
+		destination = [ball.x, ball.y, "ball"];
+	    }
+	}
+	else if (state == 2) // standing
+	{
+	    xSpeed = 0;
+	    ySpeed = 0;
+	}
+
+	if (holdingClick) // move bot
+	{
+	    x = mouse.x;
+	    y = mouse.y;
+	}
+
+	if (loop == 1200 && !ball.isLive) text = "Want to play with the ball?<br>Press B.";
+	else if (pressedKey == 66) text = "";
+
+	// updating positon
+	x += xSpeed;
+	y += ySpeed;
+	if (x < 0+botSize/2 || x > screenWidth-botSize/2) x -= xSpeed;
+	if (y < 0+botSize/2 || y > screenHeight-botSize/2) y -= ySpeed;
+
+	if (ball.isLive) ball.update();
+
+	botDisplay();
+
+	if (pressedKey) // keyboard
+	{
+	    if (pressedKey == 66) ball.start();
+	}
+	pressedKey = false;
+
+	loop++;
+    }
+}
+
+function botDisplay()
+{
+    var bot = document.getElementById("notxbot");
+    // text
+    if (text === "")
+    {
+	bot.innerHTML = '<img src="img/favicon.ico" width="'+botSize+'">';
+	textWidth = 0;
+    }
+    else if (text !== false)
+    {
+	bot.innerHTML = '<div id="bot_text" style="background-color: #181818; border-radius: 4px; padding: 2px 2px; color: white; text-align: center; display: inline-block; font-size: 12px;border: 2px solid gray; width:200px">'+text+'</div>' + ' <img src="img/favicon.ico" width="'+botSize+'">';
+	textWidth = 210;
+	text = false;
+    }
+
+    bot.style.left = x-botSize/2-textWidth + 'px';
+    bot.style.top  = y-botSize/2 + 'px';
+}
+
+function clickedOnBot(distanceMouse)
+{
+    if (mouse.clickX && distanceMouse <= botSize/2)
+    {
+	if (!holdingClick)
+	{
+	    if      (state == 1) state = 2;
+	    else if (state == 2) state = 1;
+	}
+	holdingClick = true;
+    }
+    if (mouse.clickX && mouse.x && holdingClick) {} // if clicked and moving mouse
+    else holdingClick = false; // when not holding anymore
+}
+
+function notxbotSendTo(id)
+{
+    element = document.getElementById(id);
+    var dx = element.getBoundingClientRect().left;
+    var dy;
+    var yTp = element.getBoundingClientRect().top;
+    var yBm = element.getBoundingClientRect().bottom;
+    if (id.slice(0,2) == "h_") // header
+    {
+	dx -= 40;
+	dy = (yTp + yBm) / 2;
+    }
+    else if (id.slice(0,2) == "i_") // info
+    {
+	dx -= 80;
+	dy = (yTp + yBm) / 2;
+	var about = document.getElementById('about' + id.slice(2,));
+	text = about.innerHTML;
+    }
+    destination = [dx, dy, "element"];
+}
+
+var ball =
+    {
+	isLive : false,
+	x : document.getElementById("notxbot_ball").getBoundingClientRect().left+5,
+	y : document.getElementById("notxbot_ball").getBoundingClientRect().top+5,
+	speed : 0, xSpeed : 0, ySpeed : 0,
+	lastTouched : "nobody",
+	start : function()
+	{
+	    var ballElement = document.getElementById("notxbot_ball");
+	    ballElement.innerHTML = '<img src="img/ball.png" width="10">';
+	    ball.isLive = true;
+	    ball.x = x;
+	    ball.y = y;
+	    ballElement.style.left = ball.x-5 + 'px';
+	    ballElement.style.top  = ball.y-5 + 'px';
+	},
+	update : function()
+	{
+	    var xDistanceMouse = mouse.x - ball.x;
+	    var yDistanceMouse = mouse.y - ball.y;
+	    var distanceMouse = Math.sqrt( xDistanceMouse**2 + yDistanceMouse**2 );
+	    var xDistanceBot = x - ball.x;
+	    var yDistanceBot = y - ball.y;
+	    var distanceBot = Math.sqrt( xDistanceBot**2 + yDistanceBot**2 );
+
+	    if (ball.speed < mouseSpeed) // hit mouse
+	    {
+		ball.speed = mouseSpeed;
+		ball.speed = Math.min(10, ball.speed);
+	    }
+	    if (distanceMouse && distanceMouse < 40)
+	    {
+		ball.xSpeed = - ball.speed * xDistanceMouse / distanceMouse;
+		ball.ySpeed = - ball.speed * yDistanceMouse / distanceMouse;
+		ball.lastTouched = "human";
+	    }
+
+	    if (ball.speed < speed) // hit bot
+	    {
+		ball.speed = speed;
+		ball.speed = Math.min(10, ball.speed);
+	    }
+	    if (distanceBot && distanceBot < botSize/2 + 5)
+	    {
+		ball.xSpeed = - ball.speed * xDistanceBot / distanceBot;
+		ball.ySpeed = - ball.speed * yDistanceBot / distanceBot;
+		ball.lastTouched = "bot";
+	    }
+
+	    // slowing down
+	    ball.xSpeed /= 1.01;
+	    ball.ySpeed /= 1.01;
+	    if (Math.abs(ball.xSpeed) < 0.01) ball.xSpeed = 0;
+	    if (Math.abs(ball.ySpeed) < 0.01) ball.ySpeed = 0;
+	    // updating positon
+	    ball.x += ball.xSpeed;
+	    ball.y += ball.ySpeed;
+	    if (ball.x < 0+5 || ball.x > screenWidth-5)
+	    {
+		ball.x -= ball.xSpeed;
+		ball.xSpeed = -ball.xSpeed;
+	    }
+	    if (ball.y < 0+5 || ball.y > screenHeight-5)
+	    {
+		ball.y -= ball.ySpeed;
+		ball.ySpeed = -ball.ySpeed;
+	    }
+	    // display
+	    var ballElement = document.getElementById("notxbot_ball");
+	    ballElement.style.left = ball.x-5 + 'px';
+	    ballElement.style.top  = ball.y-5 + 'px';
+	}
+    }
+
+
+
+
+
+var mouse =
+    {
+	init : function()
+	{
+	    // mouse controls
+	    window.addEventListener('mousemove', function (e) {
+		mouse.x = e.pageX;
+		mouse.y = e.pageY;
+	    })
+	    window.addEventListener('mousedown', function (e) {
+		mouse.clickX = e.pageX;
+		mouse.clickY = e.pageY;
+	    })
+	    window.addEventListener('mouseup', function (e) {
+		mouse.clickX = false;
+		mouse.clickY = false;
+	    })
+	}
+    }
+
+var keyboard =
+    {
+	init : function()
+	{
+	    // keyboard controls
+            window.addEventListener('keydown', function (e) {
+		keyboard.keys = (keyboard.keys || []);
+		keyboard.keys[e.keyCode] = true;
+            })
+            window.addEventListener('keyup', function (e) {
+		keyboard.keys[e.keyCode] = false;
+		pressedKey = e.keyCode;
+            })
+	}
+    }
