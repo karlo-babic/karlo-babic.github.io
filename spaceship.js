@@ -15,6 +15,7 @@ var pressedKey = false;
 var rotate = 0;
 var rotate_speed = 0;
 var engine = false;
+var last_time_control = 0;
 
 document.getElementById("spaceship").ondragstart = function() { return false; };
 
@@ -34,11 +35,23 @@ function notxbot_start()
     var mainloop = setInterval(frame, 50); // 50 ms -> 20 f/s   old 10
     function frame()
     {
+	engine = false;
+	if (keyboard.keys) // keyboard
+	{
+	    if (keyboard.keys[37]) rotate_speed -= 1;
+	    if (keyboard.keys[39]) rotate_speed += 1;
+	    if (keyboard.keys[38]) engine = true;
+	}
+
+	last_time_control += 1;
+	if (pressedKey)
+	    last_time_control = 0;
+
 	screenWidth = Math.max(window.innerWidth, document.body.getBoundingClientRect().width);
 	screenHeight = Math.max(window.innerHeight, document.body.getBoundingClientRect().height+25);
 
-	var mouseSpeedX = mousePrevXY[0] - mouse.x;
-	var mouseSpeedY = mousePrevXY[1] - mouse.y;
+	var mouseSpeedX = mouse.x - mousePrevXY[0];
+	var mouseSpeedY = mouse.y - mousePrevXY[1];
 	mouseSpeed = Math.sqrt(mouseSpeedX**2 + mouseSpeedY**2);
 	mousePrevXY = [mouse.x, mouse.y];
 
@@ -78,20 +91,43 @@ function notxbot_start()
 		var distanceMouse = Math.sqrt( xDistanceMouse**2 + yDistanceMouse**2 );
 		if (destination[2] == "click" && distanceMouse < 50) destination = false;
 	    }
-	    else if (false)  // follow or run from mouse
+	    else if (last_time_control > 100) // follow mouse
 	    {
-		if (mouseSpeed > 10)
+		let ship_speed = Math.sqrt(xSpeed**2 + ySpeed**2);
+		let angle_mouse = Math.atan2(yDistanceMouse, xDistanceMouse);
+		//let angle_shipspeed = Math.atan2(ySpeed, xSpeed);
+		let angle_ship = rotate - 90;
+		angle_ship = (360*(angle_ship/360-Math.floor(angle_ship/360))) / 180.*Math.PI;
+		if (angle_ship > Math.PI) { angle_ship -= Math.PI*2; }
+		let angle_diff = angle_mouse - angle_ship;
+		if (angle_diff > Math.PI) { angle_diff -= Math.PI*2; }
+
+		if (ship_speed > 10) // if ship gets too fast
 		{
-		    speed = (distanceMouse - 300) / 40; // old 200
-		    speed = Math.min(10, speed); // old 2
-		    if (distanceMouse != 0)
+		    let angle_speed = Math.atan2(ySpeed, xSpeed);
+		    let angle_speed_diff = angle_speed - angle_ship;
+		    if (angle_speed_diff > Math.PI) { angle_speed_diff -= Math.PI*2; }
+
+		    if (angle_speed_diff < 0)  { if (rotate_speed < 5)  rotate_speed += 0.2; }
+		    else                       { if (rotate_speed > -5) rotate_speed -= 0.2; }
+
+		    if ( Math.abs(angle_speed_diff) > Math.PI/1.5 )
+			engine = true;
+		}
+		else // travel towards mouse
+		{
+		    // orient towards mouse
+		    if (angle_diff > 0)  { if (rotate_speed < 5)  rotate_speed += Math.min( 1/(distanceMouse/10) *100, 0.5); }
+		    else                 { if (rotate_speed > -5) rotate_speed -= Math.min( 1/(distanceMouse/10) *100, 0.5); }
+
+		    if ( Math.abs(angle_diff) < Math.PI/2 ) // if oriented towards mouse
 		    {
-			xSpeed = speed * xDistanceMouse / distanceMouse;
-			ySpeed = speed * yDistanceMouse / distanceMouse;
+			if ( distanceMouse - ship_speed*10 > 100 && ship_speed < 10 )
+			{
+			    engine = true;
+			}
 		    }
 		}
-		//if (Math.abs(xSpeed) < 0.01) xSpeed = 0;
-		//if (Math.abs(ySpeed) < 0.01) ySpeed = 0;
 	    }
 	}
 	else if (state == 2) // standing
@@ -104,14 +140,8 @@ function notxbot_start()
 	{
 	    x = mouse.x;
 	    y = mouse.y;
-	}
-
-	engine = false;
-	if (keyboard.keys) // keyboard
-	{
-	    if (keyboard.keys[37]) rotate_speed -= 1;
-	    if (keyboard.keys[39]) rotate_speed += 1;
-	    if (keyboard.keys[38]) engine = true;
+	    xSpeed = mouseSpeedX/2;
+	    ySpeed = mouseSpeedY/2;
 	}
 
 	// updating positon
@@ -136,11 +166,14 @@ function notxbot_start()
 
 function botDisplay()
 {
-    var bot = document.getElementById("spaceship");
+    let bot = document.getElementById("spaceship");
+
+    let onoff = "off";
+    if (engine) { onoff = "on"; }
     // text
     if (text === "")
     {
-	bot.innerHTML = '<img src="ship_off.png" width="'+botSize+'" style="transform:rotate('+rotate+'deg);">';
+	bot.innerHTML = '<img src="ship_'+onoff+'.png" width="'+botSize+'" style="transform:rotate('+rotate+'deg);">';
 	textWidth = 0;
     }
     else if (text !== false)
