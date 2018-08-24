@@ -148,8 +148,8 @@ function notxbot_start()
 	rotate += rotate_speed;
 	if (engine)
 	{
-	    xSpeed += 0.3 * Math.cos( (rotate-90)/180.*Math.PI );
-	    ySpeed += 0.3 * Math.sin( (rotate-90)/180.*Math.PI );
+	    xSpeed += 0.2 * Math.cos( (rotate-90)/180.*Math.PI );
+	    ySpeed += 0.2 * Math.sin( (rotate-90)/180.*Math.PI );
 	}
 	x += xSpeed;
 	y += ySpeed;
