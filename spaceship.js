@@ -16,6 +16,8 @@ var rotate = 0;
 var rotate_speed = 0;
 var engine = false;
 var last_time_control = 0;
+var distanceMouse = 0;
+var distanceMouse_old;
 
 document.getElementById("spaceship").ondragstart = function() { return false; };
 
@@ -57,7 +59,8 @@ function notxbot_start()
 
 	var xDistanceMouse = mouse.x - x;
 	var yDistanceMouse = mouse.y - y;
-	var distanceMouse = Math.sqrt( xDistanceMouse**2 + yDistanceMouse**2 );
+	distanceMouse_old = distanceMouse;
+	distanceMouse = Math.sqrt( xDistanceMouse**2 + yDistanceMouse**2 );
 
 	clickedOnBot(distanceMouse); // change state if clicked, and other stuff
 
@@ -86,13 +89,11 @@ function notxbot_start()
 		    y >= destination[1]-10 && y <= destination[1]+10)
 		    destination = false;
 		// run away from mouse if it gets too close
-		var xDistanceMouse = mouse.x - x;
-		var yDistanceMouse = mouse.y - y;
-		var distanceMouse = Math.sqrt( xDistanceMouse**2 + yDistanceMouse**2 );
 		if (destination[2] == "click" && distanceMouse < 50) destination = false;
 	    }
 	    else if (last_time_control > 100) // follow mouse
 	    {
+		let ship_mouse_speed = distanceMouse_old - distanceMouse;
 		let ship_speed = Math.sqrt(xSpeed**2 + ySpeed**2);
 		let angle_mouse = Math.atan2(yDistanceMouse, xDistanceMouse);
 		//let angle_shipspeed = Math.atan2(ySpeed, xSpeed);
@@ -101,6 +102,10 @@ function notxbot_start()
 		if (angle_ship > Math.PI) { angle_ship -= Math.PI*2; }
 		let angle_diff = angle_mouse - angle_ship;
 		if (angle_diff > Math.PI) { angle_diff -= Math.PI*2; }
+		
+		// orient towards mouse
+		if (angle_diff > 0)  { if (rotate_speed < 5)  rotate_speed += Math.min( 1/(distanceMouse/10) *100, 0.5); }
+		else                 { if (rotate_speed > -5) rotate_speed -= Math.min( 1/(distanceMouse/10) *100, 0.5); }
 
 		if (ship_speed > 10) // if ship gets too fast
 		{
@@ -114,17 +119,14 @@ function notxbot_start()
 		    if ( Math.abs(angle_speed_diff) > Math.PI/1.5 )
 			engine = true;
 		}
-		else if ( distanceMouse - ship_speed*10 > 100 && ship_speed < 10 ) // travel towards mouse
+		else if ( distanceMouse - ship_speed*10 > 100 && ship_mouse_speed < 5 ) // travel towards mouse
 		{
-		    // orient towards mouse
-		    if (angle_diff > 0)  { if (rotate_speed < 5)  rotate_speed += Math.min( 1/(distanceMouse/10) *100, 0.5); }
-		    else                 { if (rotate_speed > -5) rotate_speed -= Math.min( 1/(distanceMouse/10) *100, 0.5); }
-
 		    if ( Math.abs(angle_diff) < Math.PI/2 ) // if oriented towards mouse
 		    {
 			engine = true;
 		    }
 		}
+
 	    }
 	}
 	else if (state == 2) // standing
@@ -150,12 +152,12 @@ function notxbot_start()
 	}
 	x += xSpeed;
 	y += ySpeed;
-	/*if (x < 0) x = screenWidth-5;
+	if (x < 0) x = screenWidth-5;
 	else if (x > screenWidth) x = 5;
 	if (y < 0) y = screenHeight-5;
-	else if (y > screenHeight) y = 5;*/
-	if (x < 0 || x > screenWidth-20)  { x -= xSpeed; xSpeed = 0; }
-	if (y < 0 || y > screenHeight-30) { y -= ySpeed; ySpeed = 0; }
+	else if (y > screenHeight) y = 5;
+	/*if (x < 0 || x > screenWidth-20)  { x -= xSpeed; xSpeed = 0; }
+	if (y < 0 || y > screenHeight-30) { y -= ySpeed; ySpeed = 0; }*/
 
 	botDisplay();
 
