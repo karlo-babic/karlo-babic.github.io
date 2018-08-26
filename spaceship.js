@@ -157,10 +157,10 @@ function notxbot_start()
 	}
 	x += xSpeed;
 	y += ySpeed;
-	if (x < 0) x = screenWidth-5;
-	else if (x > screenWidth) x = 5;
-	if (y < 0) y = screenHeight-5;
-	else if (y > screenHeight) y = 5;
+	if (x < 0) x = screenWidth-25;
+	else if (x > screenWidth-20) x = 5;
+	if (y < 0) y = screenHeight-35;
+	else if (y > screenHeight-30) y = 5;
 	/*if (x < 0 || x > screenWidth-20)  { x -= xSpeed; xSpeed = 0; }
 	if (y < 0 || y > screenHeight-30) { y -= ySpeed; ySpeed = 0; }*/
 
