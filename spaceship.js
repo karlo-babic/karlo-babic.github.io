@@ -102,16 +102,14 @@ function notxbot_start()
 		if (angle_ship > Math.PI) { angle_ship -= Math.PI*2; }
 		let angle_diff = angle_mouse - angle_ship;
 		if (angle_diff > Math.PI) { angle_diff -= Math.PI*2; }
-		
-		// orient towards mouse
-		if (angle_diff > 0)  { if (rotate_speed < 5)  rotate_speed += Math.min( 1/(distanceMouse/10) *100, 0.5); }
-		else                 { if (rotate_speed > -5) rotate_speed -= Math.min( 1/(distanceMouse/10) *100, 0.5); }
+		else if (angle_diff < -Math.PI) { angle_diff += Math.PI*2; }
 
 		if (ship_speed > 10) // if ship gets too fast
 		{
 		    let angle_speed = Math.atan2(ySpeed, xSpeed);
 		    let angle_speed_diff = angle_speed - angle_ship;
 		    if (angle_speed_diff > Math.PI) { angle_speed_diff -= Math.PI*2; }
+		    else if (angle_speed_diff < -Math.PI) { angle_speed_diff += Math.PI*2; }
 
 		    if (angle_speed_diff < 0)  { if (rotate_speed < 5)  rotate_speed += 0.2; }
 		    else                       { if (rotate_speed > -5) rotate_speed -= 0.2; }
@@ -119,11 +117,18 @@ function notxbot_start()
 		    if ( Math.abs(angle_speed_diff) > Math.PI/1.5 )
 			engine = true;
 		}
-		else if ( distanceMouse - ship_speed*10 > 100 && ship_mouse_speed < 5 ) // travel towards mouse
+		else
 		{
-		    if ( Math.abs(angle_diff) < Math.PI/2 ) // if oriented towards mouse
+		    // orient towards mouse
+		    if (angle_diff > 0)  { if (rotate_speed < 5)  rotate_speed += Math.min( 1/(distanceMouse/10) *100, 0.5); }
+		    else                 { if (rotate_speed > -5) rotate_speed -= Math.min( 1/(distanceMouse/10) *100, 0.5); }
+
+		    if ( distanceMouse - ship_speed*10 > 100 && ship_mouse_speed < 5 ) // travel towards mouse
 		    {
-			engine = true;
+			if ( Math.abs(angle_diff) < Math.PI/2 ) // if oriented towards mouse
+			{
+			    engine = true;
+			}
 		    }
 		}
 
