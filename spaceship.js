@@ -120,12 +120,12 @@ function notxbot_start()
 		else
 		{
 		    // orient towards mouse
-		    if (angle_diff > 0)  { if (rotate_speed < 5)  rotate_speed += (Math.abs(angle_diff)^2) / Math.min(distanceMouse/100,1); }
-		    else                 { if (rotate_speed > -5) rotate_speed -= (Math.abs(angle_diff)^2) / Math.min(distanceMouse/100,1); }
+		    if (angle_diff > 0)  { if (rotate_speed < 5)  rotate_speed += (Math.abs(angle_diff)^2) / Math.min(distanceMouse/100,10); }
+		    else                 { if (rotate_speed > -5) rotate_speed -= (Math.abs(angle_diff)^2) / Math.min(distanceMouse/100,10); }
 
 		    if ( ship_mouse_speed < 5 ) // travel towards mouse
 		    {
-			if ( Math.abs(angle_diff) < Math.PI/3 ) // if oriented towards mouse
+			if ( Math.abs(angle_diff) < Math.PI/1.5 ) // if oriented towards mouse
 			{
 			    engine = true;
 			}
