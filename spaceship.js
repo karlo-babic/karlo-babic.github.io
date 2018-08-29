@@ -111,7 +111,7 @@ function notxbot_start()
 		    if (angle_speed_diff > Math.PI) { angle_speed_diff -= Math.PI*2; }
 		    else if (angle_speed_diff < -Math.PI) { angle_speed_diff += Math.PI*2; }
 
-		    if (angle_speed_diff < 0)  { if (rotate_speed < 5)  rotate_speed += 0.1 + Math.abs(rotate_speed)/10; }
+		    if (angle_speed_diff < 0)  { if (rotate_speed < 5)  rotate_speed += 0.1 + Math.min(Math.abs(rotate_speed)/10, 0.2); }
 		    else                       { if (rotate_speed > -5) rotate_speed -= 0.1 + Math.abs(rotate_speed)/10; }
 
 		    if ( Math.abs(angle_speed_diff) > Math.PI/1.5 )
@@ -120,7 +120,7 @@ function notxbot_start()
 		else
 		{
 		    // orient towards mouse
-		    let rotate_delta = Math.pow(angle_diff,2) / Math.min(Math.pow(distanceMouse,2),4) + Math.abs(rotate_speed)/8;
+		    let rotate_delta = Math.pow(angle_diff,2) / Math.min(Math.pow(distanceMouse,2),4) + Math.min(Math.abs(rotate_speed)/8, 0.2);
 		    if (angle_diff > 0)  { if (rotate_speed < 5)  rotate_speed += rotate_delta; }
 		    else                 { if (rotate_speed > -5) rotate_speed -= rotate_delta; }
 
