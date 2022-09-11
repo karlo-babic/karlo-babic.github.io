@@ -11,7 +11,7 @@ class Spaceship {
     maxAngularSpeed = 0.5;
     
     itersWithoutControl = 0;
-    maxItersWithoutControl = 2;
+    maxItersWithoutControl = 100;
     prevDistanceToTarget = 0;
 
     doDisplay = false;
