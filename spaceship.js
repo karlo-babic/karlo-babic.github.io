@@ -25,7 +25,7 @@ class Spaceship {
 
     playerControl() {
 	this.propulse = false;
-	if (!keyboard.keys) return
+	if (!keyboard.keys) { this.itersWithoutControl = 0; return; }
 	if (this.id == 0) {
 	    if (keyboard.keys[37] || keyboard.keys[39] || keyboard.keys[38]) {
 		this.itersWithoutControl = 0;
@@ -210,5 +210,5 @@ function normalizeRadians(rad) {
     rad = rad % (2*Math.PI)
     if (rad > Math.PI)        { rad -= 2 * Math.PI; }
     else if (rad <= -Math.PI) { rad += 2 * Math.PI; }
-    return rad
+    return rad;
 }
