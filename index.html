@@ -1,8 +1,9 @@
-<html>    <! –– Hey! Don't look at my ugly html! By the way, here is some ugly javascript as well: https://no-x.github.io/ ––>
+<!DOCTYPE html>
+<html>
 
 
 <head>
-    <title>Karlo Babić</title>
+    <title>Karlo's observatory</title>
     <meta charset="utf-8">
     <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <link rel="shortcut icon" href="favicon.ico" >
@@ -14,18 +15,25 @@
         font-family: 'Roboto', sans-serif;
     }
     .h1 {
-        font-size: 50px;
+        font-family: monospace;
+        font-size: 30px;
         color: #f0f0f0;
         text-align: center;
     }
-    .p1 {
+    .h2 {
+        font-family: monospace;
         font-size: 22px;
+        color: #f0f0f0;
+    }
+    .p1 {
+        font-size: 18px;
         color: #f0f0f0;
         text-align: left;
     }
     
     .a {
         color: gray;
+        text-decoration: none;
     }
     .a:hover {
         color: white;
@@ -34,23 +42,24 @@
         color: white;
     }
     </style>
-    
 </head>
 
 
 <body>
-    <div id="spaceship" style="position:absolute;top:40px;right:40px;"><img onclick="spaceshipInit()" src="ship_off.png" width="20"></div>
-    <div id="spaceship2" style="position:absolute;top:40px;right:40px;"><img src="ship_off.png" width="20" hidden></div>
-    
-    <h1 class="h1">Karlo Babić</h1>
+    <div id="eye" class="h1" style="font-size:12px; white-space:pre-wrap;"></div>
     <br/>
+    <div id="eyeSpeech" class="h1" style="font-size:12px; color:#8d8594;">&nbsp;</div>
+
     
+    <div class="h2"><div id="spaceship" style="position:absolute;"><img onclick="spaceshipInit()" src="ship_off.png" width="12"></div>&nbsp;bout me</div>
     <p class="p1">
         <a href="CV_karlo.pdf" class="a">resume.pdf</a>
         <br/>
         <a href="https://scholar.google.com/citations?user=8e562aAAAAAJ&hl=en" class="a">scholar.google.com</a>
     </p>
     
+
+    <script src="observerEye.js"></script>
     <script src="spaceship.js"></script>
 </body>
 
