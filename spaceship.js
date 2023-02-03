@@ -55,9 +55,13 @@ class Spaceship {
 				this.propulse = true;
 			}
 			if ( Math.abs(this.angularSpeed - homingVelocityAngleRelative) > 0.2 ) {  // ship needs to turn
-				let angularChange = 0.1 * homingVelocityAngleRelative;
+				let angularChange = 0.005 * homingVelocityAngleRelative;
 				this.angularSpeed -= angularChange;
 			}
+		}
+		// slow down rotation
+		if (this.angularSpeed - homingVelocityAngleRelative >= 0) {
+			this.angularSpeed = this.angularSpeed * 0.9;
 		}
 
 		/*let velocityAngle = Math.atan2(this.velocity.y, this.velocity.x);
