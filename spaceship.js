@@ -4,7 +4,7 @@ class Spaceship {
     
     velocity = {x: 0, y: 0};
     rotation = 0;
-    angularSpeed = 0;
+    angularSpeed = 0.05;
     propulse = false;
     PROPULSION_STRENGTH = 0.8;
     MASS = 10;
@@ -21,8 +21,7 @@ class Spaceship {
 
     playerControl() {
 		this.propulse = false;
-		if (!keyboard.keys) { this.itersWithoutControl = 0; return; }
-		if (keyboard.keys[37] || keyboard.keys[39] || keyboard.keys[38]) {
+		if ( keyboard.keys && (keyboard.keys[37] || keyboard.keys[39] || keyboard.keys[38]) ) {
 			this.itersWithoutControl = 0;
 			
 			if (keyboard.keys[37]) this.angularSpeed -= 0.02;
@@ -35,6 +34,42 @@ class Spaceship {
 
     automaticControl() {
 		if (this.itersWithoutControl <= this.MAX_ITERS_WITHOUT_CONTROL) return;  // user is controlling it
+		let MAX_VELOCITY_DIRECTION = 2.6;
+
+		let mouseRelativePos = { 
+			x : mouse.x - this.position.x,
+			y : mouse.y - this.position.y
+		};
+		let MOUSE_HOMING_STRENGTH = 0.02;
+
+		let homingVelocity = {
+			x : this.velocity.x - mouseRelativePos.x * MOUSE_HOMING_STRENGTH,
+			y : this.velocity.y - (mouseRelativePos.y * MOUSE_HOMING_STRENGTH - 2)
+		};
+
+		let homingVelocityAngle = Math.atan2(homingVelocity.y, homingVelocity.x);
+		let homingVelocityAngleRelative = normalizeRadians(homingVelocityAngle - this.rotation - Math.PI/2 - Math.PI);
+		let homingSpeed = Math.sqrt(homingVelocity.x**2 + homingVelocity.y**2);
+		if (homingSpeed > 0.2) {
+			if ( Math.abs(homingVelocityAngleRelative) > MAX_VELOCITY_DIRECTION ) {
+				this.propulse = true;
+			}
+			if ( Math.abs(this.angularSpeed - homingVelocityAngleRelative) > 0.2 ) {  // ship needs to turn
+				let angularChange = 0.1 * homingVelocityAngleRelative;
+				this.angularSpeed -= angularChange;
+			}
+		}
+
+		/*let velocityAngle = Math.atan2(this.velocity.y, this.velocity.x);
+		let velocityAngleRelative = normalizeRadians(velocityAngle - this.rotation - Math.PI/2 - Math.PI);
+		let speed = Math.sqrt(this.velocity.x**2 + this.velocity.y**2);
+		if (speed > 4) {
+			if ( Math.abs(velocityAngleRelative) > MAX_VELOCITY_DIRECTION ) {
+				this.propulse = true;
+			} else if (Math.sign(this.angularSpeed) == Math.sign(velocityAngleRelative)) {  // ship needs to turn opposite to its current velocity direction
+				this.angularSpeed -= 0.2 * Math.sign(velocityAngleRelative);
+			}
+		}*/
 	}
 
     calcPhysics() {
