@@ -22,7 +22,85 @@ mouse.init();
 
 let eye = {
     ANIMATE_SPEED : 100,
-    INIT_TEXT : "  - -  \n- o o -\n- o o -\n  - -  ",
+    EYELID_TEXT : {
+        1 : "       \n       \n= = = =\n       ",
+        2 : ["    ", "    ", "----", "    "],
+        3 : ["    ", "    ", "----", " -- "],
+        4 : ["    ", "----", "----", " -- "]
+    },
+    iter : 0,
+    state : "init",
+    eyelidState : 1,
+    distanceToTarget : 0,
+
+    _states : {
+        "init" : function() {
+            eye.state = "";
+            textField.buffer.push({text:"Welcome to Karlo's observatory.", delay:4000});
+            setTimeout(eye._open, 3000);
+        },
+        "idle" : function() {
+            return;
+        },
+        "closing" : function() {
+            return;
+        },
+        "closed" : function() {
+            setTimeout(eye._open, 200);
+        }
+    },
+
+    _stateUpdate : function() {
+        let time = eye.iter * eye.ANIMATE_SPEED;
+        if (eye.iter%Math.round(Math.random()*100+40)==0 && eye.state == "idle") {
+            eye.state = "closing";
+            eye._close();
+        }
+
+        if (eye.state != "") {
+            eye._states[eye.state]();
+        }
+    },
+
+    _open : function() {
+        if (eye.eyelidState == 4) {
+            eye.eyelidState = false;
+        }
+        if (eye.eyelidState != false) {
+            eye.eyelidState += 1;
+            setTimeout(eye._open, 100);
+        } else {
+            eye.state = "idle";
+        }
+    },
+
+    _close : function(howTight=1) {
+        if (eye.eyelidState == false) {
+            eye.eyelidState = 4;
+        }
+        if (eye.eyelidState != false && eye.eyelidState >= 2) {
+            eye.eyelidState -= 1;
+            setTimeout(eye._close, 66);
+        } else {
+            eye.state = "closed";
+        }
+    },
+
+    _eyelidUpdate : function() {
+        if (eye.state != "idle") return;
+
+        if (eye.distanceToTarget < 50) {
+            eye.eyelidState = 1;
+        } else if (eye.distanceToTarget < 80) {
+            eye.eyelidState = 2;
+        } else if (eye.distanceToTarget < 120) {
+            eye.eyelidState = 3;
+        } else if (eye.distanceToTarget < 160) {
+            eye.eyelidState = 4;
+        } else {
+            eye.eyelidState = false;
+        }
+    },
 
     _getPos : function() {
         let eyePos = document.getElementById("eye").getBoundingClientRect();
@@ -32,7 +110,7 @@ let eye = {
         };
         return eyePos;
     },
-    
+
     _calcPupilPos : function() {
         let eyePos = eye._getPos();
         let targetPos = {x:0, y:0};
@@ -45,10 +123,10 @@ let eye = {
             x : targetPos.x - eyePos.x,
             y : targetPos.y - eyePos.y
         };
-        let distance = Math.sqrt(targetRelativePos.x**2 + targetRelativePos.y**2)
+        eye.distanceToTarget = Math.sqrt(targetRelativePos.x**2 + targetRelativePos.y**2)
         let targetNormPos = {
-            x : targetRelativePos.x / distance,
-            y : targetRelativePos.y / distance,
+            x : targetRelativePos.x / eye.distanceToTarget,
+            y : targetRelativePos.y / eye.distanceToTarget,
         };
         let pupilDistance = {
             x : Math.min(Math.abs(targetRelativePos.x/10), 2),
@@ -65,23 +143,37 @@ let eye = {
         if (isNaN(pupilPos.x)) return;
     
         let eyeText = "";
-        for (let y=0; y<4; y++) {
-            for (let x=0; x<4; x++) {
-                if (x==0 && y==0 || x==3 && y==3 || x==3 && y==0 || x==0 && y==3) eyeText += "  ";
-                else if (Math.abs(pupilPos.x - x) < 2 && Math.abs(pupilPos.y - y) < 2) eyeText += " o";
-                else eyeText += " -";
+        if (eye.eyelidState == 1) {
+            eyeText = eye.EYELID_TEXT[1];
+        } else {
+            eyeText = "";
+            for (let y=0; y<4; y++) {
+                for (let x=0; x<4; x++) {
+                    if (x==0 && y==0 || x==3 && y==3 || x==3 && y==0 || x==0 && y==3) {
+                        eyeText += "  ";
+                    } else if (eye.eyelidState != false && eye.EYELID_TEXT[eye.eyelidState][y].charAt(x) != "-") {
+                        eyeText += " " + eye.EYELID_TEXT[eye.eyelidState][y].charAt(x);
+                    } else if (Math.abs(pupilPos.x - x) < 2 && Math.abs(pupilPos.y - y) < 2) {
+                        eyeText += " o";
+                    } else {
+                        eyeText += " -";
+                    }
+                }
+                eyeText += " \n";
             }
-            eyeText += " \n";
         }
     
         document.getElementById("eye").innerHTML = eyeText;
     },
     
-    animationLoop : function() {
+    loop : function() {
+        eye._stateUpdate();
+        eye._eyelidUpdate();
         let pupilPos = eye._calcPupilPos();
         eye._render(pupilPos);
-        setTimeout(eye.animationLoop, eye.ANIMATE_SPEED);
+        setTimeout(eye.loop, eye.ANIMATE_SPEED);
         mouse.moving = false;
+        eye.iter += 1;
     }
 };
 
@@ -90,7 +182,6 @@ let eye = {
 let textField = {
     isWriting : false,
     buffer : [],
-    state : "start",
 
     _clearText : function() {
         document.getElementById("eyeSpeech").innerHTML = "&nbsp;";
@@ -116,25 +207,17 @@ let textField = {
         }
     },
 
-    _states : {
-        "start" : function() {
-            textField.buffer.push({text:"Welcome to Karlo's observatory.", delay:4000});
-            textField.state = "";
-        }
-    },
-
-    writeLoop : function() {
-        if (textField.state != "") textField._states[textField.state]();
+    loop : function() {
         if (textField.isWriting == false && textField.buffer.length > 0) {
             let args = textField.buffer.shift();
             textField._write(args.text, args.delay, args.speed, args.time, args.actionFunction, args.isQuestion);
         }
-        setTimeout(textField.writeLoop, 1000);
+        setTimeout(textField.loop, 1000);
     }
 };
 
 // --------------------------------------------------------------------- //
 
-document.getElementById("eye").innerHTML = eye.INIT_TEXT;
-eye.animationLoop();
-textField.writeLoop();
+document.getElementById("eye").innerHTML = eye.EYELID_TEXT[1];
+eye.loop();
+textField.loop();
