@@ -139,9 +139,25 @@ let eye = {
         return pupilPos;
     },
     
+    _calcPupilArray : function(pupilPos) {
+        let pupilArray = [[0,0,0,0], [0,0,0,0], [0,0,0,0], [0,0,0,0]];
+        if (isNaN(pupilPos.x)) {
+            pupilArray = [[0,0,0,0], [0,1,1,0], [0,1,1,0], [0,0,0,0]];;
+        } else {
+            for (let y=0; y<pupilArray.length; y++) {
+                for (let x=0; x<pupilArray[0].length; x++) {
+                    if (Math.abs(pupilPos.x - x) < 2 && Math.abs(pupilPos.y - y) < 2) {
+                        pupilArray[y][x] = 1;
+                    }
+                }
+            }
+        }
+        return pupilArray;
+    },
+
     _render : function(pupilPos) {
-        if (isNaN(pupilPos.x)) return;
-    
+        let pupilArray = eye._calcPupilArray(pupilPos);
+
         let eyeText = "";
         if (eye.eyelidState == 1) {
             eyeText = eye.EYELID_TEXT[1];
@@ -153,7 +169,7 @@ let eye = {
                         eyeText += "  ";
                     } else if (eye.eyelidState != false && eye.EYELID_TEXT[eye.eyelidState][y].charAt(x) != "-") {
                         eyeText += " " + eye.EYELID_TEXT[eye.eyelidState][y].charAt(x);
-                    } else if (Math.abs(pupilPos.x - x) < 2 && Math.abs(pupilPos.y - y) < 2) {
+                    } else if (pupilArray[y][x] == 1) {
                         eyeText += " o";
                     } else {
                         eyeText += " -";
