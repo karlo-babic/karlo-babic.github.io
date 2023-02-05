@@ -11,6 +11,7 @@ class Spaceship {
     MAX_ANGULAR_SPEED = 0.5;
     gravityActive = true;
     
+	iters = 0;
     itersWithoutControl = 0;
     MAX_ITERS_WITHOUT_CONTROL = 100;
     prevDistanceToTarget = 0;
@@ -25,8 +26,8 @@ class Spaceship {
 		if ( keyboard.keys && (keyboard.keys[37] || keyboard.keys[39] || keyboard.keys[38]) ) {
 			this.itersWithoutControl = 0;
 			
-			if (keyboard.keys[37]) this.angularSpeed -= 0.02;
-			if (keyboard.keys[39]) this.angularSpeed += 0.02;
+			if (keyboard.keys[37]) this.angularSpeed -= 0.01;
+			if (keyboard.keys[39]) this.angularSpeed += 0.01;
 			if (keyboard.keys[38]) this.propulse = true;
 		} else {
 			this.itersWithoutControl += 1;
@@ -58,7 +59,7 @@ class Spaceship {
 				this.propulse = true;
 			}
 			if ( Math.abs(this.angularSpeed - homingVelocityAngleRelative) > 0.2 ) {  // ship needs to turn
-				let angularChange = 0.005 * homingVelocityAngleRelative;
+				let angularChange = 0.01 * Math.sign(homingVelocityAngleRelative);
 				this.angularSpeed -= angularChange;
 			}
 		}
@@ -104,11 +105,14 @@ class Spaceship {
 		
 		if      (this.position.x < 0)                    this.position.x = screenDims.width-25;
 		else if (this.position.x > screenDims.width-20)  this.position.x = 5;
-		if      (this.position.y < 0)                    this.position.y = screenDims.height-35;
-		else if (this.position.y > screenDims.height-30) this.position.y = 5;
+		if      (this.position.y < 0)                    this.velocity.y = +Math.abs(this.velocity.y*0.5);
+		if (this.position.y > screenDims.height-30)      this.velocity.y = -Math.abs(this.velocity.y*0.5);
 	
 		this.rotation += this.PROPULSION_STRENGTH * this.angularSpeed / (this.MASS*0.3);
 		this.rotation = normalizeRadians(this.rotation);
+
+		if (this.iters%100==0) updateScreenDims();
+		this.iters += 1;
     }
 
     display(shipEl) {
@@ -133,10 +137,13 @@ let shipPos = {
 };
 let spaceship = new Spaceship(shipPos, shipSize);
 
-screenDims = { 
-	width: Math.max(window.innerWidth, document.body.getBoundingClientRect().width),
-	height: Math.max(window.innerHeight, document.body.getBoundingClientRect().height+25)
-};
+screenDims = {};
+function updateScreenDims() {
+	screenDims = {
+		width: Math.max(window.innerWidth, document.body.getBoundingClientRect().width),
+		height: Math.max(window.innerHeight, document.body.getBoundingClientRect().height+25)
+	};
+}
 
 
 let didInit = false;
