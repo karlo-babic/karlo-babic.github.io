@@ -139,8 +139,10 @@ screenDims = {
 };
 
 
-
+let didInit = false;
 function spaceshipInit() {
+	if (didInit) return;
+	didInit = true;
     //shipElement.innerHTML = '<img src="ship_off.png" width="'+spaceship.size+'">';
     keyboard.init();
     mouse.init();
