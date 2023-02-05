@@ -103,10 +103,10 @@ class Spaceship {
 		this.position.x += this.velocity.x;
 		this.position.y += this.velocity.y;
 		
-		if      (this.position.x < 0)                    this.position.x = screenDims.width-25;
-		else if (this.position.x > screenDims.width-20)  this.position.x = 5;
+		if      (this.position.x < 10)                    this.velocity.x = +Math.abs(this.velocity.x*0.5);
+		else if (this.position.x > screenDims.width-20)  this.velocity.x = -Math.abs(this.velocity.x*0.5);
 		if      (this.position.y < 0)                    this.velocity.y = +Math.abs(this.velocity.y*0.5);
-		if (this.position.y > screenDims.height-30)      this.velocity.y = -Math.abs(this.velocity.y*0.5);
+		if      (this.position.y > screenDims.height-30) this.velocity.y = -Math.abs(this.velocity.y*0.5);
 	
 		this.rotation += this.PROPULSION_STRENGTH * this.angularSpeed / (this.MASS*0.3);
 		this.rotation = normalizeRadians(this.rotation);
