@@ -24,6 +24,7 @@
         font-family: monospace;
         font-size: 22px;
         color: #f0f0f0;
+        text-decoration: none;
     }
     .p1 {
         font-size: 18px;
@@ -41,27 +42,54 @@
     .a:active {
         color: white;
     }
+
+    .gr_grid_container {
+    /* customize grid container div here. eg: width: 500px; */
+    }
+
+    .gr_grid_book_container {
+    /* customize book cover container div here */
+    float: left;
+    width: 50px;
+    height: 75px;
+    padding: 0px 0px;
+    overflow: hidden;
+    }
     </style>
 </head>
 
 
 <body>
+
     <div id="eye" class="h1" style="font-size:12px; white-space:pre-wrap;"></div>
     <br/>
     <div id="eyeSpeech" class="h1" style="font-size:12px; color:#8d8594;">&nbsp;</div>
-    <br/>
 
-    
-    <div class="h2"><div id="spaceship" style="position:absolute;"><img onclick="spaceshipInit()" src="ship_off.png" width="12"></div>&nbsp;bout me</div>
+
+    <br/>
+    <table style="margin-left:auto; margin-right:auto"><td>
+    <div class="h2"><a href="javascript:showhide('books')"><div id="spaceship" style="position:absolute;"><img onclick="spaceshipInit()" src="ship_off.png" width="12"></div></a>&nbsp;bout me</div>
     <p class="p1">
         <a href="CV_karlo.pdf" class="a">resume.pdf</a>
         <br/>
         <a href="https://scholar.google.com/citations?user=8e562aAAAAAJ&hl=en" class="a">scholar.google.com</a>
     </p>
-    
+    </td></table>
+
 
     <script src="observerEye.js"></script>
     <script src="spaceship.js"></script>
+
+    <script type="text/javascript">
+        function showhide(id) {
+            var e = document.getElementById(id);
+            e.style.display = (e.style.display == 'block') ? 'none' : 'block';
+        }
+    </script>
+    <div style="display:none;" id="books">
+    <br/>
+    <table style="margin-left:4%; margin-right:4%"><td><script src="https://www.goodreads.com/review/grid_widget/57999946.Karlo's%20bookshelf:%20read?cover_size=small&hide_link=true&hide_title=true&num_books=200&order=d&shelf=read&sort=date_read&widget_id=1491596460" type="text/javascript" charset="utf-8"></script></td></table>
+    </div>
 </body>
 
 

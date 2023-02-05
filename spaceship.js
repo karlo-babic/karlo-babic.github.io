@@ -9,6 +9,7 @@ class Spaceship {
     PROPULSION_STRENGTH = 0.8;
     MASS = 10;
     MAX_ANGULAR_SPEED = 0.5;
+    gravityActive = true;
     
     itersWithoutControl = 0;
     MAX_ITERS_WITHOUT_CONTROL = 100;
@@ -30,6 +31,8 @@ class Spaceship {
 		} else {
 			this.itersWithoutControl += 1;
 		}
+
+        if (keyboard.keys && keyboard.keys[71]) this.gravityActive = !this.gravityActive;
 	}
 
     automaticControl() {
@@ -44,7 +47,7 @@ class Spaceship {
 
 		let homingVelocity = {
 			x : this.velocity.x - mouseRelativePos.x * MOUSE_HOMING_STRENGTH,
-			y : this.velocity.y - (mouseRelativePos.y * MOUSE_HOMING_STRENGTH - 2)
+			y : this.velocity.y - (mouseRelativePos.y * MOUSE_HOMING_STRENGTH - 1)
 		};
 
 		let homingVelocityAngle = Math.atan2(homingVelocity.y, homingVelocity.x);
@@ -90,7 +93,9 @@ class Spaceship {
 		}
 
 		// gravity
-		this.velocity.y += 0.003 * this.MASS;
+        if (this.gravityActive) {
+    		this.velocity.y += 0.003 * this.MASS;
+        }
     }
 
     updateState() {

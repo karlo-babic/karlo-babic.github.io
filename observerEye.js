@@ -91,11 +91,11 @@ let eye = {
 
         if (eye.distanceToTarget < 50) {
             eye.eyelidState = 1;
-        } else if (eye.distanceToTarget < 80) {
+        } else if (eye.distanceToTarget < 70) {
             eye.eyelidState = 2;
-        } else if (eye.distanceToTarget < 120) {
+        } else if (eye.distanceToTarget < 90) {
             eye.eyelidState = 3;
-        } else if (eye.distanceToTarget < 160) {
+        } else if (eye.distanceToTarget < 110) {
             eye.eyelidState = 4;
         } else {
             eye.eyelidState = false;
