@@ -52,7 +52,7 @@ let eye = {
 
     _stateUpdate : function() {
         let time = eye.iter * eye.ANIMATE_SPEED;
-        if (eye.iter%Math.round(Math.random()*100+40)==0 && eye.state == "idle") {
+        if (eye.iter%Math.round(Math.random()*100+40)==0 && eye.state == "idle" && eye.eyelidState == false) {
             eye.state = "closing";
             eye._close();
         }
