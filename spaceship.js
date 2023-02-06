@@ -1,4 +1,5 @@
 class Spaceship {
+	origPosition = {x: 0, y: 0};
     position = {x: 0, y: 0};
     SIZE = 12;
     
@@ -14,10 +15,10 @@ class Spaceship {
 	iters = 0;
     itersWithoutControl = 0;
     MAX_ITERS_WITHOUT_CONTROL = 100;
-    prevDistanceToTarget = 0;
     
     constructor(position, size) {
-		this.position = position;
+		this.origPosition = position;
+		Object.assign(this.position, position);
 		this.SIZE = size;
     }
 
@@ -103,13 +104,23 @@ class Spaceship {
 		this.position.x += this.velocity.x;
 		this.position.y += this.velocity.y;
 		
-		if      (this.position.x < 10)                    this.velocity.x = +Math.abs(this.velocity.x*0.5);
+		if      (this.position.x < 10)                   this.velocity.x = +Math.abs(this.velocity.x*0.5);
 		else if (this.position.x > screenDims.width-20)  this.velocity.x = -Math.abs(this.velocity.x*0.5);
 		if      (this.position.y < 0)                    this.velocity.y = +Math.abs(this.velocity.y*0.5);
 		if      (this.position.y > screenDims.height-30) this.velocity.y = -Math.abs(this.velocity.y*0.5);
 	
 		this.rotation += this.PROPULSION_STRENGTH * this.angularSpeed / (this.MASS*0.3);
 		this.rotation = normalizeRadians(this.rotation);
+		
+		if (Math.abs(this.position.x - this.origPosition.x) < 4 &&
+		Math.abs(this.position.y - this.origPosition.y) < 4 &&
+		Math.abs(this.rotation) < 0.4 &&
+		this.iters >= 50) {
+			Object.assign(this.position, this.origPosition);
+			this.rotation = 0;
+			showhide('books');
+			stopShip();
+		}
 
 		if (this.iters%100==0) updateScreenDims();
 		this.iters += 1;
@@ -146,14 +157,14 @@ function updateScreenDims() {
 }
 
 
-let didInit = false;
+let shipRunning = false;
+let mainLoop = null;
 function spaceshipInit() {
-	if (didInit) return;
-	didInit = true;
-    //shipElement.innerHTML = '<img src="ship_off.png" width="'+spaceship.size+'">';
+	if (shipRunning) return;
+	shipRunning = true;
     keyboard.init();
     mouse.init();
-    let mainLoop = setInterval(iter, 20); // 50 ms -> 20 f/s
+    mainLoop = setInterval(iter, 20);
 }
 
 function iter() {
@@ -162,6 +173,16 @@ function iter() {
     spaceship.calcPhysics();
     spaceship.updateState();
     spaceship.display(shipElement)
+}
+
+function stopShip() {
+	if (shipRunning == false) return;
+	shipRunning = false;
+	clearInterval(mainLoop);
+	spaceship.propulse = false;
+	spaceship.iters = 0;
+	spaceship.itersWithoutControl = 0;
+	spaceship.display(shipElement);
 }
 
 
