@@ -112,6 +112,7 @@ class Spaceship {
 		this.rotation += this.PROPULSION_STRENGTH * this.angularSpeed / (this.MASS*0.3);
 		this.rotation = normalizeRadians(this.rotation);
 		
+		// if back at the origin
 		if (Math.abs(this.position.x - this.origPosition.x) < 4 &&
 		Math.abs(this.position.y - this.origPosition.y) < 4 &&
 		Math.abs(this.rotation) < 0.4 &&
@@ -164,10 +165,10 @@ function spaceshipInit() {
 	shipRunning = true;
     keyboard.init();
     mouse.init();
-    mainLoop = setInterval(iter, 20);
+    mainLoop = setInterval(iterSpaceship, 20);
 }
 
-function iter() {
+function iterSpaceship() {
     spaceship.playerControl();
     spaceship.automaticControl();
     spaceship.calcPhysics();

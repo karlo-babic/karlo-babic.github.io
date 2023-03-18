@@ -141,7 +141,7 @@ let eye = {
     
     _calcPupilArray : function(pupilPos) {
         let pupilArray = [[0,0,0,0], [0,0,0,0], [0,0,0,0], [0,0,0,0]];
-        if (isNaN(pupilPos.x)) {
+        if (isNaN(pupilPos.x) || mouse.moving == false && spaceship.propulse == false) {
             pupilArray = [[0,0,0,0], [0,1,1,0], [0,1,1,0], [0,0,0,0]];;
         } else {
             for (let y=0; y<pupilArray.length; y++) {
