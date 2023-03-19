@@ -144,8 +144,8 @@ class Spaceship {
 let shipElement = document.getElementById("spaceship");
 let shipSize = 12;
 let shipPos = {
-	x: shipElement.getBoundingClientRect().left + shipSize/2,
-	y: shipElement.getBoundingClientRect().top  + shipSize/2
+	x: shipElement.getBoundingClientRect().left + window.scrollX + shipSize/2,
+	y: shipElement.getBoundingClientRect().top  + window.scrollY + shipSize/2
 };
 let spaceship = new Spaceship(shipPos, shipSize);
 

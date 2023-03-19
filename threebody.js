@@ -95,8 +95,8 @@ class Threebody {
 
 let threebodyElement = document.getElementById("threebody");
 let threebodyPos = {
-	x: threebodyElement.getBoundingClientRect().left + 22,
-	y: threebodyElement.getBoundingClientRect().top  + 0
+	x: threebodyElement.getBoundingClientRect().left + window.scrollX + 22,
+	y: threebodyElement.getBoundingClientRect().top + window.scrollY + 0
 };
 let bodyElements;
 
