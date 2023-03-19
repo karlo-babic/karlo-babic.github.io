@@ -1,5 +1,5 @@
 const G = 0.001;
-const DT = 2;
+const DT = 5;
 
 
 class Threebody {
@@ -10,9 +10,9 @@ class Threebody {
         {position: {x: 0, y: 0}, velocity: {x: Math.random()-0.5, y: Math.random()-0.5}, mass: 100}
     ];
     bodiesBuffer = [
-        {position: {x: 0, y: 0}, velocity: {x: Math.random()-0.5, y: Math.random()-0.5}, mass: 100},
-        {position: {x: 0, y: 0}, velocity: {x: Math.random()-0.5, y: Math.random()-0.5}, mass: 100},
-        {position: {x: 0, y: 0}, velocity: {x: Math.random()-0.5, y: Math.random()-0.5}, mass: 100}
+        {position: {x: 0, y: 0}, velocity: {x: 0, y: 0}, mass: 0},
+        {position: {x: 0, y: 0}, velocity: {x: 0, y: 0}, mass: 0},
+        {position: {x: 0, y: 0}, velocity: {x: 0, y: 0}, mass: 0}
     ];
     iters = 0;
 
@@ -23,9 +23,15 @@ class Threebody {
 		Object.assign(this.bodies[2].position, position);
         this.bodies[0].position.x -= 15
         this.bodies[2].position.x += 15
+
+        this.bodies[0].velocity = {x: Math.random()*0.1-0.05, y: Math.random()*0.1-0.05}
+        this.bodies[1].velocity = {x: Math.random()*0.1-0.05, y: Math.random()*0.1-0.05}
+        this.bodies[2].velocity = {x: -this.bodies[0].velocity.x - this.bodies[1].velocity.x, y: -this.bodies[0].velocity.y - this.bodies[1].velocity.y}
+
         for (let i=0; i<3; i++) {
             Object.assign(this.bodiesBuffer[i].position, this.bodies[i].position);
             Object.assign(this.bodiesBuffer[i].velocity, this.bodies[i].velocity);
+            this.bodiesBuffer[i].mass = this.bodies[i].mass;
         }
     }
 
@@ -52,7 +58,7 @@ class Threebody {
         const dx = body2.position.x - body1.position.x;
         const dy = body2.position.y - body1.position.y;
         const distance = Math.sqrt(dx * dx + dy * dy );
-        const force = G * body1.mass * body2.mass / Math.max(distance, 10);
+        const force = G * body1.mass * body2.mass / Math.max(Math.pow(distance, 2), 10);
         const fx = force * dx / distance;
         const fy = force * dy / distance;
         return { fx, fy };
@@ -66,10 +72,10 @@ class Threebody {
         body.position.x += body.velocity.x * DT;
         body.position.y += body.velocity.y * DT;
 		
-		if      (body.position.x < 10)                   body.velocity.x = +Math.abs(body.velocity.x*0.9);
+		if      (body.position.x < 5)                    body.velocity.x = +Math.abs(body.velocity.x*0.9);
 		else if (body.position.x > screenDims.width-10)  body.velocity.x = -Math.abs(body.velocity.x*0.9);
 		if      (body.position.y < 0)                    body.velocity.y = +Math.abs(body.velocity.y*0.9);
-		if      (body.position.y > screenDims.height-15) body.velocity.y = -Math.abs(body.velocity.y*0.9);
+		if      (body.position.y > screenDims.height-20) body.velocity.y = -Math.abs(body.velocity.y*0.9);
         
 		if (this.iters%100==0) updateScreenDims();
 		this.iters += 1;
