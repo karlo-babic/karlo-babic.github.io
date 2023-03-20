@@ -25,7 +25,7 @@ class Threebody {
         this.bodies[2].position.x += 15
 
         this.bodies[0].velocity = {x: 0, y: Math.random()*0.2-0.1}
-        this.bodies[1].velocity = {x: 0, y: Math.random()*0.2-0.1}
+        this.bodies[1].velocity = {x: Math.random()*0.2-0.1, y: 0}
         this.bodies[2].velocity = {x: -this.bodies[0].velocity.x - this.bodies[1].velocity.x, y: -this.bodies[0].velocity.y - this.bodies[1].velocity.y}
 
         for (let i=0; i<3; i++) {
