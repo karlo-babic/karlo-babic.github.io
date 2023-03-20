@@ -5,9 +5,9 @@ const DT = 5;
 class Threebody {
 	origPosition = {x: 0, y: 0};
     bodies = [
-        {position: {x: 0, y: 0}, velocity: {x: Math.random()-0.5, y: Math.random()-0.5}, mass: 100},
-        {position: {x: 0, y: 0}, velocity: {x: Math.random()-0.5, y: Math.random()-0.5}, mass: 100},
-        {position: {x: 0, y: 0}, velocity: {x: Math.random()-0.5, y: Math.random()-0.5}, mass: 100}
+        {position: {x: 0, y: 0}, velocity: {x: 0, y: 0}, mass: 100},
+        {position: {x: 0, y: 0}, velocity: {x: 0, y: 0}, mass: 100},
+        {position: {x: 0, y: 0}, velocity: {x: 0, y: 0}, mass: 100}
     ];
     bodiesBuffer = [
         {position: {x: 0, y: 0}, velocity: {x: 0, y: 0}, mass: 0},
@@ -24,8 +24,8 @@ class Threebody {
         this.bodies[0].position.x -= 15
         this.bodies[2].position.x += 15
 
-        this.bodies[0].velocity = {x: Math.random()*0.1-0.05, y: Math.random()*0.1-0.05}
-        this.bodies[1].velocity = {x: Math.random()*0.1-0.05, y: Math.random()*0.1-0.05}
+        this.bodies[0].velocity = {x: 0, y: Math.random()*0.2-0.1}
+        this.bodies[1].velocity = {x: 0, y: Math.random()*0.2-0.1}
         this.bodies[2].velocity = {x: -this.bodies[0].velocity.x - this.bodies[1].velocity.x, y: -this.bodies[0].velocity.y - this.bodies[1].velocity.y}
 
         for (let i=0; i<3; i++) {
