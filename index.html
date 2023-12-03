@@ -8,6 +8,7 @@
     <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <link rel="shortcut icon" href="favicon.ico" >
     <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
+    <script src="files/fuzzyECA.js"></script>
     
     <style>
     body {
@@ -55,11 +56,19 @@
     padding: 0px 0px;
     overflow: hidden;
     }
+
+    canvas{
+      position:absolute;
+      left:0;
+      top:0;
+      z-index:-1;
+      background-color: #2a2a2e;
+    }
     </style>
 </head>
 
 
-<body>
+<body onload="startFuzzyEca()">
     <div id="eye" class="h1" style="font-size:12px; white-space:pre-wrap;"></div>
     <br/>
     <div id="eyeSpeech" class="h1" style="font-size:12px; color:#8d8594;">&nbsp;</div>
@@ -70,9 +79,9 @@
     <table style="margin-left:auto; margin-right:auto"><td>
 
     <div class="h2">
-    <a href="javascript:spaceshipInit();"><div id="spaceship" style="position:absolute;"><img src="ship_off.png" width="12" title="rocket"></div></a>
+    <a href="javascript:spaceshipInit();"><div id="spaceship" style="position:absolute;"><img src="files/ship_off.png" width="12" title="rocket"></div></a>
     &nbsp;bout me
-    <div id="threebody" style="float:right;"><a href="javascript:threebodyInit();"><img src="threedots.png" width="40" style="image-rendering:pixelated;" title="three body problem"></a></div>
+    <div id="threebody" style="float:right;"><a href="javascript:threebodyInit();"><img src="files/threedots.png" width="40" style="image-rendering:pixelated;" title="three body problem"></a></div>
     </div>
 
     <p class="p1">
@@ -85,9 +94,9 @@
     <!--------------------------------------------------------------->
 
 
-    <script src="observerEye.js"></script>
-    <script src="spaceship.js"></script>
-    <script src="threebody.js"></script>
+    <script src="files/observerEye.js"></script>
+    <script src="files/spaceship.js"></script>
+    <script src="files/threebody.js"></script>
 
     <script type="text/javascript">function showhide(id) { var e = document.getElementById(id); e.style.display = (e.style.display == 'block') ? 'none' : 'block'; }</script>
     <div style="display:none;" id="books">
