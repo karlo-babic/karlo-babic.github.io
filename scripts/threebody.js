@@ -125,15 +125,19 @@ function threebodyInit() {
         document.getElementById("body2")
     ];
 
-    threebody.prevTime = performance.now();
     threebodyLoop = setInterval(iterThreebody, 20);
 }
 
 function iterThreebody() {
-	const time = performance.now();
-	let deltaTime = (time - threebody.prevTime) / 1000;
+	const time = performance.now() / 1000;
+	let deltaTime = (time - threebody.prevTime);
     if (deltaTime > 0.1) deltaTime = 0.02;
 	threebody.prevTime = time;
     threebody.calcPhysics(deltaTime);
     threebody.display(bodyElements)
 }
+
+
+setTimeout(() => {
+    threebodyInit()
+}, 10000);
