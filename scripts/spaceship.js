@@ -31,7 +31,8 @@ class Spaceship {
 
 	loopIter() {
 		const time = performance.now();
-		const deltaTime = (time - spaceship.prevTime) / 1000;
+		let deltaTime = (time - spaceship.prevTime) / 1000;
+		if (deltaTime > 0.1) deltaTime = 0.02;
 		spaceship.prevTime = time;
 		spaceship.playerControl();
 		spaceship.automaticControl();

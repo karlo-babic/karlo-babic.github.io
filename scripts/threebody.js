@@ -64,7 +64,7 @@ class Threebody {
         const dx = body2.position.x - body1.position.x;
         const dy = body2.position.y - body1.position.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
-        const force = Math.min(G * body1.mass * body2.mass / Math.pow(distance, 1.5), MAX_FORCE);
+        const force = Math.min(G * body1.mass * body2.mass / Math.pow(distance, 1.1), MAX_FORCE);
         const fx = force * dx / distance;
         const fy = force * dy / distance;
         return { fx, fy };
@@ -131,7 +131,8 @@ function threebodyInit() {
 
 function iterThreebody() {
 	const time = performance.now();
-	const deltaTime = (time - threebody.prevTime) / 1000;
+	let deltaTime = (time - threebody.prevTime) / 1000;
+    if (deltaTime > 0.1) deltaTime = 0.02;
 	threebody.prevTime = time;
     threebody.calcPhysics(deltaTime);
     threebody.display(bodyElements)
