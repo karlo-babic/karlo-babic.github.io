@@ -5,13 +5,15 @@ class Spaceship {
     
     velocity = {x: 0, y: 0};
     rotation = 0;
-    angularSpeed = 0.05;
+    angularSpeed = (Math.random()-0.5)*0.1;
     propulse = false;
-    PROPULSION_STRENGTH = 0.8;
-    MASS = 10;
+    PROPULSION_STRENGTH = 3;
+    MASS = 0.5;
     MAX_ANGULAR_SPEED = 0.5;
     gravityActive = true;
+	GRAVITY_ACC = 6.81;
     
+	prevTime = -1;
 	iters = 0;
     itersWithoutControl = 0;
     MAX_ITERS_WITHOUT_CONTROL = 100;
@@ -45,11 +47,11 @@ class Spaceship {
 			x : mouse.x - this.position.x,
 			y : mouse.y - this.position.y
 		};
-		let MOUSE_HOMING_STRENGTH = 0.02;
+		let MOUSE_HOMING_STRENGTH = 2.0;
 
 		let homingVelocity = {
 			x : this.velocity.x - mouseRelativePos.x * MOUSE_HOMING_STRENGTH,
-			y : this.velocity.y - (mouseRelativePos.y * MOUSE_HOMING_STRENGTH - 1)
+			y : this.velocity.y - (mouseRelativePos.y * MOUSE_HOMING_STRENGTH - this.GRAVITY_ACC*20)
 		};
 
 		let homingVelocityAngle = Math.atan2(homingVelocity.y, homingVelocity.x);
@@ -60,7 +62,7 @@ class Spaceship {
 				this.propulse = true;
 			}
 			if ( Math.abs(this.angularSpeed - homingVelocityAngleRelative) > 0.2 ) {  // ship needs to turn
-				let angularChange = 0.01 * Math.sign(homingVelocityAngleRelative);
+				let angularChange = 0.02 * Math.sign(homingVelocityAngleRelative);
 				this.angularSpeed -= angularChange;
 			}
 		}
@@ -96,20 +98,20 @@ class Spaceship {
 
 		// gravity
         if (this.gravityActive) {
-    		this.velocity.y += 0.003 * this.MASS;
+    		this.velocity.y += this.GRAVITY_ACC * this.MASS;
         }
     }
 
-    updateState() {
-		this.position.x += this.velocity.x;
-		this.position.y += this.velocity.y;
-		
-		if      (this.position.x < 10)                   this.velocity.x = +Math.abs(this.velocity.x*0.5);
-		else if (this.position.x > screenDims.width-20)  this.velocity.x = -Math.abs(this.velocity.x*0.5);
-		if      (this.position.y < 0)                    this.velocity.y = +Math.abs(this.velocity.y*0.5);
-		if      (this.position.y > screenDims.height-30) this.velocity.y = -Math.abs(this.velocity.y*0.5);
+    updateState(deltaTime) {
+		if      (this.position.x < 10 && this.velocity.x < 0)                   { this.velocity.x = +Math.abs(this.velocity.x)*0.2; if (Math.abs(this.velocity.x) < 0.01) this.velocity.x = 0; }
+		else if (this.position.x > screenDims.width-20 && this.velocity.x > 0)  this.velocity.x = -Math.abs(this.velocity.x)*0.2;
+		if      (this.position.y < 0 && this.velocity.y < 0)                    this.velocity.y = +Math.abs(this.velocity.y)*0.2;
+		else if (this.position.y > screenDims.height-30 && this.velocity.y > 0) this.velocity.y = -Math.abs(this.velocity.y)*0.2;
+
+		this.position.x += this.velocity.x * deltaTime;
+		this.position.y += this.velocity.y * deltaTime;
 	
-		this.rotation += this.PROPULSION_STRENGTH * this.angularSpeed / (this.MASS*0.3);
+		this.rotation += 2 * this.angularSpeed / (this.MASS*0.3) * deltaTime;
 		this.rotation = normalizeRadians(this.rotation);
 		
 		// if back at the origin
@@ -165,14 +167,18 @@ function spaceshipInit() {
 	shipRunning = true;
     keyboard.init();
     mouse.init();
+	spaceship.prevTime = performance.now();
     mainLoop = setInterval(iterSpaceship, 20);
 }
 
 function iterSpaceship() {
+	const time = performance.now();
+	const deltaTime = (time - spaceship.prevTime) / 1000;
+	spaceship.prevTime = time;
     spaceship.playerControl();
     spaceship.automaticControl();
     spaceship.calcPhysics();
-    spaceship.updateState();
+    spaceship.updateState(deltaTime);
     spaceship.display(shipElement)
 }
 
