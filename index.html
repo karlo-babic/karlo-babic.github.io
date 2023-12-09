@@ -6,101 +6,122 @@
     <title>Karlo's observatory</title>
     <meta charset="utf-8">
     <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <link rel="shortcut icon" href="favicon.ico" >
+    <link rel="shortcut icon" href="imgs/favicon.ico">
     <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
-    <script src="files/fuzzyECA.js"></script>
-    
+    <script src="scripts/inputs.js"></script>
+    <script src="scripts/fuzzyECA.js"></script>
+
     <style>
-    body {
-        background-color: #2a2a2e;
-        font-family: 'Roboto', sans-serif;
-    }
-    .h1 {
-        font-family: monospace;
-        font-size: 30px;
-        color: #f0f0f0;
-        text-align: center;
-    }
-    .h2 {
-        font-family: monospace;
-        font-size: 22px;
-        color: #f0f0f0;
-        text-decoration: none;
-    }
-    .p1 {
-        font-size: 18px;
-        color: #f0f0f0;
-        text-align: left;
-    }
-    
-    .a {
-        color: gray;
-        text-decoration: none;
-    }
-    .a:hover {
-        color: white;
-    }
-    .a:active {
-        color: white;
-    }
+        body {
+            background-color: #2a2a2e;
+            font-family: 'Roboto', sans-serif;
+        }
 
-    .gr_grid_container {
-    /* customize grid container div here. eg: width: 500px; */
-    }
+        .h1 {
+            font-family: monospace;
+            font-size: 30px;
+            color: #f0f0f0;
+            text-align: center;
+        }
 
-    .gr_grid_book_container {
-    /* customize book cover container div here */
-    float: left;
-    width: 50px;
-    height: 75px;
-    padding: 0px 0px;
-    overflow: hidden;
-    }
+        .h2 {
+            font-family: monospace;
+            font-size: 22px;
+            color: #f0f0f0;
+            text-decoration: none;
+        }
 
-    canvas{
-      position:absolute;
-      left:0;
-      top:0;
-      z-index:-1;
-      background-color: #2a2a2e;
-    }
+        .p1 {
+            font-size: 18px;
+            color: #f0f0f0;
+            text-align: left;
+        }
+
+        .a {
+            color: gray;
+            text-decoration: none;
+        }
+
+        .a:hover {
+            color: white;
+        }
+
+        .a:active {
+            color: white;
+        }
+
+        .gr_grid_container {
+            /* customize grid container div here. eg: width: 500px; */
+        }
+
+        .gr_grid_book_container {
+            /* customize book cover container div here */
+            float: left;
+            width: 50px;
+            height: 75px;
+            padding: 0px 0px;
+            overflow: hidden;
+        }
+
+        canvas {
+            position: absolute;
+            left: 0;
+            top: 0;
+            z-index: -1;
+            background-color: #2a2a2e;
+        }
     </style>
 </head>
 
 
 <body onload="startFuzzyEca()">
     <div id="eye" class="h1" style="font-size:12px; white-space:pre-wrap;"></div>
-    <br/>
+    <br />
     <div id="eyeSpeech" class="h1" style="font-size:12px; color:#8d8594;">&nbsp;</div>
 
 
     <!--------------------------------------------------------------->
-    <br/>
-    <table style="margin-left:auto; margin-right:auto"><td>
+    <br />
+    <table style="margin-left:auto; margin-right:auto">
+        <td>
 
-    <div class="h2">
-    <a href="javascript:spaceshipInit();"><div id="spaceship" style="position:absolute;"><img src="files/ship_off.png" width="12" title="rocket"></div></a>
-    &nbsp;bout me
-    <div id="threebody" style="float:right;"><a href="javascript:threebodyInit();"><img src="files/threedots.png" width="40" style="image-rendering:pixelated;" title="three body problem"></a></div>
-    </div>
+            <div class="h2">
+                <a href="javascript:spaceshipInit();">
+                    <div id="spaceship" style="position:absolute;"><img src="imgs/ship_off.png" width="12"
+                            title="rocket"></div>
+                </a>
+                &nbsp;bout me
+                <div id="threebody" style="float:right;"><a href="javascript:threebodyInit();"><img
+                            src="imgs/threedots.png" width="40" style="image-rendering:pixelated;"
+                            title="three body problem"></a></div>
+            </div>
 
-    <p class="p1">
-        <a href="CV_karlo.pdf" class="a">resume.pdf</a>
-        <br/>
-        <a href="https://scholar.google.com/citations?user=8e562aAAAAAJ&hl=en" class="a">scholar.google.com</a>
-    </p>
+            <p class="p1">
+                <a href="CV_karlo.pdf" class="a">resume.pdf</a>
+                <br />
+                <a href="https://scholar.google.com/citations?user=8e562aAAAAAJ&hl=en" class="a">scholar.google.com</a>
+            </p>
 
-    </td></table>
+        </td>
+    </table>
     <!--------------------------------------------------------------->
 
 
-    <script src="files/observerEye.js"></script>
-    <script src="files/spaceship.js"></script>
-    <script src="files/threebody.js"></script>
+    <script src="scripts/observerEye.js"></script>
+    <script src="scripts/spaceship.js"></script>
+    <script src="scripts/threebody.js"></script>
 
-    <script type="text/javascript">function showhide(id) { var e = document.getElementById(id); e.style.display = (e.style.display == 'block') ? 'none' : 'block'; }</script>
+    <script
+        type="text/javascript">function showhide(id) { var e = document.getElementById(id); e.style.display = (e.style.display == 'block') ? 'none' : 'block'; }</script>
     <div style="display:none;" id="books">
-    <br/><table style="margin-left:4%; margin-right:4%"><td><script src="https://www.goodreads.com/review/grid_widget/57999946.Karlo's%20bookshelf:%20read?cover_size=small&hide_link=true&hide_title=true&num_books=200&order=d&shelf=read&sort=date_read&widget_id=1491596460" type="text/javascript" charset="utf-8"></script></td></table>
+        <br />
+        <table style="margin-left:4%; margin-right:4%">
+            <td>
+                <script
+                    src="https://www.goodreads.com/review/grid_widget/57999946.Karlo's%20bookshelf:%20read?cover_size=small&hide_link=true&hide_title=true&num_books=200&order=d&shelf=read&sort=date_read&widget_id=1491596460"
+                    type="text/javascript" charset="utf-8"></script>
+            </td>
+        </table>
     </div>
 </body>
 

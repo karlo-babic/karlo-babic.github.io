@@ -72,8 +72,8 @@ class Threebody {
     
     _updateBody(i, body, fx, fy, deltaTime) {
         if (i == 3) {  // if this body is user's mouse
-            body.position.x = mouse.x;
-            body.position.y = mouse.y;
+            body.position.x = Mouse.x;
+            body.position.y = Mouse.y;
         }
         else {
             const ax = fx / body.mass;
@@ -84,11 +84,9 @@ class Threebody {
             body.position.y += body.velocity.y * deltaTime * SIM_SPEED;
             
             if      (body.position.x < 5)                    body.velocity.x = +Math.abs(body.velocity.x*0.9);
-            else if (body.position.x > screenDims.width-10)  body.velocity.x = -Math.abs(body.velocity.x*0.9);
+            else if (body.position.x > screenSize.width-10)  body.velocity.x = -Math.abs(body.velocity.x*0.9);
             if      (body.position.y < 0)                    body.velocity.y = +Math.abs(body.velocity.y*0.9);
-            if      (body.position.y > screenDims.height-20) body.velocity.y = -Math.abs(body.velocity.y*0.9);
-            
-            if (this.iters%100==0) updateScreenDims();
+            if      (body.position.y > screenSize.height-20) body.velocity.y = -Math.abs(body.velocity.y*0.9);
         }
     }
     
@@ -118,9 +116,9 @@ let simRunning = false;
 function threebodyInit() {
     if (simRunning) return
     simRunning = true;
-    threebodyElement.innerHTML  = '<div id="body0" style="position:absolute;"><img src="files/dot.png" width="3" style="image-rendering:pixelated;"></div>';
-    threebodyElement.innerHTML += '<div id="body1" style="position:absolute;"><img src="files/dot.png" width="3" style="image-rendering:pixelated;"></div>';
-    threebodyElement.innerHTML += '<div id="body2" style="position:absolute;"><img src="files/dot.png" width="3" style="image-rendering:pixelated;"></div>';
+    threebodyElement.innerHTML  = '<div id="body0" style="position:absolute;"><img src="imgs/dot.png" width="3" style="image-rendering:pixelated;"></div>';
+    threebodyElement.innerHTML += '<div id="body1" style="position:absolute;"><img src="imgs/dot.png" width="3" style="image-rendering:pixelated;"></div>';
+    threebodyElement.innerHTML += '<div id="body2" style="position:absolute;"><img src="imgs/dot.png" width="3" style="image-rendering:pixelated;"></div>';
     bodyElements = [
         document.getElementById("body0"),
         document.getElementById("body1"),
@@ -137,15 +135,4 @@ function iterThreebody() {
 	threebody.prevTime = time;
     threebody.calcPhysics(deltaTime);
     threebody.display(bodyElements)
-}
-
-
-
-
-screenDims = {};
-function updateScreenDims() {
-	screenDims = {
-		width: Math.max(window.innerWidth, document.body.getBoundingClientRect().width),
-		height: Math.max(window.innerHeight, document.body.getBoundingClientRect().height+25)
-	};
 }
