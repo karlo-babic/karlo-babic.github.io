@@ -1,6 +1,6 @@
 const G = 0.001;
 const NUM_BODIES = 3;
-const SIM_SPEED = 200;
+const SIM_SPEED = 100;
 const MAX_FORCE = 2;
 
 
@@ -64,7 +64,7 @@ class Threebody {
         const dx = body2.position.x - body1.position.x;
         const dy = body2.position.y - body1.position.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
-        const force = Math.min(G * body1.mass * body2.mass / Math.pow(distance, 1.1), MAX_FORCE);
+        const force = Math.min(G * body1.mass * body2.mass / Math.pow(distance, 1.3), MAX_FORCE);
         const fx = force * dx / distance;
         const fy = force * dy / distance;
         return { fx, fy };
