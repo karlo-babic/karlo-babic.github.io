@@ -155,3 +155,7 @@ function iterThreebody() {
     //threebody.temperature();
     threebody.display(bodyElements)
 }
+
+setTimeout(() => {
+    threebodyInit()
+}, 10000);
