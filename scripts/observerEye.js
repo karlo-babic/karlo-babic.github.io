@@ -28,6 +28,10 @@ const Eye = {
         }
     },
 
+    _worldDone : {
+        "spaceship" : false
+    },
+
     _stateUpdate : function() {
         let time = Eye.iter * Eye.ANIMATE_SPEED;
         if (Eye.iter%Math.round(Math.random()*70+40)==0 && Eye.state == "idle" && Eye.eyelidState == false) {
@@ -61,6 +65,26 @@ const Eye = {
             setTimeout(Eye._close, 66);
         } else {
             Eye.state = "closed";
+        }
+    },
+
+    _checkWorld : function() {
+        if (Eye.state != "idle") return;
+
+        if (threebody.bodies) {
+            const planetSpeed = Math.sqrt(Math.pow(threebody.bodies[0].velocity.x, 2) + Math.pow(threebody.bodies[0].velocity.y, 2));
+            if (planetSpeed > 160) {
+                TextField.buffer.push({text:"Gravitational slingshot!", delay:0, speed:40});
+            }
+        }
+
+        if (Eye.distanceToTarget < 50 && this.iter % 60 == 0) {
+            TextField.buffer.push({text:"Stop it.", delay:5, speed:40, time:1000});
+        }
+
+        if (spaceship && !Eye._worldDone.spaceship) {
+            Eye._worldDone.spaceship = true;
+            TextField.buffer.push({text:"Lift off!", delay:5, speed:200, time:4000});
         }
     },
 
@@ -119,9 +143,7 @@ const Eye = {
     
     _calcPupilArray : function(pupilPos) {
         let pupilArray = [[0,0,0,0], [0,0,0,0], [0,0,0,0], [0,0,0,0]];
-        if (isNaN(pupilPos.x) || Mouse.isMoving == false && spaceship && spaceship.propulse == false && this.iter % 60 < 20) {
-            pupilArray = [[0,0,0,0], [0,1,1,0], [0,1,1,0], [0,0,0,0]];;
-        } else {
+        if (!isNaN(pupilPos.x) && (Mouse.isMoving || spaceship && spaceship.propulse) && this.iter % 60 > 20) {
             for (let y=0; y<pupilArray.length; y++) {
                 for (let x=0; x<pupilArray[0].length; x++) {
                     if (Math.abs(pupilPos.x - x) < 2 && Math.abs(pupilPos.y - y) < 2) {
@@ -129,6 +151,8 @@ const Eye = {
                     }
                 }
             }
+        } else {
+            pupilArray = [[0,0,0,0], [0,1,1,0], [0,1,1,0], [0,0,0,0]];
         }
         return pupilArray;
     },
@@ -161,6 +185,7 @@ const Eye = {
     },
     
     loop : function() {
+        Eye._checkWorld();
         Eye._stateUpdate();
         Eye._eyelidUpdate();
         let pupilPos = Eye._calcPupilPos();
@@ -171,7 +196,11 @@ const Eye = {
     }
 };
 
+
+
 // --------------------------------------------------------------------- //
+
+
 
 const TextField = {
     isWriting : false,
@@ -210,7 +239,11 @@ const TextField = {
     }
 };
 
+
+
 // --------------------------------------------------------------------- //
+
+
 
 document.getElementById("eye").innerHTML = Eye.EYELID_TEXT[1];
 Eye.loop();
