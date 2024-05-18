@@ -197,6 +197,10 @@ const Smoke = {
 				Smoke.particles[i].position.x += Smoke.particles[i].velocity.x * deltaTime * 100;
 				Smoke.particles[i].position.y += Smoke.particles[i].velocity.y * deltaTime * 100;
 				Smoke.particles[i].lifetime -= 0.5;
+				if      (Smoke.particles[i].position.x < 5)                    Smoke.particles[i].velocity.x = +Math.abs(Smoke.particles[i].velocity.x*0.9);
+				else if (Smoke.particles[i].position.x > screenSize.width-20)  Smoke.particles[i].velocity.x = -Math.abs(Smoke.particles[i].velocity.x*0.9);
+				if      (Smoke.particles[i].position.y < 0)                    Smoke.particles[i].velocity.y = +Math.abs(Smoke.particles[i].velocity.y*0.9);
+				if      (Smoke.particles[i].position.y > screenSize.height-40) Smoke.particles[i].velocity.y = -Math.abs(Smoke.particles[i].velocity.y*0.9);
 			}
 		}
 	},
