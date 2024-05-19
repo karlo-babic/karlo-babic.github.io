@@ -33,7 +33,6 @@ const Eye = {
     },
 
     _stateUpdate : function() {
-        let time = Eye.iter * Eye.ANIMATE_SPEED;
         if (Eye.iter%Math.round(Math.random()*70+40)==0 && Eye.state == "idle" && Eye.eyelidState == false) {
             Eye.state = "closing";
             Eye._close();
@@ -143,7 +142,7 @@ const Eye = {
     
     _calcPupilArray : function(pupilPos) {
         let pupilArray = [[0,0,0,0], [0,0,0,0], [0,0,0,0], [0,0,0,0]];
-        if (!isNaN(pupilPos.x) && (Mouse.isMoving || spaceship && spaceship.propulse) && this.iter % 60 > 20) {
+        if (!isNaN(pupilPos.x) && (Mouse.isMoving || spaceship && spaceship.propulse)) {
             for (let y=0; y<pupilArray.length; y++) {
                 for (let x=0; x<pupilArray[0].length; x++) {
                     if (Math.abs(pupilPos.x - x) < 2 && Math.abs(pupilPos.y - y) < 2) {
