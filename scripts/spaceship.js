@@ -15,7 +15,7 @@ class Spaceship {
 	MASS = 0.5;
 	MAX_ANGULAR_SPEED = 0.5;
 	gravityActive = true;
-	GRAVITY_ACC = 4.81;
+	GRAVITY_ACC = 6.81;
 
 	prevTime = -1;
 	iters = 0;
@@ -47,13 +47,15 @@ class Spaceship {
 			this.itersWithoutControl = 0;
 
 			if (Keyboard.keys["ArrowUp"]) this.propulse = true;
-			if (Keyboard.keys["ArrowLeft"]) this.angularSpeed -= 0.01;
-			if (Keyboard.keys["ArrowRight"]) this.angularSpeed += 0.01;
+			if (Keyboard.keys["ArrowLeft"]) this.angularSpeed -= 0.02;
+			if (Keyboard.keys["ArrowRight"]) this.angularSpeed += 0.02;
 		} else {
 			this.itersWithoutControl += 1;
 		}
 
-		if (Keyboard.keys && Keyboard.keys[71]) this.gravityActive = !this.gravityActive;
+		if (Keyboard.keys && Keyboard.keys["KeyG"]) {
+            this.gravityActive = !this.gravityActive;
+        }
 	}
 
 	automaticControl() {
@@ -79,7 +81,7 @@ class Spaceship {
 				this.propulse = true;
 			}
 			if (Math.abs(this.angularSpeed - homingVelocityAngleRelative) > 0.2) {  // ship needs to turn
-				let angularChange = 0.01 * Math.sign(homingVelocityAngleRelative);
+				let angularChange = 0.03 * Math.sign(homingVelocityAngleRelative);
 				this.angularSpeed -= angularChange;
 			}
 		}
