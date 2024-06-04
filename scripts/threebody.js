@@ -132,7 +132,7 @@ let simRunning = false;
 function threebodyInit() {
     if (simRunning) return
     simRunning = true;
-    threebodyElement.innerHTML  = '<div id="body0" style="position:absolute;"><img src="imgs/planet.png" width="2"></div>';
+    threebodyElement.innerHTML  = '<div id="body0" style="position:absolute;"><img src="imgs/dot_blue.png" width="2"></div>';
     threebodyElement.innerHTML += '<div id="body1" style="position:absolute;"><img src="imgs/dot.png" width="3"></div>';
     threebodyElement.innerHTML += '<div id="body2" style="position:absolute;"><img src="imgs/dot.png" width="3"></div>';
     threebodyElement.innerHTML += '<div id="body3" style="position:absolute;"><img src="imgs/dot.png" width="3"></div>';

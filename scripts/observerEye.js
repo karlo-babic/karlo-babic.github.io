@@ -72,7 +72,7 @@ const Eye = {
 
         if (threebody.bodies) {
             const planetSpeed = Math.sqrt(Math.pow(threebody.bodies[0].velocity.x, 2) + Math.pow(threebody.bodies[0].velocity.y, 2));
-            if (planetSpeed > 160) {
+            if (planetSpeed > 170) {
                 TextField.buffer.push({text:"Gravitational slingshot!", delay:0, speed:40});
             }
         }

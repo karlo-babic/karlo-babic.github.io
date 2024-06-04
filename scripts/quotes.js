@@ -33,5 +33,4 @@ function showQuote()
     document.getElementById("quote").innerHTML = quotes[Math.floor(Math.random()*quotes.length)];
 }
 
-showQuote();
 setInterval(showQuote, 30*1000);

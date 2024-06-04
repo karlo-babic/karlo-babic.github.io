@@ -47,8 +47,8 @@ class Spaceship {
 			this.itersWithoutControl = 0;
 
 			if (Keyboard.keys["ArrowUp"]) this.propulse = true;
-			if (Keyboard.keys["ArrowLeft"]) this.angularSpeed -= 0.02;
-			if (Keyboard.keys["ArrowRight"]) this.angularSpeed += 0.02;
+			if (Keyboard.keys["ArrowLeft"]) this.angularSpeed -= 0.015;
+			if (Keyboard.keys["ArrowRight"]) this.angularSpeed += 0.015;
 		} else {
 			this.itersWithoutControl += 1;
 		}
@@ -238,3 +238,11 @@ function spaceshipInit() {
 	let smokeDocElement = document.getElementById("smoke");
 	Smoke.init(smokeDocElement);
 }
+
+
+
+
+
+setTimeout(() => {
+    spaceshipInit()
+}, 20000);
