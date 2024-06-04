@@ -90,7 +90,7 @@ function snakeInit() {
         snakePartsElements.push(document.getElementById("snakePart" + i));
     }
 
-    snakeLoop = setInterval(iterSnake, 30);
+    snakeLoop = setInterval(iterSnake, 50);
 }
 
 function iterSnake() {
