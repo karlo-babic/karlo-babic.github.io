@@ -4,8 +4,9 @@ const NUM_SNAKE_PARTS = 16;
 class Snake {
     snakeParts = [];
     STEP_SIZE = 1;
+    speed = 1;
     velocity = {x: 0, y: -1};
-    rotation = 0;
+    rotation = 1;
     iter = 0;
 
     constructor(position) {
@@ -27,9 +28,11 @@ class Snake {
 			y: mouseRelativePosition.y / magnitude
 		};*/
 
-		if (Keyboard.keys && (Keyboard.keys["ArrowLeft"] || Keyboard.keys["ArrowRight"])) {
+		if (Keyboard.keys && (Keyboard.keys["ArrowLeft"] || Keyboard.keys["ArrowRight"] || Keyboard.keys["ArrowUp"])) {
 			if (Keyboard.keys["ArrowLeft"]) this.rotation -= 0.15;
 			if (Keyboard.keys["ArrowRight"]) this.rotation += 0.15;
+			if (Keyboard.keys["ArrowUp"]) this.speed = 2;
+            else this.speed = 1;
         }
 
         this.velocity.x += Math.cos(this.rotation - Math.PI / 2);
@@ -37,6 +40,8 @@ class Snake {
         const magnitude = Math.sqrt(Math.pow(this.velocity.x, 2) + Math.pow(this.velocity.y, 2));
         this.velocity.x /= magnitude;
         this.velocity.y /= magnitude;
+        this.velocity.x *= this.speed;
+        this.velocity.y *= this.speed;
 
         for (let i=0; i<NUM_SNAKE_PARTS; i++) {
             if (i == NUM_SNAKE_PARTS-1) {
@@ -90,7 +95,7 @@ function snakeInit() {
         snakePartsElements.push(document.getElementById("snakePart" + i));
     }
 
-    snakeLoop = setInterval(iterSnake, 50);
+    snakeLoop = setInterval(iterSnake, 100);
 }
 
 function iterSnake() {
