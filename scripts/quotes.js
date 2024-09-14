@@ -25,7 +25,8 @@ quotes = [
     "In the end, respiration and burning are equivalent;<br>the slight delay in the middle is what we know as life.<br>- Nick Lane (Vital Question: Energy, Evolution, and the Origins of Complex Life, 2015)",
     "Those swirls in the cream mixing into the coffee?<br>That’s us. Ephemeral patterns of complexity, riding a wave of increasing entropy from simple beginnings to a simple end.<br>We should enjoy the ride.<br> - Sean Carroll (The Big Picture: On the Origins of Life, Meaning, and the Universe Itself, 2016)",
     "The first principle is that you must not fool yourself<br>and you are the easiest person to fool.<br>- Richard Feynman",
-    "I would rather have questions that can't be answered<br>than answers that can't be questioned.<br>- Richard Feynman"
+    "I would rather have questions that can't be answered<br>than answers that can't be questioned.<br>- Richard Feynman",
+    "If there is anything that truly makes humans unique,<br>it is that the mind is no longer singular<br>but is tethered to others through a long history of accumulated ideas.<br>- Max Solomon Bennett (A Brief History of Intelligence, 2023)"
 ];
 
 function showQuote()
