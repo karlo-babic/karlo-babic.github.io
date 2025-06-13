@@ -10,6 +10,8 @@
 </head>
 
 <body>
+    <div id="smoke"></div>
+
     <div id="eye" class="h1">       
        
 = = = =
@@ -19,36 +21,29 @@
 
     <!--------------------------------------------------------------->
     <br />
-    <table class="content-table">
-        <tr>
-            <td>
-                <div class="h2">
-                    <a href="#" id="spaceship-link">
-                        <div id="spaceship"><img src="imgs/ship_off.png" width="12" title="rocket"></div>
-                        <div id="smoke"></div>
-                    </a>
-                    <!-- Wrap text in a span to use as a reliable position anchor -->
-                    <span id="about-me-text"> bout me</span>
-                    <div id="threebody">
-                        <a href="#" id="threebody-link">
-                            <img src="imgs/dots.png" width="40" style="image-rendering:pixelated;" title="three body problem">
-                        </a>
-                    </div>
-                </div>
+    <div class="content-block">
+        <div class="h2">
+            <a href="#" id="spaceship-placeholder">
+                <img id="spaceship" src="imgs/ship_off.png" width="12" title="rocket">
+            </a>
+            <span>bout me</span>
+            <div id="threebody">
+                <a href="#" id="threebody-link">
+                    <img id="threebody-img" src="imgs/dots.png" width="40" title="three body problem">
+                </a>
+            </div>
+        </div>
 
-                <p class="p1">
-                    <a href="CV_karlo.pdf" class="a">resume.pdf</a>
-                    <br />
-                    <a href="https://scholar.google.com/citations?user=8e562aAAAAAJ&hl=en" class="a">scholar.google.com</a>
-                    <br />
-                    <a href="https://ieeexplore.ieee.org/abstract/document/10534761" class="a featured-paper">[featured paper]</a>
-                    <br />
-                    <br />
-                    <a href="https://flatdotgames.itch.io/paperfall?secret=SUFbL6vPxOrutW3VXlBlXjprfVw" class="a">Paperfall</a>
-                </p>
-            </td>
-        </tr>
-    </table>
+        <p class="p1">
+            <a href="CV_karlo.pdf" class="a">resume.pdf</a>
+            <br />
+            <a href="https://scholar.google.com/citations?user=8e562aAAAAAJ&hl=en" class="a">scholar.google.com</a>
+            <div class="featured-paper-wrapper">
+                <a href="https://ieeexplore.ieee.org/abstract/document/10534761" class="a featured-paper">[featured paper]</a>
+            </div>
+            <a href="https://flatdotgames.itch.io/paperfall?secret=SUFbL6vPxOrutW3VXlBlXjprfVw" class="a">Paperfall</a>
+        </p>
+    </div>
     
     <center>
         <br><br>

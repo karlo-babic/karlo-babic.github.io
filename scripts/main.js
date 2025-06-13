@@ -1,8 +1,8 @@
 // This function runs once the entire HTML document has been loaded and parsed.
 document.addEventListener('DOMContentLoaded', () => {
     // --- Add event listeners for interactive elements ---
-    document.getElementById('spaceship-link').addEventListener('click', (event) => {
-        event.preventDefault(); // Prevent the <a> tag's default behavior
+    document.getElementById('spaceship-placeholder').addEventListener('click', (event) => {
+        event.preventDefault();
         spaceshipInit();
     });
 
@@ -16,9 +16,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- Initialize all modules ---
-    canvasArea.start(); // fuzzyECA background
-    Eye.start();        // Eye and TextField
-    //showQuote();        // Initial call to show a quote immediately
+    canvasArea.start();
+    Eye.start();
+    //setTimeout(showQuote, 100);
 
     // Start the master animation loop
     requestAnimationFrame(mainLoop);
@@ -43,29 +43,24 @@ function mainLoop(currentTime) {
     lastTime = currentTime;
 
     // --- Call update functions for each module based on their required frequency ---
-
-    // Update background cellular automaton (target: 5 fps)
     fuzzyEcaTimer += deltaTime;
     if (fuzzyEcaTimer > 1 / 5) {
         updateCanvasArea();
         fuzzyEcaTimer = 0;
     }
 
-    // Update the eye (target: 10 fps)
     eyeTimer += deltaTime;
     if (eyeTimer > 1 / 10) {
         Eye.update();
         eyeTimer = 0;
     }
     
-    // Update the text field buffer (target: 1 fps)
     textFieldTimer += deltaTime;
     if (textFieldTimer > 1) {
         TextField.update();
         textFieldTimer = 0;
     }
 
-    // Update snake if it's running (target: 10 fps)
     if (snake && snake.running) {
         snakeTimer += deltaTime;
         if (snakeTimer > 1 / 10) {
@@ -74,16 +69,20 @@ function mainLoop(currentTime) {
         }
     }
 
-    // Update three-body simulation if it's running (runs every frame for smoothness)
     if (threebody && threebody.running) {
         threebody.update(deltaTime);
     }
     
-    // Update spaceship if it's active (runs every frame for smoothness)
     if (spaceship && spaceship.active) {
         spaceship.update(deltaTime);
     }
 
-    // Update mouse state at the end of the frame
     Mouse.update();
 }
+
+
+
+window.addEventListener('mousemove', e => {
+    document.body.style.setProperty('--mouse-x', e.clientX + 'px');
+    document.body.style.setProperty('--mouse-y', e.clientY + 'px');
+});

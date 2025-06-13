@@ -34,9 +34,20 @@ quotes = [
     "The whole of biological evolution was but a preface to the main story of evolution,<br>the evolution of memes.<br>- David Deutsch<br>(The Beginning of Infinity: Explanations That Transform the World, 2011)",
 ];
 
-function showQuote()
-{
-    document.getElementById("quote").innerHTML = quotes[Math.floor(Math.random()*quotes.length)];
+const quoteElement = document.getElementById("quote");
+
+function showQuote() {
+    const newQuote = quotes[Math.floor(Math.random() * quotes.length)];
+
+    // Fade out the current quote
+    quoteElement.style.opacity = '0';
+
+    // Wait for the fade-out transition to finish, then update and fade in.
+    setTimeout(() => {
+        quoteElement.innerHTML = newQuote;
+        quoteElement.style.opacity = '1';
+    }, 1000); // This should match the transition duration in CSS
 }
 
-setInterval(showQuote, 30*1000);
+// Set the interval for subsequent quotes
+setInterval(showQuote, 30 * 1000);
