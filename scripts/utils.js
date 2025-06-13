@@ -4,48 +4,29 @@ const Mouse = {
     isMoving: false,
     isClicked: false,
 
-    updateCoordinates: function (event) {
-        this.x = event.clientX;
-        this.y = event.clientY;
-    },
-
-    setMovingState: function (isMoving) {
-        this.isMoving = isMoving;
-    },
-
-    setClickState: function (isClicked) {
-        this.isClicked = isClicked;
-    },
-
-
     init: function () {
-        document.addEventListener('mousemove', function (event) {
-            Mouse.updateCoordinates(event);
-            Mouse.setMovingState(true);
+        document.addEventListener('mousemove', (event) => {
+            this.x = event.clientX;
+            this.y = event.clientY;
+            this.isMoving = true;
         });
 
-        document.addEventListener('mousedown', function () {
-            Mouse.setClickState(true);
+        document.addEventListener('mousedown', () => {
+            this.isClicked = true;
         });
 
-        document.addEventListener('mouseup', function () {
-            Mouse.setClickState(false);
+        document.addEventListener('mouseup', () => {
+            this.isClicked = false;
         });
     },
 
-    startMouseMovementCheck: function () {
-        const movementCheckInterval = 500;
-        setInterval(() => {
-            if (this.isMoving) {
-                this.setMovingState(false);
-            }
-        }, movementCheckInterval);
+    // This function is called at the end of each frame in the main loop
+    update: function() {
+        this.isMoving = false;
     }
 };
 
 Mouse.init();
-Mouse.startMouseMovementCheck();
-
 
 
 const Keyboard = {
@@ -69,20 +50,19 @@ const Keyboard = {
 Keyboard.init();
 
 
-
-let screenSize = {};
-setInterval(() => {
-    screenSize = {
+// screenSize is a function to get the current size on demand,
+// ensuring it's always up-to-date.
+function getScreenSize() {
+    return {
         width: Math.max(window.innerWidth, document.body.getBoundingClientRect().width),
         height: Math.max(window.innerHeight, document.body.getBoundingClientRect().height + 25)
     };
-}, 1);
-
+}
 
 
 function normalizeRadians(rad) {
-    rad = rad % (2*Math.PI)
-    if (rad > Math.PI)        { rad -= 2 * Math.PI; }
+    rad = rad % (2 * Math.PI)
+    if (rad > Math.PI) { rad -= 2 * Math.PI; }
     else if (rad <= -Math.PI) { rad += 2 * Math.PI; }
     return rad;
 }

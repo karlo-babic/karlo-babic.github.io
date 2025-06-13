@@ -1,11 +1,9 @@
 class Spaceship {
 	active = false;
-
 	origPosition = { x: 0, y: 0 };
 	position = { x: 0, y: 0 };
 	SIZE = 0;
 	docElement = null;
-	mainLoop = null;
 
 	velocity = { x: 0, y: 0 };
 	rotation = 0;
@@ -17,7 +15,6 @@ class Spaceship {
 	gravityActive = true;
 	GRAVITY_ACC = 6.81;
 
-	prevTime = -1;
 	iters = 0;
 	itersWithoutControl = 0;
 	MAX_ITERS_WITHOUT_CONTROL = 100;
@@ -29,16 +26,13 @@ class Spaceship {
 		this.docElement = docElement;
 	}
 
-	loopIter() {
-		const time = performance.now();
-		let deltaTime = (time - spaceship.prevTime) / 1000;
-		if (deltaTime > 0.1) deltaTime = 0.02;
-		spaceship.prevTime = time;
-		spaceship.playerControl();
-		spaceship.automaticControl();
-		spaceship.calcPhysics();
-		spaceship.updateState(deltaTime);
-		spaceship.display()
+	update(deltaTime) {
+        if (deltaTime > 0.1) deltaTime = 0.02; // Prevent instability on lag
+		this.playerControl();
+		this.automaticControl();
+		this.calcPhysics();
+		this.updateState(deltaTime);
+		this.display();
 	}
 
 	playerControl() {
@@ -59,7 +53,7 @@ class Spaceship {
 	}
 
 	automaticControl() {
-		if (this.itersWithoutControl <= this.MAX_ITERS_WITHOUT_CONTROL) return;  // user is controlling it
+		if (this.itersWithoutControl <= this.MAX_ITERS_WITHOUT_CONTROL) return;
 		let MAX_VELOCITY_DIRECTION = 2.6;
 
 		let mouseRelativePos = {
@@ -80,24 +74,20 @@ class Spaceship {
 			if (Math.abs(homingVelocityAngleRelative) > MAX_VELOCITY_DIRECTION) {
 				this.propulse = true;
 			}
-			if (Math.abs(this.angularSpeed - homingVelocityAngleRelative) > 0.2) {  // ship needs to turn
+			if (Math.abs(this.angularSpeed - homingVelocityAngleRelative) > 0.2) {
 				let angularChange = 0.03 * Math.sign(homingVelocityAngleRelative);
 				this.angularSpeed -= angularChange;
 			}
 		}
-		// slow down rotation
+
 		if (this.angularSpeed - homingVelocityAngleRelative >= 0) {
 			this.angularSpeed = this.angularSpeed * 0.9;
 		}
 	}
 
 	calcPhysics() {
-		if (this.angularSpeed > this.MAX_ANGULAR_SPEED) {
-			this.angularSpeed = this.MAX_ANGULAR_SPEED;
-		}
-		if (this.angularSpeed < -this.MAX_ANGULAR_SPEED) {
-			this.angularSpeed = -this.MAX_ANGULAR_SPEED;
-		}
+		if (this.angularSpeed > this.MAX_ANGULAR_SPEED) { this.angularSpeed = this.MAX_ANGULAR_SPEED; }
+		if (this.angularSpeed < -this.MAX_ANGULAR_SPEED) { this.angularSpeed = -this.MAX_ANGULAR_SPEED; }
 
 		if (this.propulse) {
 			let propulsionAcc = {
@@ -110,13 +100,13 @@ class Spaceship {
 		}
 		else Smoke.propulsionReaction = false;
 
-		// gravity
 		if (this.gravityActive) {
 			this.velocity.y += this.GRAVITY_ACC * this.MASS;
 		}
 	}
 
 	updateState(deltaTime) {
+        const screenSize = getScreenSize();
 		if (this.position.x < 10 && this.velocity.x < 0) { this.velocity.x = +Math.abs(this.velocity.x) * 0.2; if (Math.abs(this.velocity.x) < 0.01) this.velocity.x = 0; }
 		else if (this.position.x > screenSize.width - 20 && this.velocity.x > 0) this.velocity.x = -Math.abs(this.velocity.x) * 0.2;
 		if (this.position.y < 0 && this.velocity.y < 0) this.velocity.y = +Math.abs(this.velocity.y) * 0.2;
@@ -130,34 +120,29 @@ class Spaceship {
 
 		Smoke.updateState(deltaTime);
 
-		// if back at the origin
 		if (Math.abs(this.position.x - this.origPosition.x) < 4 &&
 			Math.abs(this.position.y - this.origPosition.y) < 4 &&
 			Math.abs(this.rotation) < 0.4 &&
 			this.iters >= 50) {
 			Object.assign(this.position, this.origPosition);
 			this.rotation = 0;
-			toggleDisplay('books'); // Use the new function from utils.js
+			toggleDisplay('books');
 			this.stop();
 		}
-
 		this.iters += 1;
 	}
 
 	display() {
-		let onoff = "off";
-		if (this.propulse) { onoff = "on"; }
-		this.docElement.innerHTML = '<img src="imgs/ship_' + onoff + '.png" width="' + this.SIZE + '" style="transform:rotate(' + this.rotation + 'rad);">';
+		let onoff = this.propulse ? "on" : "off";
+		this.docElement.innerHTML = `<img src="imgs/ship_${onoff}.png" width="${this.SIZE}" style="transform:rotate(${this.rotation}rad);">`;
 		this.docElement.style.left = this.position.x - this.SIZE / 2 + 'px';
 		this.docElement.style.top = this.position.y - this.SIZE / 2 + 'px';
-
 		Smoke.display();
 	}
 
 	stop() {
 		if (this.active == false) return;
 		this.active = false;
-		clearInterval(spaceship.mainLoop);
 		this.propulse = false;
 		this.iters = 0;
 		this.itersWithoutControl = 0;
@@ -168,25 +153,22 @@ class Spaceship {
 
 const Smoke = {
 	lifetime: 3,
-	particles: [
-		{ position: { x: 0, y: 0 }, velocity: { x: 0, y: 0 }, lifetime: 0, size: 6 },
-		//{ position: { x: 0, y: 0 }, velocity: { x: 0, y: 0 }, lifetime: 0, size: 6 },
-		//{ position: { x: 0, y: 0 }, velocity: { x: 0, y: 0 }, lifetime: 0, size: 6 }
-	],
+	particles: [ { position: { x: 0, y: 0 }, velocity: { x: 0, y: 0 }, lifetime: 0, size: 6 } ],
 	docElement: null,
 	particleDocElements: [],
-	propulsionReaction: false, //{x: 0, y: 0},
+	propulsionReaction: false,
 
 	init: function (docElement) {
 		Smoke.docElement = docElement;
 		Smoke.docElement.innerHTML = ""
 		for (let i = 0; i < Smoke.particles.length; i++) {
-			Smoke.docElement.innerHTML += '<div id="smoke' + i + '" style="position:absolute;"><img src="imgs/smoke.png" width="' + Smoke.particles[i].size + '" style="visibility:hidden;"></div>';
+			Smoke.docElement.innerHTML += `<div id="smoke${i}" style="position:absolute;"><img src="imgs/smoke.png" width="${Smoke.particles[i].size}" style="visibility:hidden;"></div>`;
 			Smoke.particleDocElements.push(document.getElementById("smoke" + i));
 		}
 	},
 
 	updateState: function (deltaTime) {
+        const screenSize = getScreenSize();
 		for (let i = 0; i < Smoke.particles.length; i++) {
 			if (Smoke.particles[i].lifetime == 0) {
 				if (Smoke.propulsionReaction) {
@@ -210,15 +192,12 @@ const Smoke = {
 	display: function () {
 		for (let i = 0; i < Smoke.particles.length; i++) {
 			let visible = (Smoke.particles[i].lifetime > 0) ? "visible" : "hidden";
-			Smoke.particleDocElements[i].innerHTML = '<div id="smoke' + i + '" style="position:absolute;"><img src="imgs/smoke.png" width="' + Smoke.particles[i].lifetime*2 + '" style="visibility:' + visible + ';"></div>';
+			Smoke.particleDocElements[i].innerHTML = `<div id="smoke${i}" style="position:absolute;"><img src="imgs/smoke.png" width="${Smoke.particles[i].lifetime*2}" style="visibility:${visible};"></div>`;
 			Smoke.particleDocElements[i].style.left = Smoke.particles[i].position.x - Smoke.particles[i].lifetime*2 / 2 + 'px';
 			Smoke.particleDocElements[i].style.top = Smoke.particles[i].position.y - Smoke.particles[i].lifetime*2 / 2 + 'px';
 		}
 	}
 };
-
-
-
 
 let spaceship = null;
 function spaceshipInit() {
@@ -228,21 +207,17 @@ function spaceshipInit() {
 		x: docElement.getBoundingClientRect().left + window.scrollX + shipSize / 2,
 		y: docElement.getBoundingClientRect().top + window.scrollY + shipSize / 2
 	};
-	if (spaceship === null) spaceship = new Spaceship(shipPos, shipSize, docElement);
-	spaceship.prevTime = performance.now();
-
+	if (spaceship === null) {
+        spaceship = new Spaceship(shipPos, shipSize, docElement);
+    }
+    
 	if (spaceship.active) return;
 	spaceship.active = true;
-	spaceship.mainLoop = setInterval(spaceship.loopIter, 20);
-
+	
 	let smokeDocElement = document.getElementById("smoke");
 	Smoke.init(smokeDocElement);
 }
 
-
-
-
-
 setTimeout(() => {
     spaceshipInit()
-}, 20000);
+}, 40000);

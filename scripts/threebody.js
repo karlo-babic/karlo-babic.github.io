@@ -3,8 +3,8 @@ const G = 10;
 const SIM_SPEED = 1;
 const MAX_FORCE = 10000;
 
-
 class Threebody {
+    running = false;
 	origPosition = {x: 0, y: 0};
     bodies = [
         {position: {x: 0, y: 0}, velocity: {x: 0, y: 0}, mass: 10},
@@ -18,7 +18,6 @@ class Threebody {
         {position: {x: 0, y: 0}, velocity: {x: 0, y: 0}, mass: 0},
         {position: {x: 0, y: 0}, velocity: {x: 0, y: 0}, mass: 0}
     ];
-    prevTime = -1;
     iters = 0;
 
     constructor(position) {
@@ -31,11 +30,11 @@ class Threebody {
         this.bodies[3].position.x += 15
 
         let velRangeFactor = 50;
-        this.bodies[0].velocity = {x: Math.random()*1*velRangeFactor-0.5*velRangeFactor, y: Math.random()*1*velRangeFactor-0.5*velRangeFactor}
+        this.bodies[0].velocity = {x: Math.random()*velRangeFactor-0.5*velRangeFactor, y: Math.random()*velRangeFactor-0.5*velRangeFactor}
         this.bodies[0].position.x += Math.random()*10 - 5;
         this.bodies[0].position.y += Math.random()*10 - 5;
-        this.bodies[1].velocity = {x: Math.random()*1*velRangeFactor-0.5*velRangeFactor, y: Math.random()*1*velRangeFactor-0.5*velRangeFactor}
-        this.bodies[2].velocity = {x: Math.random()*1*velRangeFactor-0.5*velRangeFactor, y: Math.random()*1*velRangeFactor-0.5*velRangeFactor}
+        this.bodies[1].velocity = {x: Math.random()*velRangeFactor-0.5*velRangeFactor, y: Math.random()*velRangeFactor-0.5*velRangeFactor}
+        this.bodies[2].velocity = {x: Math.random()*velRangeFactor-0.5*velRangeFactor, y: Math.random()*velRangeFactor-0.5*velRangeFactor}
         this.bodies[3].velocity = {x: -this.bodies[1].velocity.x - this.bodies[2].velocity.x, y: -this.bodies[1].velocity.y - this.bodies[2].velocity.y}
 
         for (let i=0; i<NUM_BODIES; i++) {
@@ -45,7 +44,14 @@ class Threebody {
         }
     }
 
-    calcPhysics(deltaTime) {
+    update(deltaTime) {
+        if (deltaTime > 0.1) deltaTime = 0.02; // Prevent instability on lag
+        this._calcPhysics(deltaTime);
+        this._display();
+        this.iters += 1;
+    }
+
+    _calcPhysics(deltaTime) {
         for (let i=0; i<NUM_BODIES; i++) {
             let fx = 0;
             let fy = 0;
@@ -62,7 +68,6 @@ class Threebody {
             Object.assign(this.bodies[i].position, this.bodiesBuffer[i].position);
             Object.assign(this.bodies[i].velocity, this.bodiesBuffer[i].velocity);
         }
-        this.iters += 1;
     }
     
     _calcForce(body1, body2) {
@@ -76,6 +81,7 @@ class Threebody {
     }
     
     _updateBody(i, body, fx, fy, deltaTime) {
+        const screenSize = getScreenSize();
         const ax = fx / body.mass;
         const ay = fy / body.mass;
         body.velocity.x += ax * deltaTime * SIM_SPEED;
@@ -88,25 +94,8 @@ class Threebody {
         if      (body.position.y < 0)                    body.velocity.y = +Math.abs(body.velocity.y*0.9);
         if      (body.position.y > screenSize.height-30) body.velocity.y = -Math.abs(body.velocity.y*0.9);
     }
-
-    temperature() {
-        let totalHeat = 0;
-        for (let i=1; i<NUM_BODIES; i++) {
-            const dx = this.bodies[i].position.x - this.bodies[0].position.x;
-            const dy = this.bodies[i].position.y - this.bodies[0].position.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            totalHeat = totalHeat + 100 / Math.pow(distance, 2)
-        }
-
-        let temperature = "";
-        if (totalHeat > 2.8) temperature = "TOO HOT!";
-        if (totalHeat < 0.05) temperature = "TOO COLD!";
-        //console.log(temperature);
-        let heatTextElement = document.getElementById("heat");
-        heatTextElement.innerHTML = temperature;
-    }
     
-    display(bodyElements) {
+    _display() {
         for (let i=0; i<NUM_BODIES; i++) {
             bodyElements[i].style.left = this.bodies[i].position.x + 'px';
             bodyElements[i].style.top  = this.bodies[i].position.y + 'px';
@@ -114,24 +103,17 @@ class Threebody {
 	}
 }
 
-
-
-
-
 let threebodyElement = document.getElementById("threebody");
 let threebodyPos = {
 	x: threebodyElement.getBoundingClientRect().left + 20,
 	y: threebodyElement.getBoundingClientRect().top + window.scrollY + 3
 };
 let bodyElements;
-
 let threebody = new Threebody(threebodyPos);
 
-let threebodyLoop = null;
-let simRunning = false;
 function threebodyInit() {
-    if (simRunning) return
-    simRunning = true;
+    if (threebody.running) return;
+    
     threebodyElement.innerHTML  = '<div id="body0" style="position:absolute;"><img src="imgs/dot_blue.png" width="2"></div>';
     threebodyElement.innerHTML += '<div id="body1" style="position:absolute;"><img src="imgs/dot.png" width="3"></div>';
     threebodyElement.innerHTML += '<div id="body2" style="position:absolute;"><img src="imgs/dot.png" width="3"></div>';
@@ -143,17 +125,7 @@ function threebodyInit() {
         document.getElementById("body3")
     ];
 
-    threebodyLoop = setInterval(iterThreebody, 20);
-}
-
-function iterThreebody() {
-	const time = performance.now() / 1000;
-	let deltaTime = (time - threebody.prevTime);
-    if (deltaTime > 0.1) deltaTime = 0.02;
-	threebody.prevTime = time;
-    threebody.calcPhysics(deltaTime);
-    //threebody.temperature();
-    threebody.display(bodyElements)
+    threebody.running = true;
 }
 
 setTimeout(() => {

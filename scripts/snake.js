@@ -1,7 +1,7 @@
 const NUM_SNAKE_PARTS = 16;
 
-
 class Snake {
+    running = false;
     snakeParts = [];
     STEP_SIZE = 1;
     speed = 1;
@@ -17,17 +17,7 @@ class Snake {
         }
     }
 
-    movement() {
-		/*const mouseRelativePosition = {
-			x: Mouse.x - this.snakeParts[NUM_SNAKE_PARTS-1].position.x,
-			y: Mouse.y - this.snakeParts[NUM_SNAKE_PARTS-1].position.y
-		};
-        const magnitude = Math.sqrt(Math.pow(mouseRelativePosition.x, 2) + Math.pow(mouseRelativePosition.y, 2));
-        const mouseRelativeDirection = {
-			x: mouseRelativePosition.x / magnitude,
-			y: mouseRelativePosition.y / magnitude
-		};*/
-
+    update() {
 		if (Keyboard.keys && (Keyboard.keys["ArrowLeft"] || Keyboard.keys["ArrowRight"] || Keyboard.keys["ArrowUp"])) {
 			if (Keyboard.keys["ArrowLeft"]) this.rotation -= 0.15;
 			if (Keyboard.keys["ArrowRight"]) this.rotation += 0.15;
@@ -52,26 +42,18 @@ class Snake {
                 this.snakeParts[i].position.x = this.snakeParts[i+1].position.x;
                 this.snakeParts[i].position.y = this.snakeParts[i+1].position.y;
             }
-            /*if      (this.snakeParts[i].position.x < 5)                    this.velocity.x = +Math.abs(this.velocity.x*0.9);
-            else if (this.snakeParts[i].position.x > screenSize.width-10)  this.velocity.x = -Math.abs(this.velocity.x*0.9);
-            if      (this.snakeParts[i].position.y < 0)                    this.velocity.y = +Math.abs(this.velocity.y*0.9);
-            if      (this.snakeParts[i].position.y > screenSize.height-30) this.velocity.y = -Math.abs(this.velocity.y*0.9);*/
         }
-
+        this.display();
         this.iter += 1;
     }
     
-    display(bodyElements) {
+    display() {
         for (let i=0; i<NUM_SNAKE_PARTS; i++) {
-            bodyElements[i].style.left = this.snakeParts[i].position.x + 'px';
-            bodyElements[i].style.top  = this.snakeParts[i].position.y + 'px';
+            snakePartsElements[i].style.left = this.snakeParts[i].position.x + 'px';
+            snakePartsElements[i].style.top  = this.snakeParts[i].position.y + 'px';
         }
 	}
 }
-
-
-
-
 
 let snakeElement = document.getElementById("snake");
 let snakePos = {
@@ -79,26 +61,23 @@ let snakePos = {
 	y: snakeElement.getBoundingClientRect().top + window.scrollY + 3
 };
 let snakePartsElements = [];
+let snake = null;
 
-let snake = new Snake(snakePos);
-
-let snakeLoop = null;
-let snakeRunning = false;
 function snakeInit() {
-    if (snakeRunning) return
-    snakeRunning = true;
-    snakeElement.innerHTML = ''
+    if (snake && snake.running) return;
+    
+    snakeElement.innerHTML = '';
     for (let i=0; i<NUM_SNAKE_PARTS; i++) {
         snakeElement.innerHTML += '<div id="snakePart' + i + '" style="position:absolute;"><img src="imgs/dot.png" width="2"></div>';
     }
+    snakePartsElements = []; // Clear previous elements
     for (let i=0; i<NUM_SNAKE_PARTS; i++) {
         snakePartsElements.push(document.getElementById("snakePart" + i));
     }
-
-    snakeLoop = setInterval(iterSnake, 100);
-}
-
-function iterSnake() {
-    snake.movement();
-    snake.display(snakePartsElements)
+    
+    // Create a new snake instance if it's the first time
+    if (!snake) {
+        snake = new Snake(snakePos);
+    }
+    snake.running = true;
 }
