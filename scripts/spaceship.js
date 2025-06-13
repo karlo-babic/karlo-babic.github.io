@@ -137,7 +137,7 @@ class Spaceship {
 			this.iters >= 50) {
 			Object.assign(this.position, this.origPosition);
 			this.rotation = 0;
-			showhide('books');
+			toggleDisplay('books'); // Use the new function from utils.js
 			this.stop();
 		}
 

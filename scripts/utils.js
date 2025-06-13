@@ -86,3 +86,14 @@ function normalizeRadians(rad) {
     else if (rad <= -Math.PI) { rad += 2 * Math.PI; }
     return rad;
 }
+
+/**
+ * Toggles the display style of an element between 'block' and 'none'.
+ * @param {string} id The ID of the element to toggle.
+ */
+function toggleDisplay(id) {
+    const e = document.getElementById(id);
+    if (e) {
+        e.style.display = (e.style.display === 'block') ? 'none' : 'block';
+    }
+}

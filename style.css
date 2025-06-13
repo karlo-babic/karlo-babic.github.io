@@ -1,0 +1,110 @@
+/* --- General Body and Font Styles --- */
+body {
+    background-color: #2a2a2e;
+    font-family: 'Roboto', sans-serif;
+    color: #f0f0f0;
+}
+
+canvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: -1;
+    background-color: #2a2a2e;
+}
+
+/* --- Typography --- */
+.h1 {
+    font-family: monospace;
+    font-size: 30px;
+    text-align: center;
+}
+
+.h2 {
+    font-family: monospace;
+    font-size: 22px;
+    text-decoration: none;
+}
+
+.p1 {
+    font-size: 18px;
+    text-align: left;
+}
+
+.a {
+    color: gray;
+    text-decoration: none;
+}
+
+.a:hover,
+.a:active {
+    color: white;
+}
+
+/* --- Layout Containers --- */
+.content-table {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#quote-container {
+    min-width: 95vw;
+    max-width: 420px;
+    font-size: 12px;
+    color: rgb(97, 97, 97);
+    text-align: center;
+}
+
+/* --- Specific Element Styles --- */
+#eye {
+    font-size: 12px;
+    white-space: pre-wrap;
+}
+
+#eyeSpeech {
+    font-size: 12px;
+    color: #8d8594;
+}
+
+#spaceship {
+    position: absolute;
+}
+
+#threebody {
+    float: right;
+}
+
+.featured-paper {
+    font-size: 12px;
+    float: right;
+}
+
+/* --- Books Section --- */
+#books {
+    display: none;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#books .h2,
+#books table {
+    margin-left: 4%;
+    margin-right: 4%;
+}
+
+#snake {
+    position: absolute;
+}
+
+/* --- Goodreads Widget Styles --- */
+.gr_grid_container {
+    /* customize grid container div here. eg: width: 500px; */
+}
+
+.gr_grid_book_container {
+    float: left;
+    width: 105px;
+    height: 175px;
+    padding: 0px 0px;
+    overflow: hidden;
+}

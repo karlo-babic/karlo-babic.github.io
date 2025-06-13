@@ -1,152 +1,90 @@
 <!DOCTYPE html>
 <html>
-
-
 <head>
     <title>Karlo's observatory</title>
     <meta charset="utf-8">
     <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <link rel="shortcut icon" href="imgs/favicon.ico">
     <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
-    <script src="scripts/utils.js"></script>
-    <script src="scripts/fuzzyECA.js"></script>
-
-    <style>
-        body {
-            background-color: #2a2a2e;
-            font-family: 'Roboto', sans-serif;
-        }
-
-        .h1 {
-            font-family: monospace;
-            font-size: 30px;
-            color: #f0f0f0;
-            text-align: center;
-        }
-
-        .h2 {
-            font-family: monospace;
-            font-size: 22px;
-            color: #f0f0f0;
-            text-decoration: none;
-        }
-
-        .p1 {
-            font-size: 18px;
-            color: #f0f0f0;
-            text-align: left;
-        }
-
-        .a {
-            color: gray;
-            text-decoration: none;
-        }
-
-        .a:hover {
-            color: white;
-        }
-
-        .a:active {
-            color: white;
-        }
-
-        .gr_grid_container {
-            /* customize grid container div here. eg: width: 500px; */
-        }
-
-        .gr_grid_book_container {
-            /* customize book cover container div here */
-            float: left;
-            width: 105px;
-            height: 175px;
-            padding: 0px 0px;
-            overflow: hidden;
-        }
-
-        canvas {
-            position: absolute;
-            left: 0;
-            top: 0;
-            z-index: -1;
-            background-color: #2a2a2e;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 
-
-<body onload="startFuzzyEca()">
-
-    <div id="eye" class="h1" style="font-size:12px; white-space:pre-wrap;"></div>
+<body>
+    <div id="eye" class="h1">       
+       
+= = = =
+       </div>
     <br />
-    <div id="eyeSpeech" class="h1" style="font-size:12px; color:#8d8594;">&nbsp;</div>
-
+    <div id="eyeSpeech" class="h1"> </div>
 
     <!--------------------------------------------------------------->
     <br />
-    <table style="margin-left:auto; margin-right:auto">
-        <td>
+    <table class="content-table">
+        <tr>
+            <td>
+                <div class="h2">
+                    <a href="#" id="spaceship-link">
+                        <div id="spaceship"><img src="imgs/ship_off.png" width="12" title="rocket"></div>
+                        <div id="smoke"></div>
+                    </a>
+                     bout me
+                    <div id="threebody">
+                        <a href="#" id="threebody-link">
+                            <img src="imgs/dots.png" width="40" style="image-rendering:pixelated;" title="three body problem">
+                        </a>
+                    </div>
+                </div>
 
-            <div class="h2">
-                <a href="javascript:spaceshipInit();">
-                    <div id="spaceship" style="position:absolute;"><img src="imgs/ship_off.png" width="12"
-                            title="rocket"></div>
-                    <div id="smoke"></div>
-                </a>
-                &nbsp;bout me
-                <div id="threebody" style="float:right;"><a href="javascript:threebodyInit();"><img
-                            src="imgs/dots.png" width="40" style="image-rendering:pixelated;"
-                            title="three body problem"></a></div>
-            </div>
-
-            <p class="p1">
-                <a href="CV_karlo.pdf" class="a">resume.pdf</a>
-                <br />
-                <a href="https://scholar.google.com/citations?user=8e562aAAAAAJ&hl=en" class="a">scholar.google.com</a>
-                <br />
-                <a href="https://ieeexplore.ieee.org/abstract/document/10534761" class="a" style="font-size: 12px; float: right;">[featured paper]</a>
-                <br />
-                <br />
-                <a href="https://flatdotgames.itch.io/paperfall?secret=SUFbL6vPxOrutW3VXlBlXjprfVw" class="a">Paperfall</a>
-            </p>
-
-        </td>
+                <p class="p1">
+                    <a href="CV_karlo.pdf" class="a">resume.pdf</a>
+                    <br />
+                    <a href="https://scholar.google.com/citations?user=8e562aAAAAAJ&hl=en" class="a">scholar.google.com</a>
+                    <br />
+                    <a href="https://ieeexplore.ieee.org/abstract/document/10534761" class="a featured-paper">[featured paper]</a>
+                    <br />
+                    <br />
+                    <a href="https://flatdotgames.itch.io/paperfall?secret=SUFbL6vPxOrutW3VXlBlXjprfVw" class="a">Paperfall</a>
+                </p>
+            </td>
+        </tr>
     </table>
     
-    <center><br><br>
-        <div style="min-width: 95vw; max-width: 420px; font-size: 12px; color: rgb(97, 97, 97); text-align: center;">
+    <center>
+        <br><br>
+        <div id="quote-container">
             <div id="quote"></div>
         </div>
     </center>
     <!--------------------------------------------------------------->
 
-
-    <script src="scripts/observerEye.js"></script>
-    <script src="scripts/spaceship.js"></script>
-    <script src="scripts/threebody.js"></script>
-    <script src="scripts/quotes.js"></script>
-
-
-    <script
-        type="text/javascript">function showhide(id) { var e = document.getElementById(id); e.style.display = (e.style.display == 'block') ? 'none' : 'block'; }</script>
-    <div style="display:none; margin-left:auto; margin-right:auto" id="books">
+    <div id="books">
         <br /><br />
-
-        <div class="h2" style="margin-left:4%; margin-right:4%">
-            Book<span id="snake" onclick="javascript:snakeInit();" style="position:absolute;" title="snake">s</span>
+        <div class="h2">
+            Book<span id="snake" title="snake">s</span>
         </div>
-        <script src="scripts/snake.js"></script>
         <br />
         
-        <table style="margin-left:4%; margin-right:4%">
-            <td>
-                <script
-                    src="https://www.goodreads.com/review/grid_widget/57999946.Karlo's%20bookshelf:%20read?cover_size=medium&hide_link=true&hide_title=true&num_books=200&order=d&shelf=read&sort=date_read&widget_id=1491596460"
-                    type="text/javascript" charset="utf-8"></script>
-            </td>
+        <table>
+            <tr>
+                <td>
+                    <!-- This third-party script might use document.write, so it's safer to leave it here. -->
+                    <script
+                        src="https://www.goodreads.com/review/grid_widget/57999946.Karlo's%20bookshelf:%20read?cover_size=medium&hide_link=true&hide_title=true&num_books=200&order=d&shelf=read&sort=date_read&widget_id=1491596460"
+                        type="text/javascript" charset="utf-8"></script>
+                </td>
+            </tr>
         </table>
     </div>
 
+    <!-- Scripts are loaded at the end of the body for faster page rendering. -->
+    <script src="scripts/utils.js"></script>
+    <script src="scripts/fuzzyECA.js"></script>
+    <script src="scripts/observerEye.js"></script>
+    <script src="scripts/spaceship.js"></script>
+    <script src="scripts/threebody.js"></script>
+    <script src="scripts/snake.js"></script>
+    <script src="scripts/quotes.js"></script>
+    <!-- Main script to initialize everything -->
+    <script src="scripts/main.js"></script>
 </body>
-
-
 </html>

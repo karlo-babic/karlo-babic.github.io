@@ -206,7 +206,7 @@ const TextField = {
     buffer : [],
 
     _clearText : function() {
-        document.getElementById("eyeSpeech").innerHTML = "&nbsp;";
+        document.getElementById("eyeSpeech").innerHTML = " ";
         TextField.isWriting = false;
     },
     
@@ -243,7 +243,6 @@ const TextField = {
 // --------------------------------------------------------------------- //
 
 
-
-document.getElementById("eye").innerHTML = Eye.EYELID_TEXT[1];
+// The initial HTML is now in index.html, so this line is no longer needed.
 Eye.loop();
 TextField.loop();
