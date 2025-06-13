@@ -1,32 +1,48 @@
 const Eye = {
-    ANIMATE_SPEED : 100, // This is now used as a reference, not for a timer
-    EYELID_TEXT : {
-        1 : "       \n       \n= = = =\n       ",
-        2 : ["    ", "    ", "----", "    "],
-        3 : ["    ", "    ", "----", " -- "],
-        4 : ["    ", "----", "----", " -- "]
+    // --- Constants ---
+    ANIMATE_SPEED: 100,
+    EYELID_STATES: {
+        CLOSED: 1,
+        SQUINT_HARD: 2,
+        SQUINT_MEDIUM: 3,
+        SQUINT_LIGHT: 4,
+        OPEN: false
     },
-    iter : 0,
-    state : "init",
-    eyelidState : 1,
-    distanceToTarget : 0,
+    DISTANCE_THRESHOLDS: {
+        CLOSED: 50,
+        SQUINT_HARD: 70,
+        SQUINT_MEDIUM: 90,
+        SQUINT_LIGHT: 110,
+    },
+    EYELID_TEXT: {
+        1: "       \n       \n= = = =\n       ", // CLOSED
+        2: ["    ", "    ", "----", "    "],    // SQUINT_HARD
+        3: ["    ", "    ", "----", " -- "],    // SQUINT_MEDIUM
+        4: ["    ", "----", "----", " -- "]     // SQUINT_LIGHT
+    },
 
-    _states : {
-        "init" : function() {
+    // --- State ---
+    iter: 0,
+    state: "init",
+    eyelidState: 1, // Start with EYELID_STATES.CLOSED
+    distanceToTarget: 0,
+    _worldDone: { "spaceship": false },
+
+    _states: {
+        "init": function () {
             Eye.state = "";
-            TextField.buffer.push({text:"Welcome to Karlo's observatory.", delay:4000});
+            TextField.buffer.push({ text: "Welcome to Karlo's observatory.", delay: 4000 });
             setTimeout(Eye._open, 3000);
         },
-        "idle" : function() { return; },
-        "closing" : function() { return; },
-        "closed" : function() {
+        "idle": function () { return; },
+        "closing": function () { return; },
+        "closed": function () {
             setTimeout(Eye._open, 200);
         }
     },
-    _worldDone : { "spaceship" : false },
 
-    _stateUpdate : function() {
-        if (Eye.iter % Math.round(Math.random() * 70 + 40) == 0 && Eye.state == "idle" && Eye.eyelidState == false) {
+    _stateUpdate: function () {
+        if (Eye.iter % Math.round(Math.random() * 70 + 40) == 0 && Eye.state == "idle" && Eye.eyelidState === this.EYELID_STATES.OPEN) {
             Eye.state = "closing";
             Eye._close();
         }
@@ -35,11 +51,11 @@ const Eye = {
         }
     },
 
-    _open : function() {
-        if (Eye.eyelidState == 4) {
-            Eye.eyelidState = false;
+    _open: function () {
+        if (Eye.eyelidState === Eye.EYELID_STATES.SQUINT_LIGHT) {
+            Eye.eyelidState = Eye.EYELID_STATES.OPEN;
         }
-        if (Eye.eyelidState != false) {
+        if (Eye.eyelidState !== Eye.EYELID_STATES.OPEN) {
             Eye.eyelidState += 1;
             setTimeout(Eye._open, 100);
         } else {
@@ -47,11 +63,11 @@ const Eye = {
         }
     },
 
-    _close : function(howTight=1) {
-        if (Eye.eyelidState == false) {
-            Eye.eyelidState = 4;
+    _close: function () {
+        if (Eye.eyelidState === Eye.EYELID_STATES.OPEN) {
+            Eye.eyelidState = Eye.EYELID_STATES.SQUINT_LIGHT;
         }
-        if (Eye.eyelidState != false && Eye.eyelidState >= 2) {
+        if (Eye.eyelidState !== Eye.EYELID_STATES.OPEN && Eye.eyelidState >= Eye.EYELID_STATES.SQUINT_HARD) {
             Eye.eyelidState -= 1;
             setTimeout(Eye._close, 66);
         } else {
@@ -59,102 +75,106 @@ const Eye = {
         }
     },
 
-    _checkWorld : function() {
+    _checkWorld: function () {
         if (Eye.state != "idle") return;
-
-        if (threebody && threebody.running) {
-            const planetSpeed = Math.sqrt(Math.pow(threebody.bodies[0].velocity.x, 2) + Math.pow(threebody.bodies[0].velocity.y, 2));
-            if (planetSpeed > 170) {
-                TextField.buffer.push({text:"Gravitational slingshot!", delay:0, speed:40});
-            }
-        }
 
         if (Eye.distanceToTarget < 50 && this.iter % 60 == 0) {
-            TextField.buffer.push({text:"Stop it.", delay:5, speed:40, time:1000});
-        }
-
-        if (spaceship && spaceship.active && !Eye._worldDone.spaceship) {
-            Eye._worldDone.spaceship = true;
-            TextField.buffer.push({text:"Lift off!", delay:5, speed:200, time:4000});
+            TextField.buffer.push({ text: "Stop it.", delay: 5, speed: 40, time: 1000 });
         }
     },
 
-    _eyelidUpdate : function() {
+    handleLiftoff: function () {
+        if (!this._worldDone.spaceship) {
+            this._worldDone.spaceship = true;
+            TextField.buffer.push({ text: "Lift off!", delay: 5, speed: 200, time: 4000 });
+        }
+    },
+
+    handleSlingshot: function () {
+        TextField.buffer.push({ text: "Gravitational slingshot!", delay: 0, speed: 40 });
+    },
+
+    _eyelidUpdate: function () {
         if (Eye.state != "idle") return;
 
-        if (Eye.distanceToTarget < 50) { Eye.eyelidState = 1; } 
-        else if (Eye.distanceToTarget < 70) { Eye.eyelidState = 2; } 
-        else if (Eye.distanceToTarget < 90) { Eye.eyelidState = 3; } 
-        else if (Eye.distanceToTarget < 110) { Eye.eyelidState = 4; } 
-        else { Eye.eyelidState = false; }
+        if (Eye.distanceToTarget < this.DISTANCE_THRESHOLDS.CLOSED) {
+            Eye.eyelidState = this.EYELID_STATES.CLOSED;
+        } else if (Eye.distanceToTarget < this.DISTANCE_THRESHOLDS.SQUINT_HARD) {
+            Eye.eyelidState = this.EYELID_STATES.SQUINT_HARD;
+        } else if (Eye.distanceToTarget < this.DISTANCE_THRESHOLDS.SQUINT_MEDIUM) {
+            Eye.eyelidState = this.EYELID_STATES.SQUINT_MEDIUM;
+        } else if (Eye.distanceToTarget < this.DISTANCE_THRESHOLDS.SQUINT_LIGHT) {
+            Eye.eyelidState = this.EYELID_STATES.SQUINT_LIGHT;
+        } else {
+            Eye.eyelidState = this.EYELID_STATES.OPEN;
+        }
     },
 
-    _getPos : function() {
+    _getPos: function () {
         let eyePos = document.getElementById("eye").getBoundingClientRect();
         return {
-            x : (eyePos.left + eyePos.right) / 2,
-            y : (eyePos.top + eyePos.bottom) / 2
+            x: (eyePos.left + eyePos.right) / 2,
+            y: (eyePos.top + eyePos.bottom) / 2
         };
     },
 
-    _calcPupilPos : function() {
+    _calcPupilPos: function () {
         let eyePos = Eye._getPos();
-        let targetPos = {x:0, y:0};
+        let targetPos = { x: 0, y: 0 };
         if (spaceship && spaceship.propulse && !Mouse.isMoving) {
             targetPos = spaceship.position;
         } else {
-            targetPos = {x:Mouse.x, y:Mouse.y};
+            targetPos = { x: Mouse.x, y: Mouse.y };
         }
         let targetRelativePos = {
-            x : targetPos.x - eyePos.x,
-            y : targetPos.y - eyePos.y
+            x: targetPos.x - eyePos.x,
+            y: targetPos.y - eyePos.y
         };
-        Eye.distanceToTarget = Math.sqrt(targetRelativePos.x**2 + targetRelativePos.y**2)
+        Eye.distanceToTarget = Math.sqrt(targetRelativePos.x ** 2 + targetRelativePos.y ** 2)
         let targetNormPos = {
-            x : targetRelativePos.x / Eye.distanceToTarget,
-            y : targetRelativePos.y / Eye.distanceToTarget,
+            x: targetRelativePos.x / Eye.distanceToTarget,
+            y: targetRelativePos.y / Eye.distanceToTarget,
         };
         let pupilDistance = {
-            x : Math.min(Math.abs(targetRelativePos.x/10), 2),
-            y : Math.min(Math.abs(targetRelativePos.y/10), 2),
+            x: Math.min(Math.abs(targetRelativePos.x / 10), 2),
+            y: Math.min(Math.abs(targetRelativePos.y / 10), 2),
         };
         return {
-            x : Math.floor( (targetNormPos.x)*pupilDistance.x+2 ),
-            y : Math.floor( (targetNormPos.y)*pupilDistance.y+2 )
+            x: Math.floor((targetNormPos.x) * pupilDistance.x + 2),
+            y: Math.floor((targetNormPos.y) * pupilDistance.y + 2)
         };
     },
-    
-    _calcPupilArray : function(pupilPos) {
-        let pupilArray = [[0,0,0,0], [0,0,0,0], [0,0,0,0], [0,0,0,0]];
+
+    _calcPupilArray: function (pupilPos) {
+        let pupilArray = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]];
         if (!isNaN(pupilPos.x) && (Mouse.isMoving || (spaceship && spaceship.propulse))) {
-            for (let y=0; y<pupilArray.length; y++) {
-                for (let x=0; x<pupilArray[0].length; x++) {
+            for (let y = 0; y < pupilArray.length; y++) {
+                for (let x = 0; x < pupilArray[0].length; x++) {
                     if (Math.abs(pupilPos.x - x) < 2 && Math.abs(pupilPos.y - y) < 2) {
                         pupilArray[y][x] = 1;
                     }
                 }
             }
         } else {
-            pupilArray = [[0,0,0,0], [0,1,1,0], [0,1,1,0], [0,0,0,0]];
+            pupilArray = [[0, 0, 0, 0], [0, 1, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0]];
         }
         return pupilArray;
     },
 
-    _render : function(pupilPos) {
-        let pupilArray = Eye._calcPupilArray(pupilPos);
-
+    _render: function (pupilPos) {
+        const pupilArray = this._calcPupilArray(pupilPos);
         let eyeText = "";
-        if (Eye.eyelidState == 1) {
-            eyeText = Eye.EYELID_TEXT[1];
+        
+        if (this.eyelidState === this.EYELID_STATES.CLOSED) {
+            eyeText = this.EYELID_TEXT[this.EYELID_STATES.CLOSED];
         } else {
-            eyeText = "";
-            for (let y=0; y<4; y++) {
-                for (let x=0; x<4; x++) {
-                    if (x==0 && y==0 || x==3 && y==3 || x==3 && y==0 || x==0 && y==3) {
+            for (let y = 0; y < 4; y++) {
+                for (let x = 0; x < 4; x++) {
+                    if (x === 0 && y === 0 || x === 3 && y === 3 || x === 3 && y === 0 || x === 0 && y === 3) {
                         eyeText += "  ";
-                    } else if (Eye.eyelidState != false && Eye.EYELID_TEXT[Eye.eyelidState][y].charAt(x) != "-") {
-                        eyeText += " " + Eye.EYELID_TEXT[Eye.eyelidState][y].charAt(x);
-                    } else if (pupilArray[y][x] == 1) {
+                    } else if (this.eyelidState !== this.EYELID_STATES.OPEN && this.EYELID_TEXT[this.eyelidState][y].charAt(x) !== "-") {
+                        eyeText += " " + this.EYELID_TEXT[this.eyelidState][y].charAt(x);
+                    } else if (pupilArray[y][x] === 1) {
                         eyeText += " o";
                     } else {
                         eyeText += " -";
@@ -165,13 +185,13 @@ const Eye = {
         }
         document.getElementById("eye").innerHTML = eyeText;
     },
-    
-    start: function() {
-        // This function doesn't need to do anything anymore,
-        // but it's kept for structural consistency.
+
+    start: function () {
+        AppEvents.on('spaceship:liftoff', this.handleLiftoff.bind(this));
+        AppEvents.on('threebody:slingshot', this.handleSlingshot.bind(this));
     },
-    
-    update : function() {
+
+    update: function () {
         this._checkWorld();
         this._stateUpdate();
         this._eyelidUpdate();

@@ -19,6 +19,8 @@ class Threebody {
         {position: {x: 0, y: 0}, velocity: {x: 0, y: 0}, mass: 0}
     ];
     iters = 0;
+    isSlingshotting = false; // State to prevent event spam
+    SLINGSHOT_THRESHOLD = 170;
 
     constructor(position) {
 		this.origPosition = position;
@@ -47,8 +49,19 @@ class Threebody {
     update(deltaTime) {
         if (deltaTime > 0.1) deltaTime = 0.02; // Prevent instability on lag
         this._calcPhysics(deltaTime);
+        this._checkEvents();
         this._display();
         this.iters += 1;
+    }
+
+    _checkEvents() {
+        const planetSpeed = Math.sqrt(Math.pow(this.bodies[0].velocity.x, 2) + Math.pow(this.bodies[0].velocity.y, 2));
+        if (planetSpeed > this.SLINGSHOT_THRESHOLD && !this.isSlingshotting) {
+            this.isSlingshotting = true;
+            AppEvents.emit('threebody:slingshot');
+        } else if (planetSpeed < this.SLINGSHOT_THRESHOLD) {
+            this.isSlingshotting = false;
+        }
     }
 
     _calcPhysics(deltaTime) {

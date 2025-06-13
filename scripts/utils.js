@@ -50,7 +50,42 @@ const Keyboard = {
 Keyboard.init();
 
 
-// screenSize is a function to get the current size on demand,
+// A simple event bus for decoupled communication
+const EventBus = {
+    events: {},
+    
+    // Subscribe to an event
+    on(eventName, fn) {
+        this.events[eventName] = this.events[eventName] || [];
+        this.events[eventName].push(fn);
+    },
+
+    // Unsubscribe from an event
+    off(eventName, fn) {
+        if (this.events[eventName]) {
+            for (let i = 0; i < this.events[eventName].length; i++) {
+                if (this.events[eventName][i] === fn) {
+                    this.events[eventName].splice(i, 1);
+                    break;
+                }
+            }
+        }
+    },
+
+    // Broadcast an event
+    emit(eventName, data) {
+        if (this.events[eventName]) {
+            this.events[eventName].forEach(fn => {
+                fn(data);
+            });
+        }
+    }
+};
+// Global instance for the application
+const AppEvents = EventBus;
+
+
+// screenSize is now a function to get the current size on demand,
 // ensuring it's always up-to-date.
 function getScreenSize() {
     return {
