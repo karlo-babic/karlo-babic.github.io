@@ -231,6 +231,6 @@ function spaceshipInit() {
 	Smoke.init(smokeDocElement);
 }
 
-setTimeout(() => {
+/*setTimeout(() => {
     spaceshipInit()
-}, 40000);
+}, 40000);*/

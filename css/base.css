@@ -1,0 +1,33 @@
+/* css/base.css - Foundational styles and typography */
+
+body {
+    background-color: #2a2a2e;
+    font-family: 'Roboto', sans-serif;
+    color: #f0f0f0;
+    overflow-x: hidden;
+}
+
+canvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: -1;
+    background-color: #2a2a2e;
+}
+
+/* --- Base Typography --- */
+.h1 {
+    font-size: 30px;
+    text-align: center;
+}
+
+.h2 {
+    font-size: 22px;
+    text-decoration: none;
+}
+
+.p1 {
+    font-size: 18px;
+    line-height: 1.6;
+    text-align: left;
+}

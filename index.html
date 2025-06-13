@@ -6,7 +6,12 @@
     <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <link rel="shortcut icon" href="imgs/favicon.ico">
     <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" href="style.css">
+
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/console.css">
 </head>
 
 <body>
@@ -45,6 +50,23 @@
         </p>
     </div>
     
+    <!-- Console Window -->
+    <div id="console-window">
+        <div id="console-screen"></div>
+        <div id="console-controls">
+            <!-- New Restart Button -->
+            <button id="restart-program" class="console-btn" title="Restart Program">⟳</button>
+            
+            <div class="dropdown" id="program-dropdown">
+                <button id="current-program-btn" class="console-btn dropdown-btn"></button>
+                <div id="program-list" class="dropdown-content"></div>
+            </div>
+            <button id="next-program" class="console-btn" title="Next Program">►</button>
+            <input type="text" id="program-input" class="console-input">
+            <button id="fullscreen-btn" class="console-btn" title="Toggle Fullscreen">⛶</button>
+        </div>
+    </div>
+
     <center>
         <br><br>
         <div id="quote-container">
@@ -63,7 +85,6 @@
         <table>
             <tr>
                 <td>
-                    <!-- This third-party script might use document.write, so it's safer to leave it here. -->
                     <script
                         src="https://www.goodreads.com/review/grid_widget/57999946.Karlo's%20bookshelf:%20read?cover_size=medium&hide_link=true&hide_title=true&num_books=200&order=d&shelf=read&sort=date_read&widget_id=1491596460"
                         type="text/javascript" charset="utf-8"></script>
@@ -80,7 +101,7 @@
     <script src="scripts/threebody.js"></script>
     <script src="scripts/snake.js"></script>
     <script src="scripts/quotes.js"></script>
-    <!-- Main script to initialize everything -->
+    <script src="scripts/console.js"></script>
     <script src="scripts/main.js"></script>
 </body>
 </html>

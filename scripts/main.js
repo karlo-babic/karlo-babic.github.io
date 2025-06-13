@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Initialize all modules ---
     canvasArea.start();
     Eye.start();
+    Console.init();
     //setTimeout(showQuote, 100);
 
     // Start the master animation loop
