@@ -1,6 +1,6 @@
 const Console = {
     // --- Configuration ---
-    availablePrograms: ['gameoflife', 'evoltree', 'mandelbrot'],
+    availablePrograms: ['gameoflife', 'evoltree', 'mandelbrot', 'boids', 'gravitysim'],
     
     // --- State ---
     currentProgramIndex: 0,

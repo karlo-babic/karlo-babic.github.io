@@ -27,6 +27,7 @@
     width: 100%;
     height: 100%;
     z-index: 1;
+    background-color: transparent;
 }
 
 #console-controls {
@@ -139,6 +140,9 @@
 #console-window.fullscreen #console-screen {
     flex-grow: 1;
     aspect-ratio: auto;
+}
+#console-window.fullscreen #console-screen canvas {
+    background-color: #000;
 }
 
 /* --- Mobile Responsive Styles --- */
