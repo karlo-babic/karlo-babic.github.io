@@ -14,7 +14,8 @@
                 document.getElementById('program-script-boids')?.remove();
             },
             onResize: function() {
-                if (this.instance) this.instance.onResize();
+                //if (this.instance) this.instance.onResize();
+                Console.restartCurrentProgram();
             }
         };
 

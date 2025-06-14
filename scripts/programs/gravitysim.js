@@ -14,7 +14,8 @@
                 document.getElementById('program-script-gravitysim')?.remove();
             },
             onResize: function() {
-                if (this.instance) this.instance.onResize();
+                //if (this.instance) this.instance.onResize();
+                Console.restartCurrentProgram();
             }
         };
 
