@@ -1,3 +1,5 @@
+import { AppEvents, getScreenSize } from './utils.js';
+
 const NUM_BODIES = 4;
 const G = 10;
 const SIM_SPEED = 1;
@@ -122,9 +124,9 @@ let threebodyPos = {
 	y: threebodyElement.getBoundingClientRect().top + window.scrollY + 3
 };
 let bodyElements;
-let threebody = new Threebody(threebodyPos);
+export let threebody = new Threebody(threebodyPos);
 
-function threebodyInit() {
+export function threebodyInit() {
     if (threebody.running) return;
     
     threebodyElement.innerHTML  = `<div id="body0" style="position:absolute;"><img src="imgs/dot_blue.png" width="2" class="glow-particle"></div>`;

@@ -131,7 +131,7 @@ function _mutateRule() {
 
 // --- Main Update Function (called by main.js) ---
 
-function updateCanvasArea() {
+export function updateCanvasArea() {
 	_renderLine(y);
     _addNoise(y);
 	_generateNextLine(y);
@@ -141,6 +141,6 @@ function updateCanvasArea() {
 }
 
 // --- Public Access ---
-function startFuzzyEca() {
+export function startFuzzyEca() {
     canvasArea.start();
 }

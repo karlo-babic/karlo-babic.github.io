@@ -1,4 +1,4 @@
-quotes = [
+export const quotes = [
     "Imagine a puddle waking up one morning and thinking,<br>\"This is an interesting world I find myself in,<br>an interesting hole I find myself in,<br>fits me rather neatly, doesn't it?<br>In fact it fits me staggeringly well,<br>must have been made to have me in it!\"<br>- Douglas Adams",
     "Life is dynamically preserved pattern.<br>- Dave Ackley",
     "I compute, therefore I am.",
@@ -36,7 +36,7 @@ quotes = [
 
 const quoteElement = document.getElementById("quote");
 
-function showQuote() {
+export function showQuote() {
     const newQuote = quotes[Math.floor(Math.random() * quotes.length)];
 
     // Fade out the current quote

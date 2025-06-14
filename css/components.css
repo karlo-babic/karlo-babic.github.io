@@ -80,30 +80,3 @@
 .featured-paper {
     font-size: 12px;
 }
-
-/* --- Hidden Sections & Widgets --- */
-#books {
-    display: none;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-#books .h2,
-#books table {
-    margin-left: 4%;
-    margin-right: 4%;
-}
-
-#snake {
-    position: absolute;
-}
-
-.gr_grid_container {}
-
-.gr_grid_book_container {
-    float: left;
-    width: 105px;
-    height: 175px;
-    padding: 0px 0px;
-    overflow: hidden;
-}

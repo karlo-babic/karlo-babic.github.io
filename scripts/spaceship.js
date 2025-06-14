@@ -1,3 +1,5 @@
+import { Keyboard, Mouse, AppEvents, getScreenSize, normalizeRadians, toggleDisplay } from './utils.js';
+
 // --- Module Constants ---
 const PROPULSION_STRENGTH = 3;
 const MASS = 0.5;
@@ -154,7 +156,7 @@ class Spaceship {
 	}
 }
 
-const Smoke = {
+export const Smoke = {
 	lifetime: 3,
 	particles: [ { position: { x: 0, y: 0 }, velocity: { x: 0, y: 0 }, lifetime: 0, size: 6 } ],
 	docElement: null,
@@ -207,8 +209,8 @@ const Smoke = {
 	}
 };
 
-let spaceship = null;
-function spaceshipInit() {
+export let spaceship = null;
+export function spaceshipInit() {
 	let docElement = document.getElementById("spaceship");
 	
 	if (spaceship === null) {

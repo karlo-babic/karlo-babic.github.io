@@ -1,4 +1,46 @@
-const Eye = {
+import { Mouse } from './utils.js';
+import { AppEvents } from './utils.js';
+import { spaceship } from './spaceship.js'; 
+// Note: spaceship is a circular dependency here. It's better if Eye doesn't know about spaceship directly.
+// We will leave it for now, but this could be improved later with more event-driven logic.
+
+export const TextField = {
+    isWriting : false,
+    buffer : [],
+
+    _clearText : function() {
+        document.getElementById("eyeSpeech").innerHTML = " ";
+        TextField.isWriting = false;
+    },
+    
+    _typeWriter : function(text, speed, time, i) {
+        if (i < text.length) {
+            document.getElementById("eyeSpeech").innerHTML += text.charAt(i);
+            i++;
+            setTimeout(TextField._typeWriter, speed, text, speed, time, i);
+        } else {
+            setTimeout(TextField._clearText, time);
+        }
+    },
+    
+    _write : function(text, delay=0, speed=100, time=4000, actionFunction=null, isQuestion=false) {
+        TextField.isWriting = true;
+        if (delay > 0) {
+            setTimeout(TextField._write, delay, text, 0, speed, time);
+        } else {
+            TextField._typeWriter(text, speed, time, 0);
+        }
+    },
+
+    update : function() {
+        if (this.isWriting == false && this.buffer.length > 0) {
+            let args = this.buffer.shift();
+            this._write(args.text, args.delay, args.speed, args.time, args.actionFunction, args.isQuestion);
+        }
+    }
+};
+
+export const Eye = {
     // --- Constants ---
     ANIMATE_SPEED: 100,
     EYELID_STATES: {
@@ -198,41 +240,5 @@ const Eye = {
         let pupilPos = this._calcPupilPos();
         this._render(pupilPos);
         this.iter += 1;
-    }
-};
-
-const TextField = {
-    isWriting : false,
-    buffer : [],
-
-    _clearText : function() {
-        document.getElementById("eyeSpeech").innerHTML = " ";
-        TextField.isWriting = false;
-    },
-    
-    _typeWriter : function(text, speed, time, i) {
-        if (i < text.length) {
-            document.getElementById("eyeSpeech").innerHTML += text.charAt(i);
-            i++;
-            setTimeout(TextField._typeWriter, speed, text, speed, time, i);
-        } else {
-            setTimeout(TextField._clearText, time);
-        }
-    },
-    
-    _write : function(text, delay=0, speed=100, time=4000, actionFunction=null, isQuestion=false) {
-        TextField.isWriting = true;
-        if (delay > 0) {
-            setTimeout(TextField._write, delay, text, 0, speed, time);
-        } else {
-            TextField._typeWriter(text, speed, time, 0);
-        }
-    },
-
-    update : function() {
-        if (this.isWriting == false && this.buffer.length > 0) {
-            let args = this.buffer.shift();
-            this._write(args.text, args.delay, args.speed, args.time, args.actionFunction, args.isQuestion);
-        }
     }
 };

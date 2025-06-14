@@ -1,5 +1,17 @@
-// This function runs once the entire HTML document has been loaded and parsed.
+import { Mouse, Keyboard } from './utils.js';
+import { startFuzzyEca, updateCanvasArea } from './fuzzyECA.js';
+import { Eye, TextField } from './observerEye.js';
+import { spaceshipInit, spaceship, Smoke } from './spaceship.js';
+import { threebodyInit, threebody } from './threebody.js';
+import { showQuote } from './quotes.js';
+import { Console } from './console.js';
+
+// This function runs once the entire HTML document has been loaded.
 document.addEventListener('DOMContentLoaded', () => {
+    // --- Initialize imported utilities ---
+    Mouse.init();
+    Keyboard.init();
+    
     // --- Add event listeners for interactive elements ---
     document.getElementById('spaceship-placeholder').addEventListener('click', (event) => {
         event.preventDefault();
@@ -11,15 +23,11 @@ document.addEventListener('DOMContentLoaded', () => {
         threebodyInit();
     });
 
-    document.getElementById('snake').addEventListener('click', () => {
-        snakeInit();
-    });
-
     // --- Initialize all modules ---
-    canvasArea.start();
+    startFuzzyEca();
     Eye.start();
     Console.init();
-    //setTimeout(showQuote, 100);
+    setTimeout(showQuote, 100);
 
     // Start the master animation loop
     requestAnimationFrame(mainLoop);
@@ -27,23 +35,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 // --- Master Animation Loop ---
-
 let lastTime = 0;
-// Timers to control update frequency for different modules
+// Timers to control update frequency
 let fuzzyEcaTimer = 0;
 let eyeTimer = 0;
 let textFieldTimer = 0;
-let snakeTimer = 0;
 
 function mainLoop(currentTime) {
     // Schedule the next frame
     requestAnimationFrame(mainLoop);
 
-    // Calculate time elapsed since the last frame
-    const deltaTime = (currentTime - lastTime) / 1000;
+    const deltaTime = (currentTime - lastTime) / 1000 || 0;
     lastTime = currentTime;
 
-    // --- Call update functions for each module based on their required frequency ---
+    // --- Call update functions for each module ---
     fuzzyEcaTimer += deltaTime;
     if (fuzzyEcaTimer > 1 / 5) {
         updateCanvasArea();
@@ -62,14 +67,6 @@ function mainLoop(currentTime) {
         textFieldTimer = 0;
     }
 
-    if (snake && snake.running) {
-        snakeTimer += deltaTime;
-        if (snakeTimer > 1 / 10) {
-            snake.update();
-            snakeTimer = 0;
-        }
-    }
-
     if (threebody && threebody.running) {
         threebody.update(deltaTime);
     }
@@ -81,8 +78,7 @@ function mainLoop(currentTime) {
     Mouse.update();
 }
 
-
-
+// Mousemove event for the radial gradient background effect
 window.addEventListener('mousemove', e => {
     document.body.style.setProperty('--mouse-x', e.clientX + 'px');
     document.body.style.setProperty('--mouse-y', e.clientY + 'px');

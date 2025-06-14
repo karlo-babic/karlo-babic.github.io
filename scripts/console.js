@@ -1,4 +1,4 @@
-const Console = {
+export const Console = {
     // --- Configuration ---
     availablePrograms: ['gameoflife', 'evoltree', 'mandelbrot', 'boids', 'gravitysim'],
     
@@ -28,9 +28,8 @@ const Console = {
         
         this.inputEl.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
-                e.preventDefault(); // Prevent any default 'enter' behavior
+                e.preventDefault();
                 this.runProgramFromInput();
-                // Clear the input to ready it for the next command, but keep it focused.
                 this.inputEl.value = '';
             }
         });
@@ -89,42 +88,48 @@ const Console = {
         }
     },
 
-    loadProgram: function(programName) {
+    // --- REFACTORED PROGRAM LOADER ---
+    loadProgram: async function(programName) {
+        // Unload the previous program if it exists.
         if (this.activeProgram && typeof this.activeProgram.unload === 'function') {
             this.activeProgram.unload();
         }
         this.activeProgram = null;
-        this.screenEl.innerHTML = '';
+        this.screenEl.innerHTML = ''; // Clear the screen.
 
-        const script = document.createElement('script');
-        script.src = `scripts/programs/${programName}.js`;
-        script.id = `program-script-${programName}`;
-        script.onerror = () => console.error(`Failed to load script for program: ${programName}`);
-        document.head.appendChild(script);
+        try {
+            // Dynamically import the program's module.
+            const path = `./programs/${programName}.js`;
+            const programModule = await import(path);
+
+            // The module should have a default export with an `init` method.
+            if (programModule.default && typeof programModule.default.init === 'function') {
+                this.activeProgram = programModule.default;
+                this.activeProgram.init(this.screenEl);
+            } else {
+                 console.error(`Program "${programName}" does not have a valid default export.`);
+            }
+        } catch (error) {
+            console.error(`Failed to load or run program: ${programName}`, error);
+            // Optionally, display an error message on the console screen.
+            this.screenEl.innerHTML = `<p style="color:red;padding:1em;">Error loading ${programName}.</p>`;
+        }
         
         this.updateDisplays();
-    },
-
-    runProgram: function(programName, programObject) {
-        if (programObject && typeof programObject.init === 'function') {
-            this.activeProgram = programObject;
-            this.activeProgram.init(this.screenEl);
-        } else {
-            console.error(`Program "${programName}" tried to run but is invalid.`);
-        }
     },
     
     toggleFullscreen: function() {
         this.windowEl.classList.toggle('fullscreen');
-        if (this.activeProgram && typeof this.activeProgram.onResize === 'function') {
-            setTimeout(() => this.activeProgram.onResize(), 150);
-        }
+        // Let the CSS transition finish before resizing the program's canvas.
+        setTimeout(() => {
+            if (this.activeProgram && typeof this.activeProgram.onResize === 'function') {
+                this.activeProgram.onResize();
+            }
+        }, 150);
     },
     
     updateDisplays: function() {
-        // Only update if the input is not currently focused by the user
         if (document.activeElement !== this.inputEl) {
-            const currentProgramName = this.availablePrograms[this.currentProgramIndex];
             this.inputEl.value = `...`;
         }
         this.dropdownBtn.textContent = this.availablePrograms[this.currentProgramIndex];

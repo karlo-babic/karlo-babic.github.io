@@ -1,14 +1,18 @@
 /* css/base.css - Foundational styles and typography */
 
-body {
+html {
     background-color: #2a2a2e;
+}
+
+body {
+    background-color: transparent;
     font-family: 'Roboto', sans-serif;
     color: #f0f0f0;
     overflow-x: hidden;
 }
 
 canvas {
-    position: absolute;
+    position: fixed;
     left: 0;
     top: 0;
     z-index: -1;
