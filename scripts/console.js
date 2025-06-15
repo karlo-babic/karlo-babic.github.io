@@ -5,11 +5,15 @@ export const Console = {
     // --- State ---
     currentProgramIndex: 0,
     activeProgram: null,
+    currentSuggestion: '',
+    commandHistory: [],
+    historyIndex: -1,
     
     // --- DOM Elements ---
     windowEl: null,
     screenEl: null,
     inputEl: null,
+    suggestionEl: null,
     dropdownBtn: null,
     programListEl: null,
     
@@ -17,6 +21,7 @@ export const Console = {
         this.windowEl = document.getElementById('console-window');
         this.screenEl = document.getElementById('console-screen');
         this.inputEl = document.getElementById('program-input');
+        this.suggestionEl = document.getElementById('console-suggestion'); // Get the new element
         this.dropdownBtn = document.getElementById('current-program-btn');
         this.programListEl = document.getElementById('program-list');
 
@@ -26,16 +31,38 @@ export const Console = {
         document.getElementById('next-program').addEventListener('click', () => this.browse(1));
         document.getElementById('fullscreen-btn').addEventListener('click', () => this.toggleFullscreen());
         
+        this.inputEl.addEventListener('input', () => this.updateSuggestion());
+
         this.inputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp') {
+                e.preventDefault(); // Prevent cursor from moving to the start of the line
+                this.navigateHistory('up');
+            }
+            if (e.key === 'ArrowDown') {
+                e.preventDefault(); // Prevent cursor from moving to the end of the line
+                this.navigateHistory('down');
+            }
+
             if (e.key === 'Enter') {
                 e.preventDefault();
                 this.runProgramFromInput();
                 this.inputEl.value = '';
+                this.updateSuggestion(); // Clear suggestion after enter
+            }
+
+            // New handler for the Tab key
+            if (e.key === 'Tab') {
+                if (this.currentSuggestion) {
+                    e.preventDefault(); // Prevent focus from moving to the next element
+                    this.inputEl.value = this.currentSuggestion;
+                    this.updateSuggestion(); // Clear the suggestion text
+                }
             }
         });
 
-        this.inputEl.addEventListener('focus', () => { this.inputEl.value = ''; });
-        this.inputEl.addEventListener('blur', () => { this.updateDisplays(); });
+        this.inputEl.addEventListener('blur', () => {
+            this.clearSuggestion(); // Clear suggestion when input loses focus
+        });
         
         window.addEventListener('click', (e) => {
             if (!e.target.matches('.dropdown-btn')) {
@@ -47,6 +74,69 @@ export const Console = {
         this.loadProgram(this.availablePrograms[this.currentProgramIndex]);
     },
     
+    // --- Autocomplete logic ---
+    updateSuggestion: function() {
+        const inputText = this.inputEl.value.trim().toLowerCase();
+        
+        if (!inputText) {
+            this.clearSuggestion();
+            return;
+        }
+
+        const match = this.availablePrograms.find(prog => prog.startsWith(inputText));
+
+        if (match && match !== inputText) {
+            this.currentSuggestion = match;
+            this.suggestionEl.textContent = match;
+        } else {
+            this.clearSuggestion();
+        }
+    },
+
+    clearSuggestion: function() {
+        this.currentSuggestion = '';
+        this.suggestionEl.textContent = '';
+    },
+
+    addToHistory: function(command) {
+        if (!command || command === this.commandHistory[0]) {
+            return; // Don't add empty commands or consecutive duplicates
+        }
+        this.commandHistory.unshift(command); // Add to the beginning of the array
+        
+        // Optional: Limit history size
+        if (this.commandHistory.length > 50) {
+            this.commandHistory.pop();
+        }
+    },
+
+    navigateHistory: function(direction) {
+        if (direction === 'up') {
+            // Go older in history (increase index)
+            if (this.historyIndex < this.commandHistory.length - 1) {
+                this.historyIndex++;
+            }
+        } else { // 'down'
+            // Go newer in history (decrease index)
+            if (this.historyIndex > -1) {
+                this.historyIndex--;
+            }
+        }
+
+        if (this.historyIndex >= 0) {
+            this.inputEl.value = this.commandHistory[this.historyIndex];
+        } else {
+            // If we are back at the start, clear the input
+            this.inputEl.value = '';
+        }
+        
+        // Place cursor at the end of the line
+        this.inputEl.focus();
+        this.inputEl.selectionStart = this.inputEl.selectionEnd = this.inputEl.value.length;
+        
+        this.clearSuggestion(); // Don't show a suggestion while browsing history
+    },
+
     restartCurrentProgram: function() {
         this.loadProgram(this.availablePrograms[this.currentProgramIndex]);
     },
@@ -78,13 +168,19 @@ export const Console = {
     
     runProgramFromInput: function() {
         const programName = this.inputEl.value.trim().toLowerCase();
+        
+        this.addToHistory(programName); // Add the command to history
+        this.historyIndex = -1; // Reset history navigation index
+
         const programIndex = this.availablePrograms.indexOf(programName);
 
         if (programIndex !== -1) {
             this.currentProgramIndex = programIndex;
             this.loadProgram(programName);
         } else {
-            console.warn(`Program "${programName}" not found.`);
+            if (programName) { // Don't warn for empty commands
+                console.warn(`Program "${programName}" not found.`);
+            }
         }
     },
 
@@ -129,9 +225,6 @@ export const Console = {
     },
     
     updateDisplays: function() {
-        if (document.activeElement !== this.inputEl) {
-            this.inputEl.value = `...`;
-        }
         this.dropdownBtn.textContent = this.availablePrograms[this.currentProgramIndex];
     }
 };

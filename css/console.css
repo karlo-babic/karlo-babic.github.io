@@ -41,7 +41,7 @@
 
 .console-input {
     flex-grow: 1;
-    background-color: #111;
+    background-color: transparent;
     border: 1px solid #444;
     color: #ccc;
     font-family: monospace;
@@ -49,6 +49,9 @@
     padding: 0.2rem 0.4rem;
     outline: none;
     transition: border-color 0.2s;
+    position: relative; /* Ensure it's on top */
+    z-index: 2;
+    width: 100%; /* Make it fill the wrapper */
 }
 
 .console-input:focus {
@@ -144,6 +147,35 @@
 #console-window.fullscreen #console-screen canvas {
     background-color: #000;
 }
+
+
+/* --- Styles for the input wrapper and suggestion --- */
+#console-input-wrapper {
+    position: relative;
+    flex-grow: 1; /* Allows the wrapper to fill the available space */
+    display: flex;
+    align-items: center;
+}
+
+#console-suggestion {
+    position: absolute;
+    top: 0;
+    left: 0;
+    color: #555; /* A faint color for the suggestion text */
+    pointer-events: none; /* Allows clicks to pass through to the real input */
+    
+    /* These properties MUST match the .console-input styles for perfect alignment */
+    font-family: monospace;
+    font-size: 0.8rem;
+    padding: 0.2rem 0.4rem;
+    line-height: normal;
+    box-sizing: border-box;
+    border: 1px solid transparent; /* To match the input's border width */
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+
 
 /* --- Mobile Responsive Styles --- */
 @media (max-width: 480px) {
