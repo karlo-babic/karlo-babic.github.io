@@ -1,6 +1,6 @@
 export const Console = {
     // --- Configuration ---
-    availablePrograms: ['gameoflife', 'evoltree', 'mandelbrot', 'boids', 'gravitysim'],
+    availablePrograms: ['gameoflife', 'evoltree', 'mandelbrot', 'boids', 'gravitysim', 'help'],
     
     // --- State ---
     currentProgramIndex: 0,
@@ -17,6 +17,38 @@ export const Console = {
     dropdownBtn: null,
     programListEl: null,
     
+    // --- A private helper function for parsing commands ---
+    _parseCommand: function(input) {
+        const parts = input.trim().split(/\s+/);
+        const command = parts.shift() || '';
+        const args = {
+            positional: [],
+            named: {}
+        };
+
+        while (parts.length > 0) {
+            let current = parts.shift();
+            // Check for both long (--foo) and short (-f) flags
+            if (current.startsWith('--') || current.startsWith('-')) {
+                // Get the key, removing either '--' or '-'
+                const key = current.startsWith('--') ? current.substring(2) : current.substring(1);
+                
+                // Check if the next part is a value and not another option
+                if (parts.length > 0 && !parts[0].startsWith('-')) {
+                    const value = parts.shift();
+                    const numValue = parseFloat(value);
+                    args.named[key] = isNaN(numValue) ? value : numValue;
+                } else {
+                    // It's a boolean flag, like -v or --verbose
+                    args.named[key] = true;
+                }
+            } else {
+                args.positional.push(current);
+            }
+        }
+        return { command, args };
+    },
+
     init: function() {
         this.windowEl = document.getElementById('console-window');
         this.screenEl = document.getElementById('console-screen');
@@ -167,47 +199,44 @@ export const Console = {
     },
     
     runProgramFromInput: function() {
-        const programName = this.inputEl.value.trim().toLowerCase();
+        const inputString = this.inputEl.value;
+        const { command, args } = this._parseCommand(inputString);
         
-        this.addToHistory(programName); // Add the command to history
-        this.historyIndex = -1; // Reset history navigation index
+        this.addToHistory(inputString.trim());
+        this.historyIndex = -1;
 
-        const programIndex = this.availablePrograms.indexOf(programName);
+        const programIndex = this.availablePrograms.indexOf(command);
 
         if (programIndex !== -1) {
             this.currentProgramIndex = programIndex;
-            this.loadProgram(programName);
+            this.loadProgram(command, args);
         } else {
-            if (programName) { // Don't warn for empty commands
-                console.warn(`Program "${programName}" not found.`);
+            if (command) {
+                console.warn(`Program "${command}" not found.`);
             }
         }
     },
 
-    // --- REFACTORED PROGRAM LOADER ---
-    loadProgram: async function(programName) {
-        // Unload the previous program if it exists.
+    loadProgram: async function(programName, args = { positional: [], named: {} }) {
         if (this.activeProgram && typeof this.activeProgram.unload === 'function') {
             this.activeProgram.unload();
         }
         this.activeProgram = null;
-        this.screenEl.innerHTML = ''; // Clear the screen.
+        this.screenEl.innerHTML = '';
 
         try {
-            // Dynamically import the program's module.
             const path = `./programs/${programName}.js`;
             const programModule = await import(path);
 
-            // The module should have a default export with an `init` method.
             if (programModule.default && typeof programModule.default.init === 'function') {
                 this.activeProgram = programModule.default;
-                this.activeProgram.init(this.screenEl);
+                // Pass the structured args object to the program's init method.
+                this.activeProgram.init(this.screenEl, args);
             } else {
                  console.error(`Program "${programName}" does not have a valid default export.`);
             }
         } catch (error) {
             console.error(`Failed to load or run program: ${programName}`, error);
-            // Optionally, display an error message on the console screen.
             this.screenEl.innerHTML = `<p style="color:red;padding:1em;">Error loading ${programName}.</p>`;
         }
         

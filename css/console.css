@@ -177,6 +177,42 @@
 }
 
 
+.text-program-container {
+    padding: 0.5em 0.5em;
+    font-family: monospace;
+    font-size: 0.8rem;
+    color: #ddd;
+    background-color: #0000004a;
+    line-height: 1.2;
+    height: 100%;
+    overflow-y: auto; /* Make it scrollable if content overflows */
+    white-space: pre-wrap; /* Respects newlines and wraps long lines */
+    box-sizing: border-box;
+    scrollbar-width: none; /* For Firefox */
+    -ms-overflow-style: none;  /* For Internet Explorer and Edge */
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.text-program-container::-webkit-scrollbar {
+    display: none;
+}
+
+/* Apply a solid black background to text programs ONLY when the console is fullscreen */
+#console-window.fullscreen .text-program-container {
+    background-color: #000000cd;
+}
+
+/* Style for links inside the text program */
+.text-program-container a {
+    color: var(--accent-color);
+    text-decoration: underline;
+}
+
+.text-program-container a:hover {
+    color: #8adeff;
+}
+
+
 /* --- Mobile Responsive Styles --- */
 @media (max-width: 480px) {
     #console-controls {

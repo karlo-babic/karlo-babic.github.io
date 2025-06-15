@@ -1,15 +1,30 @@
 import { BaseComputeShader } from './engines/base_compute_shader.js';
 
 class BoidsProgram extends BaseComputeShader {
-    constructor(screenEl) {
+    /**
+     * @param {HTMLElement} screenEl The element to render the canvas into.
+     * @param {object} options An object containing boids parameters.
+     * @param {number} options.separation The strength of the separation force.
+     * @param {number} options.alignment The strength of the alignment force.
+     * @param {number} options.cohesion The strength of the cohesion force.
+     */
+    constructor(screenEl, options = {}) {
         super(screenEl);
 
-        // --- Simulation Parameters ---
-        this.PARTICLE_TEXTURE_SIDE_LEN = 64; // 256; // 256x256 = 65536 particles
+        // --- Boids Simulation Parameters ---
+        const defaults = {
+            separation: 2.0,
+            alignment: 0.05,
+            cohesion: 0.08,
+        };
+        // Merge user-provided options with defaults.
+        this.forces = { ...defaults, ...options };
+
+        // --- WebGL Particle Simulation Parameters ---
+        this.PARTICLE_TEXTURE_SIDE_LEN = 64;
         this.PARTICLE_COUNT = this.PARTICLE_TEXTURE_SIDE_LEN * this.PARTICLE_TEXTURE_SIDE_LEN;
 
         // --- GLSL Shaders ---
-
         this.computeVertexShader = `
             attribute vec2 a_position;
             void main() {
@@ -25,24 +40,22 @@ class BoidsProgram extends BaseComputeShader {
         uniform vec2 u_mouse;
         uniform float u_deltaTime;
 
-        // Boids parameters
+        // Boids force parameters passed from JavaScript as uniforms
+        uniform float u_separationForce;
+        uniform float u_alignmentForce;
+        uniform float u_cohesionForce;
+
+        // Boids simulation constants
         const float MAX_SPEED = 50.0;
         const float PERCEPTION_RADIUS = 20.0;
         const float AVOIDANCE_RADIUS = 10.0;
-
-        const float SEPARATION_FORCE = 2.0;
-        const float ALIGNMENT_FORCE = 0.05;
-        const float COHESION_FORCE = 0.08;
         const float MOUSE_FORCE = 2.0;
-        const float BORDER_MARGIN = 20.0; // How far from the edge to start turning
+        const float BORDER_MARGIN = 20.0;
         const float BORDER_TURN_FORCE = 4.0;
 
         float rand(vec2 co){
             return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
         }
-
-        // Since we are no longer wrapping, we don't need toroidal distance.
-        // The standard distance function is fine.
         
         void main() {
             vec2 uv = gl_FragCoord.xy / u_textureResolution;
@@ -83,9 +96,10 @@ class BoidsProgram extends BaseComputeShader {
                 alignment /= float(perceptionCount);
                 separation /= float(perceptionCount);
 
-                vel += separation * SEPARATION_FORCE;
-                vel += alignment * ALIGNMENT_FORCE;
-                vel += cohesion * COHESION_FORCE;
+                // Apply the forces using the values from the uniforms
+                vel += separation * u_separationForce;
+                vel += alignment * u_alignmentForce;
+                vel += cohesion * u_cohesionForce;
             }
             
             vec2 mouse_dir = vec2(0.0);
@@ -95,8 +109,7 @@ class BoidsProgram extends BaseComputeShader {
                 vel += mouse_dir * MOUSE_FORCE;
             }
 
-            // --- MODIFIED BOUNDARY LOGIC ---
-            // Steer away from edges instead of hard bouncing for a smoother look.
+            // Steer away from edges for a smoother look.
             if (pos.x < BORDER_MARGIN) vel.x += BORDER_TURN_FORCE;
             if (pos.x > u_screenResolution.x - BORDER_MARGIN) vel.x -= BORDER_TURN_FORCE;
             if (pos.y < BORDER_MARGIN) vel.y += BORDER_TURN_FORCE;
@@ -108,7 +121,7 @@ class BoidsProgram extends BaseComputeShader {
 
             pos += vel * u_deltaTime;
 
-            // Add a hard clamp as a fallback to prevent any escapees.
+            // Clamp positions to screen as a fallback.
             pos = clamp(pos, vec2(0.0), u_screenResolution);
             
             gl_FragColor = vec4(pos, vel);
@@ -154,7 +167,6 @@ class BoidsProgram extends BaseComputeShader {
         this.computeProgram = this._createProgram(this.computeVertexShader, this.computeFragmentShader);
         this.renderProgram = this._createProgram(this.renderVertexShader, this.renderFragmentShader);
 
-        // We need the canvas dimensions to initialize particles, so call onResize first.
         super.onResize();
 
         const initialParticleData = new Float32Array(this.PARTICLE_COUNT * 4);
@@ -218,12 +230,16 @@ class BoidsProgram extends BaseComputeShader {
         this.gl.enableVertexAttribArray(posAttrib);
         this.gl.vertexAttribPointer(posAttrib, 2, this.gl.FLOAT, false, 0, 0);
         
-        // Set uniforms
-        this.gl.uniform1f(this.gl.getUniformLocation(this.computeProgram, "u_deltaTime"), Math.min(deltaTime, 0.05)); // Cap delta to prevent explosions
+        // Set uniforms for time, resolution, and mouse
+        this.gl.uniform1f(this.gl.getUniformLocation(this.computeProgram, "u_deltaTime"), Math.min(deltaTime, 0.05));
         this.gl.uniform2f(this.gl.getUniformLocation(this.computeProgram, "u_textureResolution"), this.PARTICLE_TEXTURE_SIDE_LEN, this.PARTICLE_TEXTURE_SIDE_LEN);
         this.gl.uniform2f(this.gl.getUniformLocation(this.computeProgram, "u_mouse"), this.mousePos.x, this.mousePos.y);
-        // --- BUG FIX: Set the new screen resolution uniform ---
         this.gl.uniform2f(this.gl.getUniformLocation(this.computeProgram, "u_screenResolution"), this.canvas.width, this.canvas.height);
+
+        // Set the force uniforms using the values from the constructor
+        this.gl.uniform1f(this.gl.getUniformLocation(this.computeProgram, "u_separationForce"), this.forces.separation);
+        this.gl.uniform1f(this.gl.getUniformLocation(this.computeProgram, "u_alignmentForce"), this.forces.alignment);
+        this.gl.uniform1f(this.gl.getUniformLocation(this.computeProgram, "u_cohesionForce"), this.forces.cohesion);
 
         this.gl.activeTexture(this.gl.TEXTURE0);
         this.gl.bindTexture(this.gl.TEXTURE_2D, readState.texture);
@@ -273,28 +289,58 @@ class BoidsProgram extends BaseComputeShader {
     }
 }
 
+
+// --- Alias map for command-line arguments ---
+// Maps short-form flags (e.g., '-c') to their long-form names.
+const ALIAS_MAP = {
+    s: 'separation',
+    a: 'alignment',
+    c: 'cohesion'
+};
+
 // The main object that defines the program's interface for the console.
 const Boids = {
     instance: null,
 
-    init: function(screenEl) {
-        this.instance = new BoidsProgram(screenEl);
+    init: function(screenEl, args = { positional: [], named: {} }) {
+        // Create a clean options object to pass to the program.
+        const options = {};
+        
+        // Process all named arguments provided by the user.
+        for (const key in args.named) {
+            const value = args.named[key];
+            
+            // Check if the key is a short-form alias (e.g., 'c').
+            if (ALIAS_MAP[key]) {
+                // If it is, use its long-form name (e.g., 'cohesion').
+                options[ALIAS_MAP[key]] = value;
+            } else {
+                // Otherwise, use the key as is (e.g., 'separation').
+                options[key] = value;
+            }
+        }
+        
+        // Pass the processed options object to the BoidsProgram constructor.
+        this.instance = new BoidsProgram(screenEl, options);
         this.instance.init();
     },
 
     unload: function() {
-        if (this.instance) this.instance.unload();
-        this.instance = null;
+        if (this.instance) {
+            this.instance.unload();
+            this.instance = null;
+        }
     },
 
     onResize: function() {
-        // A full restart on resize is often the easiest way to handle WebGL contexts.
+        // A full restart on resize is the easiest way to handle WebGL contexts.
         if (this.instance) {
             this.instance.unload();
+            // Re-init with the same screen element. Note: arguments are lost on resize.
+            // This is acceptable behavior for this program.
             this.init(this.instance.screenEl);
         }
     }
 };
 
-// Export the Boids object as the default for this module.
 export default Boids;
