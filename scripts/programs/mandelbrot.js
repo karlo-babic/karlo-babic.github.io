@@ -1,9 +1,9 @@
-import { ShaderProgram } from './shader-program-base.js';
+import { BaseShader } from './engines/base_shader.js';
 
 // A helper function for vector math, kept internal to this module.
 function vec2(x, y) { return {x, y}; }
 
-class MandelbrotProgram extends ShaderProgram {
+class MandelbrotProgram extends BaseShader {
     constructor(screenEl) {
         super(screenEl);
 

@@ -1,6 +1,6 @@
-import { ComputeProgramBase } from './compute-program-base.js';
+import { BaseComputeShader } from './engines/base_compute_shader.js';
 
-class BoidsProgram extends ComputeProgramBase {
+class BoidsProgram extends BaseComputeShader {
     constructor(screenEl) {
         super(screenEl);
 

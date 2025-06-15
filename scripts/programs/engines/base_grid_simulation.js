@@ -2,7 +2,7 @@
  * A base class for creating iterative, grid-based simulations on a canvas.
  * It handles the rendering loop, canvas setup, resizing, and user input for drawing.
  */
-export class GridSimulation {
+export class BaseGridSimulation {
     constructor(screenEl, config = {}) {
         this.screenEl = screenEl;
         this.config = {

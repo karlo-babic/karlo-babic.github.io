@@ -3,7 +3,7 @@
  * Handles the boilerplate of setting up a WebGL context, compiling shaders,
  * creating buffers, and managing the render loop.
  */
-export class ShaderProgram {
+export class BaseShader {
     constructor(screenEl) {
         this.screenEl = screenEl;
         this.canvas = document.createElement('canvas');

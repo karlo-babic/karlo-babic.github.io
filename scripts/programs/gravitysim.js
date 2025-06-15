@@ -1,6 +1,6 @@
-import { ComputeProgramBase } from './compute-program-base.js';
+import { BaseComputeShader } from './engines/base_compute_shader.js';
 
-class GravitySimProgram extends ComputeProgramBase {
+class GravitySimProgram extends BaseComputeShader {
     constructor(screenEl) {
         super(screenEl);
 

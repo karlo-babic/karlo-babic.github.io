@@ -4,7 +4,7 @@
  * creating floating-point textures and framebuffers for ping-ponging,
  * and managing the render loop.
  */
-export class ComputeProgramBase {
+export class BaseComputeShader {
     constructor(screenEl) {
         this.screenEl = screenEl;
         this.canvas = document.createElement('canvas');

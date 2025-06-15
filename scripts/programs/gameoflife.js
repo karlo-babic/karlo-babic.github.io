@@ -1,6 +1,6 @@
-import { GridSimulation } from './grid-simulation-base.js';
+import { BaseGridSimulation } from './engines/base_grid_simulation.js';
 
-class GameOfLifeProgram extends GridSimulation {
+class GameOfLifeProgram extends BaseGridSimulation {
     constructor(screenEl, config) {
         super(screenEl, config);
     }
