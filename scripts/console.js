@@ -1,14 +1,16 @@
 export const Console = {
     // --- Configuration ---
-    availablePrograms: ['gameoflife', 'evoltree', 'mandelbrot', 'boids', 'gravitysim', 'help'],
-    
+    availablePrograms: ['gameoflife', 'evoltree', 'mandelbrot', 'boids', 'gravitysim', 'help', 'read'],
+    // A list of programs to hide from UI elements like the dropdown and next/prev.
+    hiddenPrograms: ['read'],
+
     // --- State ---
     currentProgramIndex: 0,
     activeProgram: null,
     currentSuggestion: '',
     commandHistory: [],
     historyIndex: -1,
-    
+
     // --- DOM Elements ---
     windowEl: null,
     screenEl: null,
@@ -16,7 +18,7 @@ export const Console = {
     suggestionEl: null,
     dropdownBtn: null,
     programListEl: null,
-    
+
     // --- A private helper function for parsing commands ---
     _parseCommand: function(input) {
         const parts = input.trim().split(/\s+/);
@@ -32,7 +34,7 @@ export const Console = {
             if (current.startsWith('--') || current.startsWith('-')) {
                 // Get the key, removing either '--' or '-'
                 const key = current.startsWith('--') ? current.substring(2) : current.substring(1);
-                
+
                 // Check if the next part is a value and not another option
                 if (parts.length > 0 && !parts[0].startsWith('-')) {
                     const value = parts.shift();
@@ -62,40 +64,37 @@ export const Console = {
         this.dropdownBtn.addEventListener('click', () => this.toggleDropdown());
         document.getElementById('next-program').addEventListener('click', () => this.browse(1));
         document.getElementById('fullscreen-btn').addEventListener('click', () => this.toggleFullscreen());
-        
+
         this.inputEl.addEventListener('input', () => this.updateSuggestion());
 
         this.inputEl.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowUp') {
-                e.preventDefault(); // Prevent cursor from moving to the start of the line
+                e.preventDefault();
                 this.navigateHistory('up');
             }
             if (e.key === 'ArrowDown') {
-                e.preventDefault(); // Prevent cursor from moving to the end of the line
+                e.preventDefault();
                 this.navigateHistory('down');
             }
-
             if (e.key === 'Enter') {
                 e.preventDefault();
                 this.runProgramFromInput();
                 this.inputEl.value = '';
-                this.updateSuggestion(); // Clear suggestion after enter
+                this.updateSuggestion();
             }
-
-            // New handler for the Tab key
             if (e.key === 'Tab') {
                 if (this.currentSuggestion) {
-                    e.preventDefault(); // Prevent focus from moving to the next element
+                    e.preventDefault();
                     this.inputEl.value = this.currentSuggestion;
-                    this.updateSuggestion(); // Clear the suggestion text
+                    this.updateSuggestion();
                 }
             }
         });
 
         this.inputEl.addEventListener('blur', () => {
-            this.clearSuggestion(); // Clear suggestion when input loses focus
+            this.clearSuggestion();
         });
-        
+
         window.addEventListener('click', (e) => {
             if (!e.target.matches('.dropdown-btn')) {
                 this.programListEl.classList.remove('show');
@@ -104,18 +103,27 @@ export const Console = {
 
         this.populateDropdown();
         this.loadProgram(this.availablePrograms[this.currentProgramIndex]);
+
+        // Automatically focus the input only on larger (desktop) screens.
+        // A common breakpoint is 768px, which excludes most phones and tablets.
+        const isDesktop = window.innerWidth > 768;
+        if (isDesktop) {
+            this.inputEl.focus();
+        }
     },
-    
+
     // --- Autocomplete logic ---
     updateSuggestion: function() {
         const inputText = this.inputEl.value.trim().toLowerCase();
-        
+
         if (!inputText) {
             this.clearSuggestion();
             return;
         }
 
-        const match = this.availablePrograms.find(prog => prog.startsWith(inputText));
+        // Only suggest programs that are not hidden.
+        const visiblePrograms = this.availablePrograms.filter(p => !this.hiddenPrograms.includes(p));
+        const match = visiblePrograms.find(prog => prog.startsWith(inputText));
 
         if (match && match !== inputText) {
             this.currentSuggestion = match;
@@ -132,11 +140,10 @@ export const Console = {
 
     addToHistory: function(command) {
         if (!command || command === this.commandHistory[0]) {
-            return; // Don't add empty commands or consecutive duplicates
+            return;
         }
-        this.commandHistory.unshift(command); // Add to the beginning of the array
-        
-        // Optional: Limit history size
+        this.commandHistory.unshift(command);
+
         if (this.commandHistory.length > 50) {
             this.commandHistory.pop();
         }
@@ -144,12 +151,10 @@ export const Console = {
 
     navigateHistory: function(direction) {
         if (direction === 'up') {
-            // Go older in history (increase index)
             if (this.historyIndex < this.commandHistory.length - 1) {
                 this.historyIndex++;
             }
-        } else { // 'down'
-            // Go newer in history (decrease index)
+        } else {
             if (this.historyIndex > -1) {
                 this.historyIndex--;
             }
@@ -158,15 +163,12 @@ export const Console = {
         if (this.historyIndex >= 0) {
             this.inputEl.value = this.commandHistory[this.historyIndex];
         } else {
-            // If we are back at the start, clear the input
             this.inputEl.value = '';
         }
-        
-        // Place cursor at the end of the line
+
         this.inputEl.focus();
         this.inputEl.selectionStart = this.inputEl.selectionEnd = this.inputEl.value.length;
-        
-        this.clearSuggestion(); // Don't show a suggestion while browsing history
+        this.clearSuggestion();
     },
 
     restartCurrentProgram: function() {
@@ -175,13 +177,17 @@ export const Console = {
 
     populateDropdown: function() {
         this.programListEl.innerHTML = '';
-        this.availablePrograms.forEach((programName, index) => {
+        // Filter out hidden programs before populating the list.
+        const visiblePrograms = this.availablePrograms.filter(p => !this.hiddenPrograms.includes(p));
+
+        visiblePrograms.forEach(programName => {
             const item = document.createElement('a');
             item.href = '#';
             item.textContent = programName;
             item.addEventListener('click', (e) => {
                 e.preventDefault();
-                this.currentProgramIndex = index;
+                // Find the original index in the complete list.
+                this.currentProgramIndex = this.availablePrograms.indexOf(programName);
                 this.loadProgram(programName);
                 this.programListEl.classList.remove('show');
             });
@@ -194,17 +200,22 @@ export const Console = {
     },
 
     browse: function(direction) {
-        this.currentProgramIndex = (this.currentProgramIndex + direction + this.availablePrograms.length) % this.availablePrograms.length;
+        // This loop ensures the next/prev buttons skip over any hidden programs.
+        do {
+            this.currentProgramIndex = (this.currentProgramIndex + direction + this.availablePrograms.length) % this.availablePrograms.length;
+        } while (this.hiddenPrograms.includes(this.availablePrograms[this.currentProgramIndex]));
+
         this.loadProgram(this.availablePrograms[this.currentProgramIndex]);
     },
-    
+
     runProgramFromInput: function() {
         const inputString = this.inputEl.value;
         const { command, args } = this._parseCommand(inputString);
-        
+
         this.addToHistory(inputString.trim());
         this.historyIndex = -1;
 
+        // We check the full list of available programs here.
         const programIndex = this.availablePrograms.indexOf(command);
 
         if (programIndex !== -1) {
@@ -230,7 +241,6 @@ export const Console = {
 
             if (programModule.default && typeof programModule.default.init === 'function') {
                 this.activeProgram = programModule.default;
-                // Pass the structured args object to the program's init method.
                 this.activeProgram.init(this.screenEl, args);
             } else {
                  console.error(`Program "${programName}" does not have a valid default export.`);
@@ -239,20 +249,19 @@ export const Console = {
             console.error(`Failed to load or run program: ${programName}`, error);
             this.screenEl.innerHTML = `<p style="color:red;padding:1em;">Error loading ${programName}.</p>`;
         }
-        
+
         this.updateDisplays();
     },
-    
+
     toggleFullscreen: function() {
         this.windowEl.classList.toggle('fullscreen');
-        // Let the CSS transition finish before resizing the program's canvas.
         setTimeout(() => {
             if (this.activeProgram && typeof this.activeProgram.onResize === 'function') {
                 this.activeProgram.onResize();
             }
         }, 150);
     },
-    
+
     updateDisplays: function() {
         this.dropdownBtn.textContent = this.availablePrograms[this.currentProgramIndex];
     }

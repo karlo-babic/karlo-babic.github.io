@@ -22,7 +22,7 @@ class Threebody {
     ];
     iters = 0;
     isSlingshotting = false; // State to prevent event spam
-    SLINGSHOT_THRESHOLD = 172;
+    SLINGSHOT_THRESHOLD = 171;
 
     constructor(position) {
 		this.origPosition = position;
@@ -89,7 +89,7 @@ class Threebody {
         const dx = body2.position.x - body1.position.x;
         const dy = body2.position.y - body1.position.y;
         const distance = Math.sqrt(dx * dx + dy * dy) + 0.001;
-        const force = Math.min(G * body1.mass * body2.mass / Math.pow(distance, 1.7), MAX_FORCE);
+        const force = Math.min(G * body1.mass * body2.mass / Math.pow(distance, 1.65), MAX_FORCE);
         const fx = force * dx / distance;
         const fy = force * dy / distance;
         return { fx, fy, distance };
@@ -145,4 +145,4 @@ export function threebodyInit() {
 
 setTimeout(() => {
     threebodyInit()
-}, 10000);
+}, 15000);

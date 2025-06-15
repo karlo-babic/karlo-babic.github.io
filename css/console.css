@@ -213,6 +213,89 @@
     color: #8adeff;
 }
 
+/* Constrain images to the width of the console screen */
+.text-program-container img {
+    max-width: 100%;
+    height: auto; /* Maintain aspect ratio */
+    display: block; /* Prevents extra space below the image */
+    margin: 0.5em 0; /* Add some vertical spacing */
+}
+
+/* Style the <pre> element which acts as the code block container */
+.text-program-container pre {
+    background-color: #111111ef;
+    padding: 0.8em;
+    border-radius: 4px;
+    overflow-x: auto;
+    white-space: pre;
+}
+
+/* Style the <code> element inside the <pre> block */
+.text-program-container pre code {
+    line-height: 1.3;
+    font-size: 0.9em;
+    background-color: transparent;
+    padding: 0;
+}
+
+/* Style for inline code snippets using `backticks` */
+.text-program-container code {
+    background-color: #333;
+    padding: 0.1em 0.3em;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+/* Style for blockquotes */
+.text-program-container blockquote {
+    border-left: 3px solid #555;
+    padding-left: 1em;
+    margin: 0.8em 0;
+    color: #aaa;
+}
+.text-program-container blockquote p {
+    margin: 0; /* Remove default paragraph margins inside a quote */
+}
+
+/* Style for horizontal rules */
+.text-program-container hr {
+    border: none;
+    border-top: 1px solid #444;
+    margin: 1em 0;
+}
+
+/* Style for checklists */
+.text-program-container input[type="checkbox"] {
+    margin-right: 0.5em;
+    vertical-align: middle; /* Align checkbox with text */
+}
+
+/* Style for lists to add visual indentation for nesting */
+.text-program-container ul {
+    list-style-type: disc; /* Use standard bullets */
+    padding-left: 1.5em; /* This creates the indentation */
+}
+.text-program-container li {
+    margin-bottom: 0.2em; /* Small space between list items */
+}
+
+/* Remove vertical margins from paragraphs to fix extra spacing between lines. */
+.text-program-container p {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/* Reset default margins for other block elements to ensure consistent spacing */
+.text-program-container h1,
+.text-program-container h2,
+.text-program-container h3,
+.text-program-container ul,
+.text-program-container pre,
+.text-program-container blockquote {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+}
+
 
 /* --- Mobile Responsive Styles --- */
 @media (max-width: 480px) {
@@ -224,19 +307,19 @@
         flex-grow: 1;
     }
     
-    /* MODIFIED: Allow the dropdown button to grow to full width */
+    /* Allow the dropdown button to grow to full width */
     .dropdown-btn {
         max-width: none;
         width: 100%;
     }
 
-    /* MODIFIED: Apply ordering to the wrapper, not the input itself */
+    /* Apply ordering to the wrapper, not the input itself */
     #console-input-wrapper {
         width: 100%;
         order: 5;
     }
 
-    /* NEW: Push the fullscreen button to the far right of the top row */
+    /* Push the fullscreen button to the far right of the top row */
     #fullscreen-btn {
         margin-left: auto;
     }
