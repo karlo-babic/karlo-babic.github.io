@@ -5,11 +5,11 @@
  * @returns {string} The escaped text.
  */
 function escapeHtml(text) {
-    return text.replace(/&/g, '&')
-               .replace(/</g, '<')
-               .replace(/>/g, '>')
-               .replace(/"/g, '"')
-               .replace(/'/g, '\'');
+    return text.replace(/&/g, '&amp;')
+               .replace(/</g, '&lt;')
+               .replace(/>/g, '&gt;')
+               .replace(/"/g, '&quot;')
+               .replace(/'/g, '&#39;');
 }
 
 /**
@@ -37,7 +37,7 @@ export function parseMarkdown(markdownText) {
         if (/^### /.test(line)) return `<h3>${line.substring(4)}</h3>`;
 
         // Horizontal Rules
-        if (/^([-*_]){3,}$/.test(line)) return '<hr>';
+        if (/^\s*([-*_]){3,}\s*$/.test(line)) return '<hr>';
 
         // Blockquotes
         if (/^> /.test(line)) return `<blockquote>${line.substring(2)}</blockquote>`;
@@ -97,7 +97,7 @@ export function parseMarkdown(markdownText) {
                // NEW: Autolink http/https URLs. The (?<!) is a negative lookbehind
                // to ensure we don't re-link something already in an href, src, or markdown link.
                .replace(/(?<!href="|src="|]\()(https?:\/\/[^\s<>]+)/g, '<a href="$1" target="_blank">$1</a>')
-               .replace(/`([^`]+)`/g, '<code>$1</code>')
+               .replace(/`([^`]+)`/g, (match, code) => `<code>${escapeHtml(code)}</code>`)
                .replace(/~~(.*?)~~/g, '<del>$1</del>')
                .replace(/\*\*(.*?)\*\*|__(.*?)__/g, '<b>$1$2</b>')
                .replace(/\*(.*?)\*|_(.*?)_/g, '<i>$1$2</i>');
