@@ -118,6 +118,32 @@ class Threebody {
 	}
 }
 
+
+function transformToGoodreads() {
+    // Find the container for body 0.
+    const body0 = document.getElementById("body0");
+    if (!body0) return;
+
+    // The Goodreads profile URL.
+    const goodreadsUrl = "https://www.goodreads.com/karlobabic";
+
+    // Create the new HTML content.
+    // The link wraps around the image.
+    body0.innerHTML = `
+        <a href="${goodreadsUrl}" target="_blank" title="My Goodreads Profile">
+            <img src="imgs/goodreads.png" width="8">
+        </a>
+    `;
+
+    // Stop the physics simulation for body 0 by setting its mass to zero.
+    // This will prevent it from moving after it has transformed.
+    /*if (threebody) {
+        threebody.bodies[0].mass = 0;
+        threebody.bodies[0].velocity = { x: 0, y: 0 };
+    }*/
+}
+
+
 let threebodyElement = document.getElementById("threebody");
 let threebodyPos = {
 	x: threebodyElement.getBoundingClientRect().left + 20,
@@ -139,6 +165,16 @@ export function threebodyInit() {
         document.getElementById("body2"),
         document.getElementById("body3")
     ];
+
+    // Subscribe to the 'spaceship:docked' event.
+    // We use a flag to ensure it only transforms once.
+    let hasTransformed = false;
+    AppEvents.on('spaceship:docked', () => {
+        if (!hasTransformed) {
+            transformToGoodreads();
+            hasTransformed = true;
+        }
+    });
 
     threebody.running = true;
 }

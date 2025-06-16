@@ -117,14 +117,14 @@ class Spaceship {
 		this.iters += 1;
 	}
 
-    _checkReturnToOrigin() {
-        const atOrigin = Math.abs(this.position.x - this.origPosition.x) < 5 &&
-                         Math.abs(this.position.y - this.origPosition.y) < 5;
-        if (atOrigin && Math.abs(this.rotation) < 0.4 && this.iters >= 50) {
-			toggleDisplay('books');
-			this.stop();
-		}
+_checkReturnToOrigin() {
+    const atOrigin = Math.abs(this.position.x - this.origPosition.x) < 5 &&
+                     Math.abs(this.position.y - this.origPosition.y) < 5;
+    if (atOrigin && Math.abs(this.rotation) < 0.4 && this.iters >= 50) {
+        AppEvents.emit('spaceship:docked');
+        this.stop();
     }
+}
 
 	display() {
         let onoff = this.propulse ? "on" : "off";
