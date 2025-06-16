@@ -13,15 +13,15 @@ class BoidsProgram extends BaseComputeShader {
 
         // --- Boids Simulation Parameters ---
         const defaults = {
-            separation: 2.0,
-            alignment: 0.05,
-            cohesion: 0.08,
+            separation: 0.01,
+            alignment: 0.015,
+            cohesion: 0.03,
         };
         // Merge user-provided options with defaults.
         this.forces = { ...defaults, ...options };
 
         // --- WebGL Particle Simulation Parameters ---
-        this.PARTICLE_TEXTURE_SIDE_LEN = 64;
+        this.PARTICLE_TEXTURE_SIDE_LEN = 32;
         this.PARTICLE_COUNT = this.PARTICLE_TEXTURE_SIDE_LEN * this.PARTICLE_TEXTURE_SIDE_LEN;
 
         // --- GLSL Shaders ---
@@ -47,8 +47,8 @@ class BoidsProgram extends BaseComputeShader {
 
         // Boids simulation constants
         const float MAX_SPEED = 50.0;
-        const float PERCEPTION_RADIUS = 20.0;
-        const float AVOIDANCE_RADIUS = 10.0;
+        const float PERCEPTION_RADIUS = 15.0;
+        const float AVOIDANCE_RADIUS = 5.0;
         const float MOUSE_FORCE = 2.0;
         const float BORDER_MARGIN = 20.0;
         const float BORDER_TURN_FORCE = 4.0;
