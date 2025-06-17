@@ -7,8 +7,8 @@
     },
     "boids": {
         "description": "A flocking simulation based on Craig Reynolds' Boids algorithm.",
-        "usage": "boids [-s|--separation N] [-a|--alignment N] [-c|--cohesion N]",
-        "details": "Simulates the collective motion of a group of boids. The simulation can be customized with the following options:\n\n  -s, --separation  [float]  Strength of the force to avoid crowding (Default: 0.01)\n  -a, --alignment   [float]  Strength of the a force to steer towards the average flock direction (Default: 0.015)\n  -c, --cohesion    [float]  Strength of the a force to steer towards the center of the flock (Default: 0.03)\n\nUse your mouse to apply a repulsive force to the boids."
+        "usage": "boids [-b|--boids N] [-s|--separation N] [-a|--alignment N] [-c|--cohesion N]",
+        "details": "Simulates the collective motion of a group of boids. The simulation can be customized with the following options:\n\n  -b, --boids       [int]    The desired number of boids to simulate (Default: 1024)\n  -s, --separation  [float]  Strength of the force to avoid crowding (Default: 0.01)\n  -a, --alignment   [float]  Strength of the force to steer towards the average flock direction (Default: 0.015)\n  -c, --cohesion    [float]  Strength of the force to steer towards the center of the flock (Default: 0.6)\n\nUse your mouse to apply a repulsive force to the boids."
     },
     "gameoflife": {
         "description": "Conway's Game of Life, a cellular automaton.",

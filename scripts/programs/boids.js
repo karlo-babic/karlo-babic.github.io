@@ -13,16 +13,47 @@ class BoidsProgram extends BaseComputeShader {
 
         // --- Boids Simulation Parameters ---
         const defaults = {
+            boids: 1024,
             separation: 0.01,
             alignment: 0.015,
-            cohesion: 0.03,
+            cohesion: 0.6,
         };
         // Merge user-provided options with defaults.
-        this.forces = { ...defaults, ...options };
+        this.params = { ...defaults, ...options };
 
         // --- WebGL Particle Simulation Parameters ---
-        this.PARTICLE_TEXTURE_SIDE_LEN = 32;
+        // Helper function to find the next power of 2
+        const _nextPowerOf2 = (n) => {
+            if (n === 0) return 1;
+            // If n is already a power of 2, return it.
+            if ((n & (n - 1)) === 0) return n;
+            return Math.pow(2, Math.ceil(Math.log2(n)));
+        };
+        // Calculate texture size based on the desired number of boids
+        const desiredBoids = this.params.boids;
+        const requiredSide = Math.ceil(Math.sqrt(desiredBoids));
+
+        // Find the powers of two on either side of the required side length.
+        const lowerPowerOf2 = Math.pow(2, Math.floor(Math.log2(requiredSide)));
+        const upperPowerOf2 = _nextPowerOf2(requiredSide);
+
+        // Determine which of the two is closer to the required side length.
+        if (requiredSide - lowerPowerOf2 <= upperPowerOf2 - requiredSide) {
+            this.PARTICLE_TEXTURE_SIDE_LEN = lowerPowerOf2;
+        } else {
+            this.PARTICLE_TEXTURE_SIDE_LEN = upperPowerOf2;
+        }
+        // Ensure the texture is at least 1x1.
+        if (this.PARTICLE_TEXTURE_SIDE_LEN < 1) {
+            this.PARTICLE_TEXTURE_SIDE_LEN = 1;
+        }
+
         this.PARTICLE_COUNT = this.PARTICLE_TEXTURE_SIDE_LEN * this.PARTICLE_TEXTURE_SIDE_LEN;
+        // Log the actual number of boids being simulated for clarity
+        console.log(`Desired boids: ${desiredBoids}. Simulating: ${this.PARTICLE_COUNT} (${this.PARTICLE_TEXTURE_SIDE_LEN}x${this.PARTICLE_TEXTURE_SIDE_LEN} texture).`);
+        if (this.PARTICLE_COUNT < desiredBoids) {
+            console.warn(`Warning: The chosen texture size results in fewer boids than requested.`);
+        }
 
         // --- GLSL Shaders ---
         this.computeVertexShader = `
@@ -49,9 +80,9 @@ class BoidsProgram extends BaseComputeShader {
         const float MAX_SPEED = 50.0;
         const float PERCEPTION_RADIUS = 15.0;
         const float AVOIDANCE_RADIUS = 5.0;
-        const float MOUSE_FORCE = 2.0;
+        const float MOUSE_FORCE = 0.6;
         const float BORDER_MARGIN = 20.0;
-        const float BORDER_TURN_FORCE = 4.0;
+        const float BORDER_TURN_FORCE = 2.0;
 
         float rand(vec2 co){
             return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
@@ -237,9 +268,9 @@ class BoidsProgram extends BaseComputeShader {
         this.gl.uniform2f(this.gl.getUniformLocation(this.computeProgram, "u_screenResolution"), this.canvas.width, this.canvas.height);
 
         // Set the force uniforms using the values from the constructor
-        this.gl.uniform1f(this.gl.getUniformLocation(this.computeProgram, "u_separationForce"), this.forces.separation);
-        this.gl.uniform1f(this.gl.getUniformLocation(this.computeProgram, "u_alignmentForce"), this.forces.alignment);
-        this.gl.uniform1f(this.gl.getUniformLocation(this.computeProgram, "u_cohesionForce"), this.forces.cohesion);
+        this.gl.uniform1f(this.gl.getUniformLocation(this.computeProgram, "u_separationForce"), this.params.separation);
+        this.gl.uniform1f(this.gl.getUniformLocation(this.computeProgram, "u_alignmentForce"), this.params.alignment);
+        this.gl.uniform1f(this.gl.getUniformLocation(this.computeProgram, "u_cohesionForce"), this.params.cohesion);
 
         this.gl.activeTexture(this.gl.TEXTURE0);
         this.gl.bindTexture(this.gl.TEXTURE_2D, readState.texture);
@@ -293,6 +324,7 @@ class BoidsProgram extends BaseComputeShader {
 // --- Alias map for command-line arguments ---
 // Maps short-form flags (e.g., '-c') to their long-form names.
 const ALIAS_MAP = {
+    b: 'boids',
     s: 'separation',
     a: 'alignment',
     c: 'cohesion'
@@ -301,14 +333,19 @@ const ALIAS_MAP = {
 // The main object that defines the program's interface for the console.
 const Boids = {
     instance: null,
+    // Capture the full original arguments to reuse on resize
+    _lastArgs: null,
 
     init: function(screenEl, args = { positional: [], named: {} }) {
+        // Store args for re-initialization on resize
+        this._lastArgs = args
         // Create a clean options object to pass to the program.
         const options = {};
         
         // Process all named arguments provided by the user.
         for (const key in args.named) {
-            const value = args.named[key];
+            // Parse value as a float, since all args are numbers
+            const value = parseFloat(args.named[key]);
             
             // Check if the key is a short-form alias (e.g., 'c').
             if (ALIAS_MAP[key]) {
@@ -336,9 +373,8 @@ const Boids = {
         // A full restart on resize is the easiest way to handle WebGL contexts.
         if (this.instance) {
             this.instance.unload();
-            // Re-init with the same screen element. Note: arguments are lost on resize.
-            // This is acceptable behavior for this program.
-            this.init(this.instance.screenEl);
+            // Re-init with the original arguments
+            this.init(this.instance.screenEl, this._lastArgs);
         }
     }
 };
