@@ -79,6 +79,7 @@ class GliderOfLifeProgram extends BaseGridSimulation {
         this.food = []; // Array of {x, y} objects
 
         this.handleKeyDown = this.handleKeyDown.bind(this);
+        this.handleTouchStart = this.handleTouchStart.bind(this);
     }
 
     /**
@@ -91,19 +92,23 @@ class GliderOfLifeProgram extends BaseGridSimulation {
     }
 
     /**
-     * Attaches all necessary event listeners, including keyboard input.
+     * Attaches all necessary event listeners, including keyboard and touch input.
      */
     attachEventListeners() {
-        super.attachEventListeners(); // For mouse/touch drawing
+        // The base class listener for mouse drawing is not used in this game.
+        // super.attachEventListeners();
         window.addEventListener('keydown', this.handleKeyDown);
+        // Add touch listener for mobile controls. passive:false allows preventDefault.
+        this.canvas.addEventListener('touchstart', this.handleTouchStart, { passive: false });
     }
 
     /**
      * Removes all event listeners on unload.
      */
     removeEventListeners() {
-        super.removeEventListeners();
+        // super.removeEventListeners();
         window.removeEventListener('keydown', this.handleKeyDown);
+        this.canvas.removeEventListener('touchstart', this.handleTouchStart);
     }
 
     /**
@@ -259,13 +264,45 @@ class GliderOfLifeProgram extends BaseGridSimulation {
      * Handles keyboard input for rotating the glider.
      */
     handleKeyDown(e) {
+        if (e.key === 'ArrowLeft') {
+            this.rotateGlider('left');
+        } else if (e.key === 'ArrowRight') {
+            this.rotateGlider('right');
+        }
+    }
+
+    /**
+     * Handles touch input for rotating the glider on mobile devices.
+     */
+    handleTouchStart(e) {
+        // Prevent default browser actions like scrolling or zooming.
+        e.preventDefault();
+
+        if (this.isGameOver || this.inputThisTurn) return;
+
+        const touch = e.touches[0];
+        const rect = this.canvas.getBoundingClientRect();
+        const touchX = touch.clientX - rect.left;
+
+        if (touchX < this.canvas.width / 2) {
+            this.rotateGlider('left');
+        } else {
+            this.rotateGlider('right');
+        }
+    }
+
+    /**
+     * Rotates the glider and updates the grid.
+     * @param {'left' | 'right'} direction - The direction to rotate.
+     */
+    rotateGlider(direction) {
         if (this.isGameOver || this.inputThisTurn) return;
 
         let rotated = false;
-        if (e.key === 'ArrowLeft') { // Counter-clockwise
+        if (direction === 'left') { // Counter-clockwise
             this.glider.orientation = (this.glider.orientation - 1 + 4) % 4;
             rotated = true;
-        } else if (e.key === 'ArrowRight') { // Clockwise
+        } else if (direction === 'right') { // Clockwise
             this.glider.orientation = (this.glider.orientation + 1) % 4;
             rotated = true;
         }
@@ -277,6 +314,7 @@ class GliderOfLifeProgram extends BaseGridSimulation {
             this.render(); // Render immediately for responsive feedback
         }
     }
+
 
     // --- Helper Methods ---
 
