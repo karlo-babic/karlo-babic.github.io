@@ -67,7 +67,7 @@ class GliderOfLifeProgram extends BaseGridSimulation {
             wildSpawnChance: 0.04,
             // Speed progression
             initialUpdateInterval: 60,
-            minUpdateInterval: 2,
+            minUpdateInterval: 5,
             speedUpFactor: 0.05,
         });
 
