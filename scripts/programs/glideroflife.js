@@ -68,7 +68,7 @@ class GliderOfLifeProgram extends BaseGridSimulation {
             // Speed progression
             initialUpdateInterval: 60,
             minUpdateInterval: 2,
-            speedUpFactor: 0.1,
+            speedUpFactor: 0.05,
         });
 
         // Game state
