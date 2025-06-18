@@ -62,13 +62,17 @@
         if (programToRun) {
             // If a program is specified in the URL, run it in "view-only" mode.
             
-            // 1. Hide the console controls.
+            // 1. Set the document title to the program's name (e.g., "Boids").
+            const title = programToRun.charAt(0).toUpperCase() + programToRun.slice(1);
+            document.title = title;
+
+            // 2. Hide the console controls.
             const controls = document.getElementById('console-controls');
             if (controls) {
                 controls.style.display = 'none';
             }
 
-            // 2. Parse any other URL parameters to use as arguments for the program.
+            // 3. Parse any other URL parameters to use as arguments for the program.
             const args = { positional: [], named: {} };
             for (const [key, value] of urlParams.entries()) {
                 if (key !== 'run') {
@@ -78,7 +82,7 @@
                 }
             }
             
-            // 3. Load the specified program with the parsed arguments.
+            // 4. Load the specified program with the parsed arguments.
             Console.windowEl = document.getElementById('console-window');
             Console.screenEl = document.getElementById('console-screen');
             Console.loadProgram(programToRun, args);
