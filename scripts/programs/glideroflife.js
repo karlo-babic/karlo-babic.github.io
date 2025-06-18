@@ -62,7 +62,7 @@ class GliderOfLifeProgram extends BaseGridSimulation {
             wildColor: '#b30900',   // Red
             foodColor: '#fff099',   // Gold
             // Gameplay
-            foodDensity: 0.001,
+            foodDensity: 0.002,
             safeRadius: 15,
             wildSpawnChance: 0.04,
             // Speed progression
