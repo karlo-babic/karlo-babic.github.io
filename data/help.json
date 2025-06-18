@@ -29,5 +29,10 @@
         "description": "A particle-based N-body gravity simulation.",
         "usage": "gravitysim",
         "details": "Simulates a galaxy of particles interacting under a simplified gravity model. The mouse acts as a massive 'sun' that attracts particles."
+    },
+    "glideroflife": {
+        "description": "A survival game based on Conway's Game of Life.",
+        "usage": "glideroflife",
+        "details": "Control a single glider with the arrow keys. Navigate the grid to collect food for points while avoiding disruption by other 'wild' cells. Collecting food increases the game speed and spawns more wild cells."
     }
 }
