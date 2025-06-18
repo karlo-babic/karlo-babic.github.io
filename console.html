@@ -51,13 +51,13 @@
 
     // Wait for the DOM to be fully loaded before running the script.
     document.addEventListener('DOMContentLoaded', () => {
-        // --- NEW: Read URL Parameters ---
+        // --- Read URL Parameters ---
 
         // Create a URLSearchParams object to easily access query parameters.
         const urlParams = new URLSearchParams(window.location.search);
         
-        // Get the value of the 'program' parameter (e.g., "boids").
-        const programToRun = urlParams.get('program');
+        // Get the value of the 'run' parameter (e.g., "boids").
+        const programToRun = urlParams.get('run');
 
         if (programToRun) {
             // If a program is specified in the URL, run it in "view-only" mode.
@@ -71,7 +71,7 @@
             // 2. Parse any other URL parameters to use as arguments for the program.
             const args = { positional: [], named: {} };
             for (const [key, value] of urlParams.entries()) {
-                if (key !== 'program') {
+                if (key !== 'run') {
                     // Try to convert to a number, otherwise keep as a string.
                     const numValue = parseFloat(value);
                     args.named[key] = isNaN(numValue) ? value : numValue;
@@ -79,14 +79,12 @@
             }
             
             // 3. Load the specified program with the parsed arguments.
-            // The console module doesn't need to be fully initialized,
-            // we just need its loadProgram method.
             Console.windowEl = document.getElementById('console-window');
             Console.screenEl = document.getElementById('console-screen');
             Console.loadProgram(programToRun, args);
 
         } else {
-            // If no program is specified, initialize the full interactive console.
+            // If no 'run' parameter is specified, initialize the full interactive console.
             Console.init();
         }
     });
