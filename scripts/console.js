@@ -59,11 +59,24 @@ export const Console = {
         this.dropdownBtn = document.getElementById('current-program-btn');
         this.programListEl = document.getElementById('program-list');
 
-        // Attach event listeners
-        document.getElementById('restart-program').addEventListener('click', () => this.restartCurrentProgram());
-        this.dropdownBtn.addEventListener('click', () => this.toggleDropdown());
-        document.getElementById('next-program').addEventListener('click', () => this.browse(1));
-        document.getElementById('fullscreen-btn').addEventListener('click', () => this.toggleFullscreen());
+        // Find each button element.
+        const restartBtn = document.getElementById('restart-program');
+        const nextBtn = document.getElementById('next-program');
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+
+        // Only add listeners if the element was found.
+        if (restartBtn) {
+            restartBtn.addEventListener('click', () => this.restartCurrentProgram());
+        }
+        if (this.dropdownBtn) {
+            this.dropdownBtn.addEventListener('click', () => this.toggleDropdown());
+        }
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => this.browse(1));
+        }
+        if (fullscreenBtn) {
+            fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
+        }
 
         this.inputEl.addEventListener('input', () => this.updateSuggestion());
 
@@ -263,6 +276,10 @@ export const Console = {
     },
 
     updateDisplays: function() {
-        this.dropdownBtn.textContent = this.availablePrograms[this.currentProgramIndex];
+        // Only update the dropdown button's text if the button element exists.
+        // This prevents errors when running in "view-only" mode where there is no dropdown.
+        if (this.dropdownBtn) {
+            this.dropdownBtn.textContent = this.availablePrograms[this.currentProgramIndex];
+        }
     }
 };

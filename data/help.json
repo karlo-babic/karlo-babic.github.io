@@ -1,5 +1,5 @@
 {
-    "_general": "Karlo's Observatory Console - v1.0\nType 'help [command]' for more information on a specific command.\n<br>",
+    "_general": "Karlo's Observatory <a href=\"/console.html\" target=\"_blank\">Console</a> - v1.0\nType 'help [command]' for more information on a specific command.\n<br>",
     "help": {
         "description": "Provides help information for console commands.",
         "usage": "help [command]",

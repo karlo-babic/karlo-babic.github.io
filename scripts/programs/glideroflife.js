@@ -324,7 +324,7 @@ class GliderOfLifeProgram extends BaseGridSimulation {
         const centerY = this.rows / 2;
         for (let y = 0; y < this.rows; y++) {
             for (let x = 0; x < this.cols; x++) {
-                const distFromCenter = Math.hypot(x - centerX, y - centerY);
+                const distFromCenter = this.getToroidalDistance(x, y, centerX, centerY);
                 if (distFromCenter > this.config.safeRadius && Math.random() > 0.93) {
                     this.grid[y][x] = 1; // Wild cell
                 }
@@ -348,7 +348,7 @@ class GliderOfLifeProgram extends BaseGridSimulation {
             newY = Math.floor(Math.random() * this.rows);
             attempts++;
 
-            const distToPlayer = Math.hypot(newX - this.glider.x, newY - this.glider.y);
+            const distToPlayer = this.getToroidalDistance(newX, newY, this.glider.x, this.glider.y);
             const isFarEnough = distToPlayer >= minDist;
             const isCellEmpty = this.grid[newY][newX] === 0;
             const isNotAlreadyFood = !this.food.some(f => f.x === newX && f.y === newY);
@@ -374,7 +374,7 @@ class GliderOfLifeProgram extends BaseGridSimulation {
 
         for (let y = 0; y < this.rows; y++) {
             for (let x = 0; x < this.cols; x++) {
-                const distFromPlayer = Math.hypot(x - playerX, y - playerY);
+                const distFromPlayer = this.getToroidalDistance(x, y, playerX, playerY);
                 // Check if outside safe radius, the cell is empty in the *next* grid, and random chance passes
                 if (distFromPlayer > safeRadius && this.nextGrid[y][x] === 0 && Math.random() < spawnChance) {
                     this.nextGrid[y][x] = 1; // Add a new wild cell
@@ -501,6 +501,24 @@ class GliderOfLifeProgram extends BaseGridSimulation {
             }
         }
         return box;
+    }
+
+    /**
+     * Calculates the shortest distance between two points on a toroidal (wrapping) grid.
+     * @param {number} x1 - First point's x-coordinate.
+     * @param {number} y1 - First point's y-coordinate.
+     * @param {number} x2 - Second point's x-coordinate.
+     * @param {number} y2 - Second point's y-coordinate.
+     * @returns {number} The Euclidean distance considering wrap-around.
+     */
+    getToroidalDistance(x1, y1, x2, y2) {
+        const dx = Math.abs(x1 - x2);
+        const dy = Math.abs(y1 - y2);
+
+        const torDx = Math.min(dx, this.cols - dx);
+        const torDy = Math.min(dy, this.rows - dy);
+
+        return Math.hypot(torDx, torDy);
     }
 
     /**
