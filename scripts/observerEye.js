@@ -77,11 +77,13 @@ export const Eye = {
             return "You're up late... or is it early?";
         } else if (hour >= 5 && hour < 12) { // Morning
             return "Good morning.";
-        } else if (hour >= 12 && hour < 18) { // Afternoon
+        } else if (hour === 12) { // Noon
+            return "High noon. A perfect time to observe our own star.";
+        } else if (hour > 12 && hour < 19) { // Afternoon
             return "Good afternoon.";
-        } else if (hour >= 18 && hour < 22) { // Evening
+        } else if (hour >= 19 && hour < 21) { // Evening
             return "Good evening.";
-        } else { // Late evening (22:00 - 23:59)
+        } else { // Late evening (21:00 - 23:59)
             return "A late night for observing.";
         }
     },
