@@ -173,7 +173,7 @@ class GliderOfLifeProgram extends BaseGridSimulation {
         // Draw UI overlays based on game state
         switch (this.gameState) {
             case 'startScreen':
-                this.drawTextOverlay('Glider of Life', "Click or press Space/Enter to begin");
+                this.drawTextOverlay('Glider of Life', "Click or press Space/Enter to begin", "A survival game based on Conway's Game of Life. Control a single glider with the arrow keys. Navigate the grid to collect food for points while avoiding disruption by other 'wild' cells. Collecting food increases the game speed and spawns more wild cells.");
                 break;
             case 'playing':
                 this.drawScore();
@@ -420,7 +420,7 @@ class GliderOfLifeProgram extends BaseGridSimulation {
      * Draws the score in the top-right corner.
      */
     drawScore() {
-        this.ctx.font = 'bold 10px "Courier New", Courier, monospace';
+        this.ctx.font = 'bold 12px "Courier New", Courier, monospace';
         this.ctx.fillStyle = 'white';
         this.ctx.textBaseline = 'top';
         this.ctx.textAlign = 'right';
@@ -432,7 +432,7 @@ class GliderOfLifeProgram extends BaseGridSimulation {
      * @param {string} title - The main text to display.
      * @param {string} subtitle - The smaller text below the title.
      */
-    drawTextOverlay(title, subtitle) {
+    drawTextOverlay(title, subtitle, description="") {
         const centerX = this.canvas.width / 2;
         const centerY = this.canvas.height / 2;
 
@@ -447,6 +447,28 @@ class GliderOfLifeProgram extends BaseGridSimulation {
         // Subtitle text
         this.ctx.font = '14px "Courier New", Courier, monospace';
         this.ctx.fillText(subtitle, centerX, centerY + 20);
+
+        // --- Description text ---
+        this.ctx.font = '12px "Courier New", Courier, monospace';
+        const maxWidth = 50;
+        const lineHeight = 15;
+        let y = centerY + 60;
+
+        const words = description.split(' ');
+        let line = '';
+
+        for (let n = 0; n < words.length; n++) {
+            const testLine = line + words[n] + ' ';
+
+            if (testLine.length > maxWidth) {
+                this.ctx.fillText(line, centerX, y);
+                line = words[n] + ' ';
+                y += lineHeight;
+            } else {
+                line = testLine;
+            }
+        }
+        this.ctx.fillText(line, centerX, y)
     }
 
     // --- Game Logic Helpers ---
