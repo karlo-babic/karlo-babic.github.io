@@ -1,7 +1,7 @@
 import { Mouse } from './utils.js';
 import { AppEvents } from './utils.js';
-import { spaceship } from './spaceship.js';
-// Note: spaceship is a circular dependency here. It's better if Eye doesn't know about spaceship directly.
+import { rocket } from './rocket.js';
+// Note: rocket is a circular dependency here. It's better if Eye doesn't know about rocket directly.
 // We will leave it for now, but this could be improved later with more event-driven logic.
 
 export const TextField = {
@@ -69,7 +69,7 @@ export const Eye = {
     eyelidState: 1, // Start with EYELID_STATES.CLOSED
     distanceToTarget: 0,
     smoothedLookPos: null, // The smoothed position the eye is looking at, for fluid animation.
-    _worldDone: { "spaceship": false },
+    _worldDone: { "rocket": false },
 
     _states: {
         "init": function () {
@@ -129,8 +129,8 @@ export const Eye = {
     },
 
     handleLiftoff: function () {
-        if (!this._worldDone.spaceship) {
-            this._worldDone.spaceship = true;
+        if (!this._worldDone.rocket) {
+            this._worldDone.rocket = true;
             TextField.buffer.push({ text: "Lift off!", delay: 5, speed: 200, time: 4000 });
         }
     },
@@ -168,8 +168,8 @@ export const Eye = {
         if (Mouse.isMoving) {
             return { x: Mouse.x, y: Mouse.y };
         }
-        if (spaceship && spaceship.propulse) {
-            return spaceship.position;
+        if (rocket && rocket.propulse) {
+            return rocket.position;
         }
         // If no active target, the target is the eye's own center,
         // causing the pupil to smoothly return to the middle.
@@ -275,7 +275,7 @@ export const Eye = {
     },
 
     start: function () {
-        AppEvents.on('spaceship:liftoff', this.handleLiftoff.bind(this));
+        AppEvents.on('rocket:liftoff', this.handleLiftoff.bind(this));
         AppEvents.on('threebody:slingshot', this.handleSlingshot.bind(this));
     },
 
@@ -287,7 +287,7 @@ export const Eye = {
         const dy = eyePos.y - Mouse.y;
         this.distanceToTarget = Math.sqrt(dx * dx + dy * dy);
         
-        // Determine the target for the eye to look at (mouse, spaceship, or center).
+        // Determine the target for the eye to look at (mouse, rocket, or center).
         const lookTarget = this._getLookTarget(eyePos);
 
         // Update the eye's general state (blinking, squinting).

@@ -29,7 +29,7 @@ body::after {
     text-shadow: 0 0 4px var(--glow-color), 0 0 12px var(--glow-color);
 }
 
-#spaceship {
+#rocket {
     filter: drop-shadow(0 0 4px var(--glow-color)) drop-shadow(0 0 12px var(--glow-color));
 }
 

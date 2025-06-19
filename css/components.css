@@ -43,16 +43,16 @@
     color: #8d8594;
 }
 
-#spaceship-placeholder {
+#rocket-placeholder {
     display: inline-block;
     width: 12px;
 }
 
-#spaceship {
+#rocket {
     display: block;
 }
 
-#spaceship.active {
+#rocket.active {
     position: absolute;
     z-index: 5;
 }

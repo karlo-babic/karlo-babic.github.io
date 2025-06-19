@@ -9,7 +9,7 @@ const MAX_ITERS_WITHOUT_CONTROL = 100;
 const ANGULAR_SENSITIVITY = 0.015;
 const SHIP_SIZE = 12;
 
-class Spaceship {
+class Rocket {
 	active = false;
 	origPosition = { x: 0, y: 0 };
 	position = { x: 0, y: 0 };
@@ -121,7 +121,7 @@ _checkReturnToOrigin() {
     const atOrigin = Math.abs(this.position.x - this.origPosition.x) < 5 &&
                      Math.abs(this.position.y - this.origPosition.y) < 5;
     if (atOrigin && Math.abs(this.rotation) < 0.4 && this.iters >= 50) {
-        AppEvents.emit('spaceship:docked');
+        AppEvents.emit('rocket:docked');
         this.stop();
     }
 }
@@ -177,7 +177,7 @@ export const Smoke = {
 			if (this.particles[i].lifetime <= 0) {
 				if (this.propulsionReaction) {
 					this.particles[i].lifetime = this.lifetime;
-					this.particles[i].position = { x: spaceship.position.x, y: spaceship.position.y };
+					this.particles[i].position = { x: rocket.position.x, y: rocket.position.y };
 					this.particles[i].velocity = { x: this.propulsionReaction.x, y: this.propulsionReaction.y };
 				}
 			}
@@ -209,30 +209,30 @@ export const Smoke = {
 	}
 };
 
-export let spaceship = null;
-export function spaceshipInit() {
-	let docElement = document.getElementById("spaceship");
+export let rocket = null;
+export function rocketInit() {
+	let docElement = document.getElementById("rocket");
 	
-	if (spaceship === null) {
-        spaceship = new Spaceship(docElement);
+	if (rocket === null) {
+        rocket = new Rocket(docElement);
     }
     
-	if (spaceship.active) return;
+	if (rocket.active) return;
 
     let shipRect = docElement.getBoundingClientRect();
     let shipPos = {
 		x: shipRect.left + window.scrollX + shipRect.width / 2,
 		y: shipRect.top + window.scrollY + shipRect.height / 2
 	};
-    spaceship.setOrigPosition(shipPos);
+    rocket.setOrigPosition(shipPos);
 
-	spaceship.activate();
-    AppEvents.emit('spaceship:liftoff');
+	rocket.activate();
+    AppEvents.emit('rocket:liftoff');
 	
 	let smokeDocElement = document.getElementById("smoke");
 	Smoke.init(smokeDocElement);
 }
 
 /*setTimeout(() => {
-    spaceshipInit()
+    rocketInit()
 }, 40000);*/

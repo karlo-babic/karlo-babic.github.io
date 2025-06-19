@@ -1,7 +1,7 @@
 import { Mouse, Keyboard } from './utils.js';
 import { startFuzzyEca, updateCanvasArea } from './fuzzyECA.js';
 import { Eye, TextField } from './observerEye.js';
-import { spaceshipInit, spaceship, Smoke } from './spaceship.js';
+import { rocketInit, rocket, Smoke } from './rocket.js';
 import { threebodyInit, threebody } from './threebody.js';
 import { showQuote } from './quotes.js';
 import { Console } from './console.js';
@@ -13,9 +13,9 @@ document.addEventListener('DOMContentLoaded', () => {
     Keyboard.init();
     
     // --- Add event listeners for interactive elements ---
-    document.getElementById('spaceship-placeholder').addEventListener('click', (event) => {
+    document.getElementById('rocket-placeholder').addEventListener('click', (event) => {
         event.preventDefault();
-        spaceshipInit();
+        rocketInit();
     });
 
     document.getElementById('threebody-link').addEventListener('click', (event) => {
@@ -71,8 +71,8 @@ function mainLoop(currentTime) {
         threebody.update(deltaTime);
     }
     
-    if (spaceship && spaceship.active) {
-        spaceship.update(deltaTime);
+    if (rocket && rocket.active) {
+        rocket.update(deltaTime);
     }
 
     Mouse.update();

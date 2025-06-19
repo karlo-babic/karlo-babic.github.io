@@ -166,10 +166,10 @@ export function threebodyInit() {
         document.getElementById("body3")
     ];
 
-    // Subscribe to the 'spaceship:docked' event.
+    // Subscribe to the 'rocket:docked' event.
     // We use a flag to ensure it only transforms once.
     let hasTransformed = false;
-    AppEvents.on('spaceship:docked', () => {
+    AppEvents.on('rocket:docked', () => {
         if (!hasTransformed) {
             transformToGoodreads();
             hasTransformed = true;
