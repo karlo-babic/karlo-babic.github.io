@@ -179,6 +179,7 @@ class GliderOfLifeProgram extends BaseGridSimulation {
                 this.drawScore();
                 break;
             case 'gameOver':
+                this.drawScore();
                 this.drawTextOverlay(-10, 'End of Life', "Click or press Space/Enter to restart");
                 break;
         }
