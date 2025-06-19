@@ -12,56 +12,104 @@
     <link rel="stylesheet" href="css/layout.css">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/console.css">
+
+    <!-- Styles for collapsible sections -->
+    <style>
+        .collapsible-title {
+            cursor: pointer;
+            user-select: none; /* Prevents text selection on click */
+        }
+        .collapsible-content {
+            display: none; /* Hidden by default */
+            padding-left: 14px; /* Indent content slightly */
+        }
+    </style>
 </head>
 
 <body>
     <div id="smoke"></div>
 
     <div id="eye" class="h1">       
-       
-= = = =
-       </div>
+       = = = =
+    </div>
     <br />
     <div id="eyeSpeech" class="h1"> </div>
 
     <!--------------------------------------------------------------->
     <br />
     <div class="content-block">
-        <div class="h2">
-            <a href="#" id="spaceship-placeholder">
-                <img id="spaceship" src="imgs/ship_off.png" width="12" title="rocket">
-            </a>
-            <span>bout me</span>
-            <div id="threebody">
-                <a href="#" id="threebody-link">
-                    <img id="threebody-img" src="imgs/dots.png" width="40" title="three body problem">
+        
+        <!-- About Me Section (Collapsible) -->
+        <div>
+            <div class="h2">
+                <a href="#" id="spaceship-placeholder">
+                    <img id="spaceship" src="imgs/ship_off.png" width="12" title="rocket">
                 </a>
+                <span class="collapsible-title">bout me</span>
+                <div id="threebody">
+                    <a href="#" id="threebody-link">
+                        <img id="threebody-img" src="imgs/dots.png" width="40" title="three body problem">
+                    </a>
+                </div>
             </div>
+            <div class="collapsible-content">
+                <p class="p1">
+                    <a href="CV_karlo.pdf" class="a">resume.pdf</a>
+                    <br />
+                    <a href="https://scholar.google.com/citations?user=8e562aAAAAAJ&hl=en" class="a">scholar.google.com</a>
+                    <div class="featured-paper-wrapper">
+                        <a href="https://ieeexplore.ieee.org/abstract/document/10534761" class="a featured-paper">[featured paper]</a>
+                    </div>
+                </p>
+            </div>
+            <br />
         </div>
 
-        <p class="p1">
-            <a href="CV_karlo.pdf" class="a">resume.pdf</a>
-            <br />
-            <a href="https://scholar.google.com/citations?user=8e562aAAAAAJ&hl=en" class="a">scholar.google.com</a>
-            <div class="featured-paper-wrapper">
-                <a href="https://ieeexplore.ieee.org/abstract/document/10534761" class="a featured-paper">[featured paper]</a>
+              
+        <!-- Teaching Materials Section (Collapsible) -->
+        <div>
+            <div class="h2 collapsible-title">
+                <span>Teaching Materials</span>
             </div>
-            <a href="https://flatdotgames.itch.io/paperfall?secret=SUFbL6vPxOrutW3VXlBlXjprfVw" class="a">Paperfall</a>
-        </p>
+            <div class="collapsible-content">
+                <p class="p1">
+                    <a href="/paradigms" class="a">Programming Paradigms</a>
+                    <br>
+                    <a href="/gamedev" class="a">Game Development</a>
+                </p>
+            </div>
+            <br />
+        </div>
+        
+        <!-- Gamedev Section (Collapsible) -->
+        <div>
+            <div class="h2 collapsible-title">
+                <span>Games</span>
+            </div>
+            <div class="collapsible-content">
+                <p class="p1">
+                    <a href="https://flatdotgames.itch.io/paperfall?secret=SUFbL6vPxOrutW3VXlBlXjprfVw" class="a">Paperfall</a>
+                    <br>
+                    <a href="/console?run=glideroflife" class="a">Glider Of Life</a>
+                </p>
+            </div>
+            <br />
+        </div>
+
     </div>
     
     <!-- Console Window -->
     <div id="console-window">
         <div id="console-screen"></div>
         <div id="console-controls">
-            <!-- New Restart Button -->
-            <button id="restart-program" class="console-btn" title="Restart Program">⟳</button>
+            <!-- Restart Button -->
+            <button id="restart-program" class="console-btn" title="Restart Program">⟲</button>
             
             <div class="dropdown" id="program-dropdown">
                 <button id="current-program-btn" class="console-btn dropdown-btn"></button>
                 <div id="program-list" class="dropdown-content"></div>
             </div>
-            <button id="next-program" class="console-btn" title="Next Program">►</button>
+            <button id="next-program" class="console-btn" title="Next Program">⏭</button>
                   
             <!-- Wrapper for input and suggestion -->
             <div id="console-input-wrapper">
@@ -69,7 +117,7 @@
                 <span id="console-suggestion"></span>
             </div>
 
-            <button id="fullscreen-btn" class="console-btn" title="Toggle Fullscreen">⛶</button>
+            <button id="fullscreen-btn" class="console-btn" title="Toggle Fullscreen">⤢</button>
         </div>
     </div>
 
@@ -83,5 +131,42 @@
 
     <!-- All scripts are loaded as modules from main.js -->
     <script type="module" src="scripts/main.js"></script>
+
+    <!-- Script to handle collapsible sections -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const titles = document.querySelectorAll('.collapsible-title');
+            const contents = document.querySelectorAll('.collapsible-content');
+
+            // Set initial state: Open the first section ("About me")
+            if (contents.length > 0) {
+                contents[0].style.display = 'block';
+            }
+
+            titles.forEach(title => {
+                title.addEventListener('click', (e) => {
+                    e.preventDefault();
+
+                    // Find the header div and its corresponding content panel.
+                    // This works whether the title itself is the header or is inside it.
+                    const headerDiv = title.classList.contains('h2') ? title : title.closest('.h2');
+                    if (!headerDiv) return;
+
+                    const content = headerDiv.nextElementSibling;
+                    if (!content || !content.classList.contains('collapsible-content')) return;
+                    
+                    const isCurrentlyOpen = content.style.display === 'block';
+
+                    // Close all sections for an accordion-style interaction.
+                    contents.forEach(c => c.style.display = 'none');
+
+                    // If the clicked section was closed, open it.
+                    if (!isCurrentlyOpen) {
+                        content.style.display = 'block';
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>
