@@ -187,8 +187,17 @@ class GliderOfLifeProgram extends BaseGridSimulation {
     /**
      * Starts a new game. This is called by user input from the start or game over screens.
      */
-    startGame() {
-        this.initAudio(); // Crucially, this unlocks audio on the first user gesture.
+    async startGame() {
+        // Prevent starting if already playing or in the process of starting.
+        if (this.gameState === 'playing' || this.gameState === 'starting') {
+            return;
+        }
+
+        // Await the audio context initialization. This must be triggered by the user
+        // gesture, but we can wait for its promise to resolve before proceeding.
+        await this.initAudio();
+
+        // Now that audio is unlocked and ready, reset the game to the 'playing' state.
         this.resetGame();
     }
 
@@ -322,6 +331,7 @@ class GliderOfLifeProgram extends BaseGridSimulation {
 
     /**
      * Initializes/Resumes the Web Audio API context. Must be called from a user gesture.
+     * @returns {Promise<void>} A promise that resolves when the context is ready.
      */
     initAudio() {
         if (!this.audioCtx) {
@@ -329,11 +339,15 @@ class GliderOfLifeProgram extends BaseGridSimulation {
                 this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             } catch (e) {
                 console.error("Web Audio API is not supported in this browser");
+                return Promise.reject(e); // Return a rejected promise on failure.
             }
         }
-        if (this.audioCtx?.state === 'suspended') {
-            this.audioCtx.resume();
+        if (this.audioCtx.state === 'suspended') {
+            // Return the promise so the caller can wait for it to resolve.
+            return this.audioCtx.resume();
         }
+        // If already running or in another state, return a resolved promise.
+        return Promise.resolve();
     }
 
     /**
