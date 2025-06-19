@@ -51,7 +51,7 @@ const Read = {
 
         // Check if a filename was provided.
         if (!filename) {
-            htmlOutput = "Usage: read <filename>";
+            htmlOutput = "Usage: read &lt;filename&gt;";
             this.engine.render(htmlOutput);
             return;
         }
@@ -63,6 +63,7 @@ const Read = {
             // Route the content to the correct renderer based on its extension.
             switch (ext) {
                 case 'md':
+                    // For MD files, we parse and format them based on their structure.
                     htmlOutput = parseMarkdown(content);
                     break;
                 case 'html':
@@ -74,7 +75,7 @@ const Read = {
                     htmlOutput = `<pre>${escapeHtml(content)}</pre>`;
                     break;
                 case 'json':
-                    // For JSON, we parse and format it based on its structure.
+                    // For JSON files, we parse and format them based on their structure.
                     const data = JSON.parse(content);
                     if (Array.isArray(data)) {
                         htmlOutput = data.join('<hr style="border-color: #444; margin: 1em 0;">');

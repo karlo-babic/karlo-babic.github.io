@@ -200,7 +200,7 @@
 
 /* Apply a darker background to text programs when the console is fullscreen */
 #console-window.fullscreen .text-program-container {
-    background-color: #000000cd;
+    background-color: #151515cd;
 }
 
 /* Style for links inside the text program */
@@ -223,7 +223,7 @@
 
 /* Style the <pre> element which acts as the code block container */
 .text-program-container pre {
-    background-color: #111111ef;
+    background-color: #1f1f1fef;
     padding: 0.8em;
     border-radius: 4px;
     overflow-x: auto;

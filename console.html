@@ -61,8 +61,16 @@
         if (programToRun) {
             // If a program is specified in the URL, run it in "view-only" mode.
             
-            // Set the document title to a capitalized version of the program's name.
-            const title = programToRun.charAt(0).toUpperCase() + programToRun.slice(1);
+            // Set the document title. Default to the capitalized program name.
+            let title = programToRun.charAt(0).toUpperCase() + programToRun.slice(1);
+
+            // If running the 'read' program, use the 'file' parameter for the title instead.
+            if (programToRun === 'read') {
+                const filename = urlParams.get('file');
+                if (filename) {
+                    title = filename;
+                }
+            }
             document.title = title;
 
             // Hide the console controls for a clean, view-only presentation.
