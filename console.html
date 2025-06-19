@@ -21,22 +21,21 @@
     <div id="console-window" class="fullscreen">
         <div id="console-screen"></div>
         <div id="console-controls">
-            <button id="restart-program" class="console-btn" title="Restart Program">⟳</button>
+            <button id="restart-program" class="console-btn" title="Restart Program">⟲</button>
             
             <div class="dropdown" id="program-dropdown">
                 <button id="current-program-btn" class="console-btn dropdown-btn"></button>
                 <div id="program-list" class="dropdown-content"></div>
             </div>
             
-            <button id="next-program" class="console-btn" title="Next Program">►</button>
+            <button id="next-program" class="console-btn" title="Next Program">⏭</button>
                   
             <div id="console-input-wrapper">
                 <input type="text" id="program-input" class="console-input">
                 <span id="console-suggestion"></span>
             </div>
 
-            <!-- The fullscreen button is not needed here as the page is always fullscreen. -->
-            <!-- <button id="fullscreen-btn" class="console-btn" title="Toggle Fullscreen">⛶</button> -->
+            <button id="view-only-btn" class="console-btn" title="Open View-Only Link">❐</button>
         </div>
     </div>
 
@@ -62,17 +61,18 @@
         if (programToRun) {
             // If a program is specified in the URL, run it in "view-only" mode.
             
-            // 1. Set the document title to the program's name (e.g., "Boids").
+            // Set the document title to a capitalized version of the program's name.
             const title = programToRun.charAt(0).toUpperCase() + programToRun.slice(1);
             document.title = title;
 
-            // 2. Hide the console controls.
+            // Hide the console controls for a clean, view-only presentation.
             const controls = document.getElementById('console-controls');
             if (controls) {
                 controls.style.display = 'none';
             }
 
-            // 3. Parse any other URL parameters to use as arguments for the program.
+            // Parse any other URL parameters to use as arguments for the program.
+            // This allows for deep-linking with specific settings (e.g., ?run=boids&count=100).
             const args = { positional: [], named: {} };
             for (const [key, value] of urlParams.entries()) {
                 if (key !== 'run') {
@@ -82,7 +82,7 @@
                 }
             }
             
-            // 4. Load the specified program with the parsed arguments.
+            // Manually set the required Console elements and load the specified program.
             Console.windowEl = document.getElementById('console-window');
             Console.screenEl = document.getElementById('console-screen');
             Console.loadProgram(programToRun, args);

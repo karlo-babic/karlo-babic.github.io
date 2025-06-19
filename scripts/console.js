@@ -55,7 +55,7 @@ export const Console = {
         this.windowEl = document.getElementById('console-window');
         this.screenEl = document.getElementById('console-screen');
         this.inputEl = document.getElementById('program-input');
-        this.suggestionEl = document.getElementById('console-suggestion'); // Get the new element
+        this.suggestionEl = document.getElementById('console-suggestion');
         this.dropdownBtn = document.getElementById('current-program-btn');
         this.programListEl = document.getElementById('program-list');
 
@@ -63,6 +63,7 @@ export const Console = {
         const restartBtn = document.getElementById('restart-program');
         const nextBtn = document.getElementById('next-program');
         const fullscreenBtn = document.getElementById('fullscreen-btn');
+        const viewOnlyBtn = document.getElementById('view-only-btn');
 
         // Only add listeners if the element was found.
         if (restartBtn) {
@@ -75,7 +76,10 @@ export const Console = {
             nextBtn.addEventListener('click', () => this.browse(1));
         }
         if (fullscreenBtn) {
-            fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
+            fullscreenBtn.addEventListener('click', () => this.openInNewTab());
+        }
+        if (viewOnlyBtn) {
+            viewOnlyBtn.addEventListener('click', () => this.openViewOnly());
         }
 
         this.inputEl.addEventListener('input', () => this.updateSuggestion());
@@ -109,7 +113,7 @@ export const Console = {
         });
 
         window.addEventListener('click', (e) => {
-            if (!e.target.matches('.dropdown-btn')) {
+            if (this.dropdownBtn && !e.target.matches('.dropdown-btn')) {
                 this.programListEl.classList.remove('show');
             }
         });
@@ -118,7 +122,6 @@ export const Console = {
         this.loadProgram(this.availablePrograms[this.currentProgramIndex]);
 
         // Automatically focus the input only on larger (desktop) screens.
-        // A common breakpoint is 768px, which excludes most phones and tablets.
         const isDesktop = window.innerWidth > 768;
         if (isDesktop) {
             this.inputEl.focus();
@@ -189,6 +192,7 @@ export const Console = {
     },
 
     populateDropdown: function() {
+        if (!this.programListEl) return;
         this.programListEl.innerHTML = '';
         // Filter out hidden programs before populating the list.
         const visiblePrograms = this.availablePrograms.filter(p => !this.hiddenPrograms.includes(p));
@@ -209,7 +213,9 @@ export const Console = {
     },
 
     toggleDropdown: function() {
-        this.programListEl.classList.toggle('show');
+        if (this.programListEl) {
+            this.programListEl.classList.toggle('show');
+        }
     },
 
     browse: function(direction) {
@@ -265,19 +271,21 @@ export const Console = {
 
         this.updateDisplays();
     },
+    
+    openInNewTab: function() {
+        window.open('console', '_blank');
+    },
 
-    toggleFullscreen: function() {
-        this.windowEl.classList.toggle('fullscreen');
-        setTimeout(() => {
-            if (this.activeProgram && typeof this.activeProgram.onResize === 'function') {
-                this.activeProgram.onResize();
-            }
-        }, 150);
+    openViewOnly: function() {
+        const programName = this.availablePrograms[this.currentProgramIndex];
+        if (programName) {
+            const url = `/console?run=${programName}`;
+            window.open(url, '_blank');
+        }
     },
 
     updateDisplays: function() {
         // Only update the dropdown button's text if the button element exists.
-        // This prevents errors when running in "view-only" mode where there is no dropdown.
         if (this.dropdownBtn) {
             this.dropdownBtn.textContent = this.availablePrograms[this.currentProgramIndex];
         }
