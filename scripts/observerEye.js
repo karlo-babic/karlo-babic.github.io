@@ -71,10 +71,31 @@ export const Eye = {
     smoothedLookPos: null, // The smoothed position the eye is looking at, for fluid animation.
     _worldDone: { "rocket": false },
 
+    _getGreeting: function() {
+        const hour = new Date().getHours();
+        if (hour >= 0 && hour < 5) { // Past midnight to very early morning
+            return "You're up late... or is it early?";
+        } else if (hour >= 5 && hour < 12) { // Morning
+            return "Good morning.";
+        } else if (hour >= 12 && hour < 18) { // Afternoon
+            return "Good afternoon.";
+        } else if (hour >= 18 && hour < 22) { // Evening
+            return "Good evening.";
+        } else { // Late evening (22:00 - 23:59)
+            return "A late night for observing.";
+        }
+    },
+
     _states: {
         "init": function () {
             Eye.state = "";
-            TextField.buffer.push({ text: "Welcome to Karlo's observatory.", delay: 4000 });
+            const greeting = Eye._getGreeting();
+
+            // Queue the time-based greeting with an initial delay.
+            TextField.buffer.push({ text: greeting, delay: 4000 });
+            // Queue the welcome message to appear immediately after.
+            TextField.buffer.push({ text: "Welcome to Karlo's observatory." });
+
             setTimeout(Eye._open, 3000);
         },
         "idle": function () { return; },
