@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Initialize all modules ---
     startFuzzyEca();
     Eye.start();
-    Console.init();
+    Console.init('gameoflife');
     setTimeout(showQuote, 100);
 
     // Start the master animation loop

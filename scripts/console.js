@@ -1,6 +1,6 @@
 export const Console = {
     // --- Configuration ---
-    availablePrograms: ['gameoflife', 'evoltree', 'mandelbrot', 'boids', 'gravitysim', 'glideroflife', 'help', 'read'],
+    availablePrograms: ['help', 'gameoflife', 'evoltree', 'mandelbrot', 'boids', 'gravitysim', 'glideroflife', 'read'],
     // A list of programs to hide from UI elements like the dropdown, suggest-complete, and "next program".
     hiddenPrograms: ['read'],
 
@@ -52,7 +52,8 @@ export const Console = {
         return { command, args };
     },
 
-    init: function() {
+      
+    init: function(initialProgramName = null) {
         this.windowEl = document.getElementById('console-window');
         this.screenEl = document.getElementById('console-screen');
         this.inputEl = document.getElementById('program-input');
@@ -118,9 +119,25 @@ export const Console = {
                 this.programListEl.classList.remove('show');
             }
         });
-
+        
         this.populateDropdown();
-        this.loadProgram(this.availablePrograms[this.currentProgramIndex]);
+
+        // --- LOGIC FOR INITIAL PROGRAM ---
+        let programToLoad = this.availablePrograms[0]; // Default to the first program
+        
+        if (initialProgramName) {
+            const requestedIndex = this.availablePrograms.indexOf(initialProgramName);
+            // Check if the requested program exists in the list.
+            if (requestedIndex !== -1) {
+                programToLoad = initialProgramName;
+                this.currentProgramIndex = requestedIndex;
+            } else {
+                console.warn(`Initial program "${initialProgramName}" not found. Defaulting to first program.`);
+            }
+        }
+        
+        // Load the determined program.
+        this.loadProgram(programToLoad);
 
         // Automatically focus the input only on larger (desktop) screens.
         const isDesktop = window.innerWidth > 768;
