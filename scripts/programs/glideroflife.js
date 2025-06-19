@@ -72,47 +72,50 @@ class GliderOfLifeProgram extends BaseGridSimulation {
         });
 
         // Game state
+        this.gameState = 'startScreen'; // 'startScreen', 'playing', 'gameOver'
         this.glider = { x: 0, y: 0, orientation: 0, step: 0 };
-        this.isGameOver = false;
         this.inputThisTurn = false;
         this.score = 0;
         this.food = []; // Array of {x, y} objects
 
+        // Audio
+        this.audioCtx = null;
+
         this.handleKeyDown = this.handleKeyDown.bind(this);
         this.handleTouchStart = this.handleTouchStart.bind(this);
+        this.handleMouseDown = this.handleMouseDown.bind(this);
     }
 
     /**
      * Overrides the base init to set up game-specific logic and event listeners.
      */
     init() {
-        this.onResize(); // Sets up grid and calls resetGame
+        this.onResize(); // Sets up grid and calls setupStartScreen
         this.attachEventListeners();
         requestAnimationFrame(this.run);
     }
 
     /**
-     * Attaches all necessary event listeners, including keyboard and touch input.
+     * Attaches all necessary event listeners for game interaction.
      */
     attachEventListeners() {
-        // The base class listener for mouse drawing is not used in this game.
-        // super.attachEventListeners();
         window.addEventListener('keydown', this.handleKeyDown);
         // Add touch listener for mobile controls. passive:false allows preventDefault.
         this.canvas.addEventListener('touchstart', this.handleTouchStart, { passive: false });
+        this.canvas.addEventListener('mousedown', this.handleMouseDown);
     }
 
     /**
      * Removes all event listeners on unload.
      */
     removeEventListeners() {
-        // super.removeEventListeners();
         window.removeEventListener('keydown', this.handleKeyDown);
         this.canvas.removeEventListener('touchstart', this.handleTouchStart);
+        this.canvas.removeEventListener('mousedown', this.handleMouseDown);
     }
 
     /**
-     * Overrides onResize to reset the game state completely.
+     * Overrides onResize to set up the start screen.
      */
     onResize() {
         const rect = this.screenEl.getBoundingClientRect();
@@ -120,18 +123,16 @@ class GliderOfLifeProgram extends BaseGridSimulation {
         this.canvas.height = rect.height;
         this.rows = Math.floor(this.canvas.height / this.config.cellSize);
         this.cols = Math.floor(this.canvas.width / this.config.cellSize);
-        this.resetGame();
+        this.setupStartScreen();
         this.render();
     }
 
     /**
      * Main update loop, called at a fixed interval.
+     * Its behavior changes based on the current gameState.
      */
     update() {
-        // Create a "dead zone" around food before calculating the next state.
-        this.clearAreaAroundFood();
-
-        // Run the standard simulation logic regardless of game over state.
+        // Run the standard simulation logic regardless of game state for the background.
         this.nextGrid = this.createEmptyGrid();
         for (let y = 0; y < this.rows; y++) {
             for (let x = 0; x < this.cols; x++) {
@@ -141,10 +142,18 @@ class GliderOfLifeProgram extends BaseGridSimulation {
             }
         }
 
-        // If the game is already over, just update the grid and exit.
-        if (this.isGameOver) {
+        // If not playing, just update the background simulation and exit.
+        if (this.gameState !== 'playing') {
             this.grid = this.nextGrid;
             return;
+        }
+
+        // --- Gameplay-specific logic ---
+        this.clearAreaAroundFood();
+
+        const proximityInfo = this.getNearbyWildCellInfo();
+        if (proximityInfo.count > 0) {
+            this.playProximitySound(proximityInfo);
         }
 
         this.inputThisTurn = false; // Allow player input for the next cycle.
@@ -153,46 +162,224 @@ class GliderOfLifeProgram extends BaseGridSimulation {
     }
 
     /**
+     * Renders the grid and UI elements, which vary based on the gameState.
+     */
+    render() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // Draw Game of Life cells (player and wild)
+        this.drawGridCells();
+
+        // Draw UI overlays based on game state
+        switch (this.gameState) {
+            case 'startScreen':
+                this.drawTextOverlay('Glider of Life', "Click or press Space/Enter to begin");
+                break;
+            case 'playing':
+                this.drawScore();
+                break;
+            case 'gameOver':
+                this.drawTextOverlay('End of Life', "Click or press Space/Enter to restart");
+                break;
+        }
+    }
+
+    /**
+     * Starts a new game. This is called by user input from the start or game over screens.
+     */
+    startGame() {
+        this.initAudio(); // Crucially, this unlocks audio on the first user gesture.
+        this.resetGame();
+    }
+
+    /**
+     * Sets up the start screen with a background simulation.
+     */
+    setupStartScreen() {
+        this.gameState = 'startScreen';
+        this.grid = this.createEmptyGrid();
+        this.food = [];
+        this.score = 0;
+        this.spawnInitialWildCells();
+    }
+
+    /**
+     * Resets the entire game state to a playable configuration.
+     */
+    resetGame() {
+        this.gameState = 'playing';
+        this.grid = this.createEmptyGrid();
+        this.score = 0;
+        this.food = [];
+        this.config.updateInterval = this.config.initialUpdateInterval; // Reset speed
+
+        this.glider = {
+            x: Math.floor(this.cols / 2),
+            y: Math.floor(this.rows / 2),
+            orientation: 0, // 0: SE
+            step: 0
+        };
+
+        const targetFoodCount = this.getTargetFoodCount();
+        for (let i = 0; i < targetFoodCount; i++) {
+            this.spawnNewFood();
+        }
+        this.spawnInitialWildCells();
+        this.stampGlider();
+    }
+
+    /**
      * Checks if the glider has survived the simulation step and updates its state.
      */
     checkGliderSurvival() {
         const { x, y, orientation, step } = this.glider;
 
-        // 1. Calculate the glider's next theoretical position and state.
         const delta = GLIDER_CENTER_DELTAS[orientation][step];
         const nextX = (x + delta.dx + this.cols) % this.cols;
         const nextY = (y + delta.dy + this.rows) % this.rows;
         const nextStep = (step + 1) % 4;
 
-        // 2. Get the expected pattern for the next state.
         const expectedPattern = GLIDER_PATTERNS[orientation][nextStep];
-
-        // 3. Get the actual 3x3 box from the newly computed grid.
         const actualPatternBox = this.getBoxFromGrid(nextX, nextY, this.nextGrid);
 
-        // 4. Compare the actual result with the expected pattern.
         if (!this.arePatternsEqual(expectedPattern, actualPatternBox)) {
-            this.isGameOver = true; // The glider collapsed!
+            this.playSound({ type: 'square', freq: 110, vol: 0.5, dur: 1.0 });
+            this.gameState = 'gameOver';
         } else {
-            // The glider survived. Update its state for the next frame.
             this.glider.x = nextX;
             this.glider.y = nextY;
             this.glider.step = nextStep;
 
-            // 5. Re-stamp the glider's cells as 'player' type (2) in the next grid.
             this.stampPattern(expectedPattern, nextX, nextY, 2, this.nextGrid);
-
-            // 6. Check if the glider has collided with any food.
             this.checkFoodCollision();
         }
     }
 
     /**
-     * Renders the grid with different colors for player and wild cells.
+     * Handles keyboard input, routing actions based on the current game state.
      */
-    render() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    handleKeyDown(e) {
+        if (this.gameState === 'startScreen' || this.gameState === 'gameOver') {
+            if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault(); // Prevent space from scrolling page
+                this.startGame();
+            }
+        } else if (this.gameState === 'playing') {
+            if (e.key === 'ArrowLeft') {
+                this.rotateGlider('left');
+            } else if (e.key === 'ArrowRight') {
+                this.rotateGlider('right');
+            }
+        }
+    }
 
+    /**
+     * Handles touch input for starting the game or controlling the glider.
+     */
+    handleTouchStart(e) {
+        e.preventDefault();
+        if (this.gameState === 'startScreen' || this.gameState === 'gameOver') {
+            this.startGame();
+        } else if (this.gameState === 'playing') {
+            if (this.inputThisTurn) return;
+            const touch = e.touches[0];
+            const rect = this.canvas.getBoundingClientRect();
+            const touchX = touch.clientX - rect.left;
+            this.rotateGlider(touchX < this.canvas.width / 2 ? 'left' : 'right');
+        }
+    }
+
+    /**
+     * Handles mouse input for starting the game.
+     */
+    handleMouseDown() {
+        if (this.gameState === 'startScreen' || this.gameState === 'gameOver') {
+            this.startGame();
+        }
+    }
+
+    /**
+     * Rotates the glider and updates the grid.
+     * @param {'left' | 'right'} direction - The direction to rotate.
+     */
+    rotateGlider(direction) {
+        if (this.inputThisTurn) return;
+
+        if (direction === 'left') { // Counter-clockwise
+            this.glider.orientation = (this.glider.orientation - 1 + 4) % 4;
+        } else if (direction === 'right') { // Clockwise
+            this.glider.orientation = (this.glider.orientation + 1) % 4;
+        }
+
+        this.inputThisTurn = true;
+        this.clearGliderArea();
+        this.stampGlider();
+        this.render(); // Render immediately for responsive feedback
+    }
+
+
+    // --- Audio Methods ---
+
+    /**
+     * Initializes/Resumes the Web Audio API context. Must be called from a user gesture.
+     */
+    initAudio() {
+        if (!this.audioCtx) {
+            try {
+                this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            } catch (e) {
+                console.error("Web Audio API is not supported in this browser");
+            }
+        }
+        if (this.audioCtx?.state === 'suspended') {
+            this.audioCtx.resume();
+        }
+    }
+
+    /**
+     * Plays a sound using the Web Audio API.
+     */
+    playSound({ type = 'sine', freq = 440, vol = 0.1, dur = 0.1 }) {
+        if (!this.audioCtx || this.audioCtx.state !== 'running') return;
+
+        const oscillator = this.audioCtx.createOscillator();
+        const gainNode = this.audioCtx.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(this.audioCtx.destination);
+
+        oscillator.type = type;
+        oscillator.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(vol, this.audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.00001, this.audioCtx.currentTime + dur);
+
+        oscillator.start(this.audioCtx.currentTime);
+        oscillator.stop(this.audioCtx.currentTime + dur);
+    }
+
+    /**
+     * Plays the proximity warning sound for nearby wild cells.
+     * @param {{count: number, minDistance: number}} proximityInfo
+     */
+    playProximitySound(proximityInfo) {
+        const maxAudibleDistance = this.config.safeRadius;
+        const maxVolume = 0.5;
+        const volume = maxVolume * (1 - (proximityInfo.minDistance / maxAudibleDistance));
+
+        this.playSound({
+            type: 'square',
+            freq: 20 + proximityInfo.count * 7,
+            vol: Math.max(0, volume),
+            dur: 0.2
+        });
+    }
+
+    // --- Rendering Helpers ---
+
+    /**
+     * Draws all cells on the grid (food, player, wild).
+     */
+    drawGridCells() {
         const cs = this.config.cellSize;
 
         // Draw food first, so it appears "underneath" the cells
@@ -213,28 +400,48 @@ class GliderOfLifeProgram extends BaseGridSimulation {
                 }
             }
         }
+    }
 
-        // Draw Score and Game Over text
+    /**
+     * Draws the score in the top-right corner.
+     */
+    drawScore() {
         this.ctx.font = 'bold 10px "Courier New", Courier, monospace';
         this.ctx.fillStyle = 'white';
         this.ctx.textBaseline = 'top';
         this.ctx.textAlign = 'right';
         this.ctx.fillText(`Score: ${this.score}`, this.canvas.width - 10, 10);
-
-        if (this.isGameOver) {
-            this.ctx.font = 'bold 32px "Courier New", Courier, monospace';
-            this.ctx.fillStyle = 'white';
-            this.ctx.textAlign = 'center';
-            this.ctx.textBaseline = 'middle';
-            this.ctx.fillText('End of Life', this.canvas.width / 2, this.canvas.height / 2);
-        }
     }
+
+    /**
+     * Draws a centered text overlay with a main title and a subtitle.
+     * @param {string} title - The main text to display.
+     * @param {string} subtitle - The smaller text below the title.
+     */
+    drawTextOverlay(title, subtitle) {
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+
+        this.ctx.fillStyle = 'white';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+
+        // Title text
+        this.ctx.font = 'bold 32px "Courier New", Courier, monospace';
+        this.ctx.fillText(title, centerX, centerY - 10);
+
+        // Subtitle text
+        this.ctx.font = '14px "Courier New", Courier, monospace';
+        this.ctx.fillText(subtitle, centerX, centerY + 20);
+    }
+
+    // --- Game Logic Helpers ---
 
     /**
      * Game of Life rule implementation. Treats player (2) and wild (1) cells as "alive".
      */
     computeNextState(x, y) {
-        const state = this.grid[y][x] > 0 ? 1 : 0; // Normalize state to 1 if alive
+        const state = this.grid[y][x] > 0 ? 1 : 0;
         const neighbors = this.getNeighborCount(x, y);
 
         if (state === 1 && (neighbors < 2 || neighbors > 3)) return 0; // Dies
@@ -261,101 +468,7 @@ class GliderOfLifeProgram extends BaseGridSimulation {
     }
 
     /**
-     * Handles keyboard input for rotating the glider.
-     */
-    handleKeyDown(e) {
-        if (e.key === 'ArrowLeft') {
-            this.rotateGlider('left');
-        } else if (e.key === 'ArrowRight') {
-            this.rotateGlider('right');
-        }
-    }
-
-    /**
-     * Handles touch input for rotating the glider on mobile devices.
-     */
-    handleTouchStart(e) {
-        // Prevent default browser actions like scrolling or zooming.
-        e.preventDefault();
-
-        if (this.isGameOver || this.inputThisTurn) return;
-
-        const touch = e.touches[0];
-        const rect = this.canvas.getBoundingClientRect();
-        const touchX = touch.clientX - rect.left;
-
-        if (touchX < this.canvas.width / 2) {
-            this.rotateGlider('left');
-        } else {
-            this.rotateGlider('right');
-        }
-    }
-
-    /**
-     * Rotates the glider and updates the grid.
-     * @param {'left' | 'right'} direction - The direction to rotate.
-     */
-    rotateGlider(direction) {
-        if (this.isGameOver || this.inputThisTurn) return;
-
-        let rotated = false;
-        if (direction === 'left') { // Counter-clockwise
-            this.glider.orientation = (this.glider.orientation - 1 + 4) % 4;
-            rotated = true;
-        } else if (direction === 'right') { // Clockwise
-            this.glider.orientation = (this.glider.orientation + 1) % 4;
-            rotated = true;
-        }
-
-        if (rotated) {
-            this.inputThisTurn = true;
-            this.clearGliderArea();
-            this.stampGlider();
-            this.render(); // Render immediately for responsive feedback
-        }
-    }
-
-
-    // --- Helper Methods ---
-
-    /**
-     * Calculates the target number of food items based on the grid size.
-     * @returns {number}
-     */
-    getTargetFoodCount() {
-        const foodCount = Math.floor(this.rows * this.cols * this.config.foodDensity);
-        return Math.max(3, foodCount); // Ensure there are at least 3 food items
-    }
-
-    /**
-     * Resets the entire game state, clearing the grid and placing the glider.
-     */
-    resetGame() {
-        this.grid = this.createEmptyGrid();
-        this.isGameOver = false;
-        this.score = 0;
-        this.food = [];
-        this.config.updateInterval = this.config.initialUpdateInterval; // Reset speed
-
-        // Initialize player glider state
-        this.glider = {
-            x: Math.floor(this.cols / 2),
-            y: Math.floor(this.rows / 2),
-            orientation: 0, // 0: SE
-            step: 0
-        };
-
-        // Spawn initial food and wild cells
-        const targetFoodCount = this.getTargetFoodCount();
-        for (let i = 0; i < targetFoodCount; i++) {
-            this.spawnNewFood();
-        }
-        this.spawnInitialWildCells();
-        this.stampGlider();
-    }
-
-    /**
-     * Spawns random "wild" cells on game start, avoiding the center of the grid.
+     * Spawns random "wild" cells, avoiding the center of the grid.
      */
     spawnInitialWildCells() {
         const centerX = this.cols / 2;
@@ -371,84 +484,7 @@ class GliderOfLifeProgram extends BaseGridSimulation {
     }
 
     /**
-     * Spawns a new food item at a random, valid location if below the target count.
-     */
-    spawnNewFood() {
-        if (this.food.length >= this.getTargetFoodCount()) return;
-
-        const minDist = this.config.safeRadius;
-        let newX, newY, isValid;
-        let attempts = 0;
-        const maxAttempts = this.rows * this.cols;
-
-        do {
-            newX = Math.floor(Math.random() * this.cols);
-            newY = Math.floor(Math.random() * this.rows);
-            attempts++;
-
-            const distToPlayer = this.getToroidalDistance(newX, newY, this.glider.x, this.glider.y);
-            const isFarEnough = distToPlayer >= minDist;
-            const isCellEmpty = this.grid[newY][newX] === 0;
-            const isNotAlreadyFood = !this.food.some(f => f.x === newX && f.y === newY);
-
-            isValid = isFarEnough && isCellEmpty && isNotAlreadyFood;
-
-        } while (!isValid && attempts < maxAttempts);
-
-        if (isValid) {
-            this.food.push({ x: newX, y: newY });
-        }
-    }
-
-    /**
-     * Spawns a new burst of wild cells across the map after eating food.
-     * New cells are spawned away from the player's current position.
-     */
-    spawnWildCellBurst() {
-        const playerX = this.glider.x;
-        const playerY = this.glider.y;
-        const safeRadius = this.config.safeRadius;
-        const spawnChance = this.config.wildSpawnChance;
-
-        for (let y = 0; y < this.rows; y++) {
-            for (let x = 0; x < this.cols; x++) {
-                const distFromPlayer = this.getToroidalDistance(x, y, playerX, playerY);
-                // Check if outside safe radius, the cell is empty in the *next* grid, and random chance passes
-                if (distFromPlayer > safeRadius && this.nextGrid[y][x] === 0 && Math.random() < spawnChance) {
-                    this.nextGrid[y][x] = 1; // Add a new wild cell
-                }
-            }
-        }
-    }
-
-    /**
-     * Kills wild cells in a circular area around each food item.
-     */
-    clearAreaAroundFood() {
-        const clearRadius = 6;
-        for (const foodItem of this.food) {
-            // Iterate over a bounding box around the food
-            for (let i = -clearRadius; i <= clearRadius; i++) {
-                for (let j = -clearRadius; j <= clearRadius; j++) {
-                    // Check if the point is within the circular radius
-                    if (Math.hypot(j, i) <= clearRadius) {
-                        const x = foodItem.x + j;
-                        const y = foodItem.y + i;
-                        const col = (x + this.cols) % this.cols;
-                        const row = (y + this.rows) % this.rows;
-
-                        // Kill the cell only if it's a "wild" cell (value 1)
-                        if (this.grid[row][col] === 1) {
-                            this.grid[row][col] = 0;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Checks if the glider occupies the same cell as a food item.
+     * Checks if the glider has collided with food. If so, updates score and state.
      */
     checkFoodCollision() {
         const { x, y, orientation, step } = this.glider;
@@ -456,14 +492,13 @@ class GliderOfLifeProgram extends BaseGridSimulation {
 
         for (let i = -1; i <= 1; i++) {
             for (let j = -1; j <= 1; j++) {
-                // Check only the live cells of the glider pattern
                 if (pattern[i + 1][j + 1] === 1) {
                     const cellX = (x + j + this.cols) % this.cols;
                     const cellY = (y + i + this.rows) % this.rows;
-
                     const foodIndex = this.food.findIndex(f => f.x === cellX && f.y === cellY);
 
                     if (foodIndex > -1) {
+                        this.playSound({ type: 'sine', freq: 1200, vol: 1.0, dur: 0.5 });
                         this.score++;
                         this.increaseSpeed();
                         this.spawnWildCellBurst();
@@ -476,40 +511,40 @@ class GliderOfLifeProgram extends BaseGridSimulation {
     }
 
     /**
-     * Decreases the update interval, making the game faster.
-     * The speed approaches a configured minimum value asymptotically.
+     * Spawns a new burst of wild cells across the map after eating food.
      */
-    increaseSpeed() {
-        const currentInterval = this.config.updateInterval;
-        const minInterval = this.config.minUpdateInterval;
-        // Reduce the interval by a fraction of the remaining distance to the minimum
-        const newInterval = currentInterval - (currentInterval - minInterval) * this.config.speedUpFactor;
-        this.config.updateInterval = Math.max(minInterval, newInterval);
+    spawnWildCellBurst() {
+        const playerX = this.glider.x;
+        const playerY = this.glider.y;
+        for (let y = 0; y < this.rows; y++) {
+            for (let x = 0; x < this.cols; x++) {
+                const distFromPlayer = this.getToroidalDistance(x, y, playerX, playerY);
+                if (distFromPlayer > this.config.safeRadius && this.nextGrid[y][x] === 0 && Math.random() < this.config.wildSpawnChance) {
+                    this.nextGrid[y][x] = 1;
+                }
+            }
+        }
     }
 
-    /**
-     * Stamps the current glider pattern onto the main grid.
-     */
+    // --- Utility Methods ---
+
+    getToroidalDistance(x1, y1, x2, y2) {
+        const dx = Math.abs(x1 - x2);
+        const dy = Math.abs(y1 - y2);
+        const torDx = Math.min(dx, this.cols - dx);
+        const torDy = Math.min(dy, this.rows - dy);
+        return Math.hypot(torDx, torDy);
+    }
+
     stampGlider() {
         const pattern = GLIDER_PATTERNS[this.glider.orientation][this.glider.step];
         this.stampPattern(pattern, this.glider.x, this.glider.y, 2, this.grid);
     }
 
-    /**
-     * Clears the 3x3 area around the glider's center point.
-     */
     clearGliderArea() {
         this.stampPattern([[0,0,0],[0,0,0],[0,0,0]], this.glider.x, this.glider.y, 0, this.grid);
     }
 
-    /**
-     * A generic function to stamp a 3x3 pattern onto a target grid.
-     * @param {number[][]} pattern - The 3x3 pattern to stamp.
-     * @param {number} cx - The center x-coordinate.
-     * @param {number} cy - The center y-coordinate.
-     * @param {number} cellType - The value to write (0, 1, or 2).
-     * @param {number[][]} targetGrid - The grid to modify.
-     */
     stampPattern(pattern, cx, cy, cellType, targetGrid) {
         for (let i = -1; i <= 1; i++) {
             for (let j = -1; j <= 1; j++) {
@@ -517,65 +552,96 @@ class GliderOfLifeProgram extends BaseGridSimulation {
                 const col = (cx + j + this.cols) % this.cols;
                 if (pattern[i + 1][j + 1] === 1) {
                     targetGrid[row][col] = cellType;
-                } else if (cellType === 0) { // Also clear non-pattern cells if erasing
+                } else if (cellType === 0) {
                     targetGrid[row][col] = 0;
                 }
             }
         }
     }
 
-    /**
-     * Extracts a 3x3 box of cell values from a specified grid.
-     * @returns {number[][]} A 3x3 array of cell states (0 or 1).
-     */
     getBoxFromGrid(cx, cy, sourceGrid) {
         const box = [[0,0,0], [0,0,0], [0,0,0]];
         for (let i = -1; i <= 1; i++) {
             for (let j = -1; j <= 1; j++) {
                 const row = (cy + i + this.rows) % this.rows;
                 const col = (cx + j + this.cols) % this.cols;
-                // Normalize to 0 or 1 for comparison
                 box[i + 1][j + 1] = sourceGrid[row][col] > 0 ? 1 : 0;
             }
         }
         return box;
     }
 
-    /**
-     * Calculates the shortest distance between two points on a toroidal (wrapping) grid.
-     * @param {number} x1 - First point's x-coordinate.
-     * @param {number} y1 - First point's y-coordinate.
-     * @param {number} x2 - Second point's x-coordinate.
-     * @param {number} y2 - Second point's y-coordinate.
-     * @returns {number} The Euclidean distance considering wrap-around.
-     */
-    getToroidalDistance(x1, y1, x2, y2) {
-        const dx = Math.abs(x1 - x2);
-        const dy = Math.abs(y1 - y2);
-
-        const torDx = Math.min(dx, this.cols - dx);
-        const torDy = Math.min(dy, this.rows - dy);
-
-        return Math.hypot(torDx, torDy);
-    }
-
-    /**
-     * Compares two 3x3 patterns for equality.
-     */
     arePatternsEqual(p1, p2) {
         for (let i = 0; i < 3; i++) {
             for (let j = 0; j < 3; j++) {
-                if (p1[i][j] !== p2[i][j]) {
-                    return false;
-                }
+                if (p1[i][j] !== p2[i][j]) return false;
             }
         }
         return true;
     }
 
-    /**
-     * Replaces the base class's randomizeGrid with our game setup.
-     */
+    increaseSpeed() {
+        const current = this.config.updateInterval;
+        const min = this.config.minUpdateInterval;
+        const newInterval = current - (current - min) * this.config.speedUpFactor;
+        this.config.updateInterval = Math.max(min, newInterval);
+    }
+
+    getTargetFoodCount() {
+        return Math.max(3, Math.floor(this.rows * this.cols * this.config.foodDensity));
+    }
+
+    spawnNewFood() {
+        if (this.food.length >= this.getTargetFoodCount()) return;
+        let newX, newY, isValid;
+        let attempts = 0;
+        do {
+            newX = Math.floor(Math.random() * this.cols);
+            newY = Math.floor(Math.random() * this.rows);
+            const distToPlayer = this.getToroidalDistance(newX, newY, this.glider.x, this.glider.y);
+            isValid = distToPlayer >= this.config.safeRadius &&
+                      this.grid[newY][newX] === 0 &&
+                      !this.food.some(f => f.x === newX && f.y === newY);
+        } while (!isValid && ++attempts < 1000);
+        if (isValid) this.food.push({ x: newX, y: newY });
+    }
+
+    clearAreaAroundFood() {
+        const r = 6;
+        for (const food of this.food) {
+            for (let i = -r; i <= r; i++) {
+                for (let j = -r; j <= r; j++) {
+                    if (Math.hypot(j, i) <= r) {
+                        const col = (food.x + j + this.cols) % this.cols;
+                        const row = (food.y + i + this.rows) % this.rows;
+                        if (this.grid[row][col] === 1) this.grid[row][col] = 0;
+                    }
+                }
+            }
+        }
+    }
+
+    getNearbyWildCellInfo() {
+        let count = 0;
+        let minDistance = Infinity;
+        const { x: px, y: py } = this.glider;
+        const r = this.config.safeRadius * 2;
+        for (let i = -r; i <= r; i++) {
+            for (let j = -r; j <= r; j++) {
+                const x = px + j, y = py + i;
+                const col = (x + this.cols) % this.cols, row = (y + this.rows) % this.rows;
+                if (this.grid[row][col] === 1) {
+                    const dist = this.getToroidalDistance(col, row, px, py);
+                    if (dist <= r) {
+                        count++;
+                        if (dist < minDistance) minDistance = dist;
+                    }
+                }
+            }
+        }
+        return { count, minDistance };
+    }
+
     randomizeGrid() {
         this.resetGame();
     }
