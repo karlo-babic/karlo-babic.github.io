@@ -128,7 +128,7 @@ _checkReturnToOrigin() {
 
 	display() {
         let onoff = this.propulse ? "on" : "off";
-        this.docElement.src = `imgs/ship_${onoff}.png`;
+        this.docElement.src = `imgs/rocket_${onoff}.png`;
         
         if (this.active) {
             this.docElement.style.transform = `rotate(${this.rotation}rad)`;
@@ -219,12 +219,12 @@ export function rocketInit() {
     
 	if (rocket.active) return;
 
-    let shipRect = docElement.getBoundingClientRect();
-    let shipPos = {
-		x: shipRect.left + window.scrollX + shipRect.width / 2,
-		y: shipRect.top + window.scrollY + shipRect.height / 2
+    let rocketRect = docElement.getBoundingClientRect();
+    let rocketPos = {
+		x: rocketRect.left + window.scrollX + rocketRect.width / 2,
+		y: rocketRect.top + window.scrollY + rocketRect.height / 2
 	};
-    rocket.setOrigPosition(shipPos);
+    rocket.setOrigPosition(rocketPos);
 
 	rocket.activate();
     AppEvents.emit('rocket:liftoff');
