@@ -132,6 +132,9 @@ class GliderOfLifeProgram extends BaseGridSimulation {
      * Its behavior changes based on the current gameState.
      */
     update() {
+        // Create a "dead zone" around food before calculating the next state.
+        this.clearAreaAroundFood();
+
         // Run the standard simulation logic regardless of game state for the background.
         this.nextGrid = this.createEmptyGrid();
         for (let y = 0; y < this.rows; y++) {
@@ -147,9 +150,6 @@ class GliderOfLifeProgram extends BaseGridSimulation {
             this.grid = this.nextGrid;
             return;
         }
-
-        // --- Gameplay-specific logic ---
-        this.clearAreaAroundFood();
 
         const proximityInfo = this.getNearbyWildCellInfo();
         if (proximityInfo.count > 0) {
@@ -173,13 +173,13 @@ class GliderOfLifeProgram extends BaseGridSimulation {
         // Draw UI overlays based on game state
         switch (this.gameState) {
             case 'startScreen':
-                this.drawTextOverlay('Glider of Life', "Click or press Space/Enter to begin", "A survival game based on Conway's Game of Life. Control a single glider with the arrow keys. Navigate the grid to collect food for points while avoiding disruption by other 'wild' cells. Collecting food increases the game speed and spawns more wild cells.");
+                this.drawTextOverlay(-40, 'Glider of Life', "Click or press Space/Enter to begin", "A survival game based on Conway's Game of Life. Control a single glider with the arrow keys. Navigate the grid to collect food for points while avoiding disruption by other 'wild' cells.");
                 break;
             case 'playing':
                 this.drawScore();
                 break;
             case 'gameOver':
-                this.drawTextOverlay('End of Life', "Click or press Space/Enter to restart");
+                this.drawTextOverlay(-10, 'End of Life', "Click or press Space/Enter to restart");
                 break;
         }
     }
@@ -428,11 +428,13 @@ class GliderOfLifeProgram extends BaseGridSimulation {
     }
 
     /**
-     * Draws a centered text overlay with a main title and a subtitle.
+     * Draws a centered text overlay with a main title, subtitle, and description.
+     * @param {string} offset - Vertical offset from center.
      * @param {string} title - The main text to display.
      * @param {string} subtitle - The smaller text below the title.
+     * @param {string} description - The smaller text below the subtitle.
      */
-    drawTextOverlay(title, subtitle, description="") {
+    drawTextOverlay(offset, title, subtitle, description="") {
         const centerX = this.canvas.width / 2;
         const centerY = this.canvas.height / 2;
 
@@ -442,17 +444,17 @@ class GliderOfLifeProgram extends BaseGridSimulation {
 
         // Title text
         this.ctx.font = 'bold 32px "Courier New", Courier, monospace';
-        this.ctx.fillText(title, centerX, centerY - 10);
+        this.ctx.fillText(title, centerX, centerY + offset);
 
         // Subtitle text
         this.ctx.font = '14px "Courier New", Courier, monospace';
-        this.ctx.fillText(subtitle, centerX, centerY + 20);
+        this.ctx.fillText(subtitle, centerX, centerY + offset + 30);
 
         // --- Description text ---
         this.ctx.font = '12px "Courier New", Courier, monospace';
+        let y = centerY + offset + 60;
         const maxWidth = 50;
         const lineHeight = 15;
-        let y = centerY + 60;
 
         const words = description.split(' ');
         let line = '';
@@ -642,15 +644,26 @@ class GliderOfLifeProgram extends BaseGridSimulation {
         if (isValid) this.food.push({ x: newX, y: newY });
     }
 
+    /**
+     * Kills wild cells in a circular area around each food item.
+     */
     clearAreaAroundFood() {
-        const r = 6;
-        for (const food of this.food) {
-            for (let i = -r; i <= r; i++) {
-                for (let j = -r; j <= r; j++) {
-                    if (Math.hypot(j, i) <= r) {
-                        const col = (food.x + j + this.cols) % this.cols;
-                        const row = (food.y + i + this.rows) % this.rows;
-                        if (this.grid[row][col] === 1) this.grid[row][col] = 0;
+        const clearRadius = 6;
+        for (const foodItem of this.food) {
+            // Iterate over a bounding box around the food
+            for (let i = -clearRadius; i <= clearRadius; i++) {
+                for (let j = -clearRadius; j <= clearRadius; j++) {
+                    // Check if the point is within the circular radius
+                    if (Math.hypot(j, i) <= clearRadius) {
+                        const x = foodItem.x + j;
+                        const y = foodItem.y + i;
+                        const col = (x + this.cols) % this.cols;
+                        const row = (y + this.rows) % this.rows;
+
+                        // Kill the cell only if it's a "wild" cell (value 1)
+                        if (this.grid[row][col] === 1) {
+                            this.grid[row][col] = 0;
+                        }
                     }
                 }
             }
