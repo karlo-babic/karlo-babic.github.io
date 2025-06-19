@@ -46,14 +46,15 @@ const Read = {
         this.engine = new BaseText(screenEl);
         let htmlOutput = '';
 
+        // Prioritize the 'file' named argument (from a URL), then fall back to positional.
+        const filename = args.named.file || (args.positional.length > 0 ? args.positional[0] : null);
+
         // Check if a filename was provided.
-        if (args.positional.length === 0) {
-            htmlOutput = "Usage: read filename";
+        if (!filename) {
+            htmlOutput = "Usage: read <filename>";
             this.engine.render(htmlOutput);
             return;
         }
-
-        const filename = args.positional[0];
 
         // Fetch the file and determine its type.
         try {

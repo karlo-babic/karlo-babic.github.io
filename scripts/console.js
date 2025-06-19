@@ -7,6 +7,7 @@ export const Console = {
     // --- State ---
     currentProgramIndex: 0,
     activeProgram: null,
+    currentProgramArgs: null, // Stores the arguments for the current program
     currentSuggestion: '',
     commandHistory: [],
     historyIndex: -1,
@@ -188,7 +189,7 @@ export const Console = {
     },
 
     restartCurrentProgram: function() {
-        this.loadProgram(this.availablePrograms[this.currentProgramIndex]);
+        this.loadProgram(this.availablePrograms[this.currentProgramIndex], this.currentProgramArgs);
     },
 
     populateDropdown: function() {
@@ -253,6 +254,9 @@ export const Console = {
         }
         this.activeProgram = null;
         this.screenEl.innerHTML = '';
+        
+        // Store the arguments used to launch this program instance.
+        this.currentProgramArgs = args;
 
         try {
             const path = `./programs/${programName}.js`;
@@ -278,10 +282,26 @@ export const Console = {
 
     openViewOnly: function() {
         const programName = this.availablePrograms[this.currentProgramIndex];
-        if (programName) {
-            const url = `/console?run=${programName}`;
-            window.open(url, '_blank');
+        if (!programName || !this.currentProgramArgs) return;
+
+        const params = new URLSearchParams();
+        params.set('run', programName);
+
+        // Copy named arguments directly from the current program's arguments.
+        for (const [key, value] of Object.entries(this.currentProgramArgs.named)) {
+            params.set(key, String(value));
         }
+
+        // Convert positional arguments to named parameters for URL sharing.
+        // This section contains program-specific logic.
+        if (programName === 'read' && this.currentProgramArgs.positional.length > 0) {
+            // For 'read', the first positional arg is the filename. Map it to 'file'.
+            params.set('file', this.currentProgramArgs.positional[0]);
+        }
+        // Add other `else if` blocks here for other programs with positional args.
+
+        const url = `/console?${params.toString()}`;
+        window.open(url, '_blank');
     },
 
     updateDisplays: function() {
