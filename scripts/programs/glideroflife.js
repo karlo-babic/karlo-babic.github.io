@@ -452,7 +452,7 @@ class GliderOfLifeProgram extends BaseGridSimulation {
         this.ctx.fillText(subtitle, centerX, centerY + offset + 30);
 
         // --- Description text ---
-        this.ctx.font = '12px "Courier New", Courier, monospace';
+        this.ctx.font = '11px "Courier New", Courier, monospace';
         let y = centerY + offset + 60;
         const maxWidth = 50;
         const lineHeight = 15;
