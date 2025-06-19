@@ -9,7 +9,7 @@ class Threebody {
     running = false;
 	origPosition = {x: 0, y: 0};
     bodies = [
-        {position: {x: 0, y: 0}, velocity: {x: 0, y: 0}, mass: 10},
+        {position: {x: 0, y: 0}, velocity: {x: 0, y: 0}, mass: 50},
         {position: {x: 0, y: 0}, velocity: {x: 0, y: 0}, mass: 1000},
         {position: {x: 0, y: 0}, velocity: {x: 0, y: 0}, mass: 1000},
         {position: {x: 0, y: 0}, velocity: {x: 0, y: 0}, mass: 1000}
