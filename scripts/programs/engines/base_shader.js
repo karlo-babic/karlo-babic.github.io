@@ -75,16 +75,26 @@ export class BaseShader {
      */
     run(timestamp) {
         if (!this.isRunning) return;
+
+        this.gl.useProgram(this.glProgram);
+        this.setUniforms(timestamp);
         this.render(timestamp);
+
         requestAnimationFrame(this.run);
     }
 
     /**
-     * The main render call. Child classes should override this to set uniforms
-     * before calling the parent method.
+     * Hook for child classes to set uniforms. This is called once per frame before render.
+     * @param {number} timestamp The current timestamp from requestAnimationFrame.
+     */
+    setUniforms(timestamp) {
+        // This method is intended to be overridden by child classes.
+    }
+
+    /**
+     * The main render call. Child classes can override for more complex drawing.
      */
     render(timestamp) {
-        this.gl.useProgram(this.glProgram);
         this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
     }
 

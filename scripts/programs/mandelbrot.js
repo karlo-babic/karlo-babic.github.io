@@ -35,6 +35,7 @@ class MandelbrotProgram extends BaseShader {
         this.isPanning = false;
         this.lastPanPos = vec2(0.0, 0.0);
         this.lastPinchDist = 0;
+        this.uniformLocations = {};
 
         // Bind all event handlers
         ['handleMouseDown', 'handleMouseUp', 'handleMouseMove', 'handleWheel', 
@@ -42,6 +43,21 @@ class MandelbrotProgram extends BaseShader {
             this[handler] = this[handler].bind(this);
         });
         this.attachEventListeners();
+
+        // Self-initialize by calling the base class init with our shaders.
+        this.init(this.vertexShader, this.fragmentShader);
+    }
+
+    // Override init to cache uniform locations after the program is linked.
+    init(vertexSrc, fragmentSrc) {
+        super.init(vertexSrc, fragmentSrc);
+        this.cacheUniformLocations();
+    }
+
+    cacheUniformLocations() {
+        this.uniformLocations.resolution = this.gl.getUniformLocation(this.glProgram, "u_resolution");
+        this.uniformLocations.zoom = this.gl.getUniformLocation(this.glProgram, "u_zoom");
+        this.uniformLocations.offset = this.gl.getUniformLocation(this.glProgram, "u_offset");
     }
 
     attachEventListeners() {
@@ -163,19 +179,11 @@ class MandelbrotProgram extends BaseShader {
         return vec2((t1.clientX + t2.clientX) / 2, (t1.clientY + t2.clientY) / 2);
     }
 
-    render(timestamp) {
-        this.gl.useProgram(this.glProgram);
-        
-        const resolutionLocation = this.gl.getUniformLocation(this.glProgram, "u_resolution");
-        this.gl.uniform2f(resolutionLocation, this.gl.canvas.width, this.gl.canvas.height);
-        
-        const zoomLocation = this.gl.getUniformLocation(this.glProgram, "u_zoom");
-        this.gl.uniform1f(zoomLocation, this.zoom);
-
-        const offsetLocation = this.gl.getUniformLocation(this.glProgram, "u_offset");
-        this.gl.uniform2f(offsetLocation, this.offset.x, this.offset.y);
-
-        super.render(timestamp);
+    // Implement the setUniforms hook from the base class.
+    setUniforms(timestamp) {
+        this.gl.uniform2f(this.uniformLocations.resolution, this.gl.canvas.width, this.gl.canvas.height);
+        this.gl.uniform1f(this.uniformLocations.zoom, this.zoom);
+        this.gl.uniform2f(this.uniformLocations.offset, this.offset.x, this.offset.y);
     }
 
     unload() {
@@ -190,9 +198,6 @@ const Mandelbrot = {
 
     init: function(screenEl) {
         this.instance = new MandelbrotProgram(screenEl);
-        // The base class is now initialized inside the MandelbrotProgram constructor
-        // But the init call now needs to pass the shaders.
-        this.instance.init(this.instance.vertexShader, this.instance.fragmentShader);
     },
 
     unload: function() {
