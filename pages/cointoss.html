@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>God's Coin Toss</title>
+    <!-- Include the Matter.js physics engine from a CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.18.0/matter.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3 {
+            color: #1a1a1a;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        .question {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #eef7ff;
+            border-left: 5px solid #007bff;
+            border-radius: 4px;
+        }
+        .buttons {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .main-button {
+            font-size: 1.2em;
+            padding: 15px 30px;
+            margin: 0 10px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        .main-button:hover {
+            background-color: #0056b3;
+        }
+        #explanationContainer {
+            display: none;
+            margin-top: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+        .simulation-container {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px dashed #ccc;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+        }
+        canvas {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            display: block;
+            margin: 10px auto;
+        }
+        .sim-controls {
+            text-align: center;
+            margin-top: 15px;
+        }
+        .sim-controls button {
+            padding: 8px 16px;
+            margin: 0 5px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+        }
+        #toggleBtn.on, #toggleTeleportBtn.on {
+            background-color: #dc3545;
+            color: white;
+            border-color: #dc3545;
+        }
+        #toggleBtn.off, #toggleTeleportBtn.off {
+             background-color: #28a745;
+             color: white;
+             border-color: #28a745;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .stat-item {
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .stat-item strong {
+            display: block;
+            font-size: 1.2em;
+        }
+        .stat-label {
+            font-size: 0.9em;
+            color: #555;
+        }
+        code {
+            background-color: #eee;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: "Courier New", Courier, monospace;
+        }
+
+        /* Styles for the 1/2 Simulation */
+        #teleporter-viz {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            min-height: 150px;
+        }
+        .location-container {
+            text-align: center;
+        }
+        .location {
+            width: 100px;
+            height: 100px;
+            background-color: #ccc;
+            border: 2px solid #aaa;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.5s;
+        }
+        .person {
+            width: 40px;
+            height: 40px;
+            background-color: #333;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .location-label {
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>God's Coin Toss: A Test of Your Metaphysics</h1>
+        <p>This puzzle, described in Scott Aaronson's <em>Quantum Computing since Democritus</em>, explores how we reason about our own existence. Here is the scenario:</p>
+        
+        <ul>
+            <li>At the beginning of time, God flips a fair coin.</li>
+            <li>If the coin is <strong>Tails</strong>, God creates one room containing one person with <strong>red hair</strong>.</li>
+            <li>If the coin is <strong>Heads</strong>, God creates two rooms: one with a <strong>red-haired</strong> person and one with a <strong>green-haired</strong> person.</li>
+        </ul>
+        
+        <p>You wake up in one of these rooms. You look in a mirror and see you have <strong>red hair</strong>.</p>
+        
+        <div class="question">
+            Conditioned on this fact, what is the probability that the coin landed Heads?
+        </div>
+
+        <div class="buttons">
+            <button class="main-button" onclick="showExplanation('1/3')">1/3</button>
+            <button class="main-button" onclick="showExplanation('1/2')">1/2</button>
+        </div>
+
+        <div id="explanationContainer">
+            <h2 id="explanationTitle"></h2>
+            <div id="explanationText"></div>
+        </div>
+    </div>
+
+    <script>
+        let engine, render, runner, ballInterval, autoTeleportInterval;
+        let isAutoSpawning = false;
+        let isAutoTeleporting = false;
+        let teleporterState = { trials: 0, malfunctions: 0, successes: 0, earnings1_3: 0 };
+
+        function cleanupSimulation() {
+            if (ballInterval) clearInterval(ballInterval);
+            if (autoTeleportInterval) clearInterval(autoTeleportInterval);
+            if (runner) Matter.Runner.stop(runner);
+            if (render) Matter.Render.stop(render);
+            if (engine) {
+                 Matter.Events.off(engine); 
+                 Matter.Engine.clear(engine);
+            }
+            if (render && render.canvas) {
+                 render.canvas.remove();
+                 render.canvas = null;
+                 render.context = null;
+                 render.textures = {};
+            }
+            isAutoSpawning = false;
+            isAutoTeleporting = false;
+        }
+
+        function showExplanation(choice) {
+            cleanupSimulation();
+            teleporterState = { trials: 0, malfunctions: 0, successes: 0, earnings1_3: 0 };
+
+            const container = document.getElementById('explanationContainer');
+            const title = document.getElementById('explanationTitle');
+            const text = document.getElementById('explanationText');
+
+            if (choice === '1/3') {
+                title.innerHTML = "Your Answer: 1/3 (The Self-Sampling Assumption)";
+                text.innerHTML = `
+                    <p>You believe the probability is 1/3. This is the result of standard Bayesian reasoning, based on what philosophers call the <strong>Self-Sampling Assumption (SSA)</strong>.</p>
+                    <p><strong>This implies a metaphysical framework where 'you' are a random sample from the set of all possible observers.</strong> You see your consciousness as an abstract entity that was randomly assigned to one of the people "God" created. The math works like this:</p>
+                    <ul>
+                        <li>The probability of the coin landing Tails is 1/2. In this case, you are created with red hair. So, the total probability of being a red-haired person in a Tails world is <code>P(Tails & Red) = 1/2</code>.</li>
+                        <li>The probability of the coin landing Heads is 1/2. In this world, there's a further 1/2 chance of being the red-haired person. So, the total probability of being a red-haired person in a Heads world is <code>P(Heads & Red) = 1/2 * 1/2 = 1/4</code>.</li>
+                        <li>The total probability of observing red hair is the sum of these possibilities: <code>P(Red) = P(Tails & Red) + P(Heads & Red) = 1/2 + 1/4 = 3/4</code>.</li>
+                        <li>The conditional probability of the coin being Heads, given you have red hair, is then: <br><code>P(Heads | Red) = P(Heads & Red) / P(Red) = (1/4) / (3/4) = 1/3</code>.</li>
+                    </ul>
+                    <p>Essentially, you reason that in the Heads world, you <em>might have been</em> green-haired. The fact that you weren't is evidence against the Heads world.</p>
+                    <div class="simulation-container">
+                        <h3>Simulation of the 1/3 Result</h3>
+                        <p>Imagine the creation process is a physical machine. A single ball, representing <strong>your soul</strong>, is dropped in. Its path through the machine determines which of the possible people you will become.</p>
+                        <p>The simulation below models this journey:</p>
+                        <ul>
+                            <li>A grey ball (a "soul") is dropped.</li>
+                            <li>It hits the first disc, representing <strong>God's Coin Flip</strong>. A random nudge sends it rolling left or right.</li>
+                            <li>If it rolls left (<strong>Tails</strong>), the ball is marked 'T' and becomes <strong>red-haired</strong>. Its journey is complete.</li>
+                            <li>If it rolls right (<strong>Heads</strong>), the ball is marked 'H' and continues to the second disc.</li>
+                            <li>The second disc represents the <strong>Hair Color Choice</strong>. The ball is again sent rolling left (becoming <strong>red-haired</strong>) or right (becoming <strong>green-haired</strong>).</li>
+                        </ul>
+                        <p>Notice that for every <strong>one</strong> red ball that comes from the 'Heads' path, there are, on average, <strong>two</strong> red balls that come from the 'Tails' path. Therefore, if your ball comes out red, it makes sense to think that your soul most probably ended up in the red-haired person in the <strong>Tails</strong> world.</p>
+
+                        <canvas id="simulationCanvas" width="500" height="500"></canvas>
+                        <div class="sim-controls">
+                            <button id="spawnBtn" onclick="spawnBall()">Spawn Ball</button>
+                            <button id="toggleBtn" class="off" onclick="toggleAutoSpawn()">Start Auto-Spawn</button>
+                        </div>
+                        <div class="stats">
+                             <div class="stat-item"><span class="stat-label">Heads: Red</span><strong id="headsRedCount">0</strong></div>
+                            <div class="stat-item"><span class="stat-label">Heads: Green</span><strong id="headsGreenCount">0</strong></div>
+                            <div class="stat-item"><span class="stat-label">Tails: Red</span><strong id="tailsRedCount">0</strong></div>
+                            <div class="stat-item"><span class="stat-label">P(Heads | Red)</span><strong id="probDisplay">N/A</strong></div>
+                        </div>
+                    </div>
+                `;
+                startPinballSimulation();
+            } else if (choice === '1/2') {
+                title.innerHTML = "Your Answer: 1/2 (The Self-Indication Assumption)";
+                text.innerHTML = `
+                    <p>You believe the probability is 1/2. This is also a perfectly valid conclusion, which follows from what philosophers call the <strong>Self-Indication Assumption (SIA)</strong>.</p>
+                    <p><strong>This implies a metaphysical framework where your existence itself is evidence.</strong> There is no "you" before the experiment begins. Your existence is a consequence of the coin flip. You don't see yourself as a disembodied consciousness randomly assigned a body. Instead, the logic is:</p>
+                    <ol>
+                        <li>The coin was flipped. It was a fair 50/50 event, independent of you.</li>
+                        <li>You know that no matter how the coin landed, a person with red hair was <strong>guaranteed</strong> to be created.</li>
+                        <li>Therefore, your observation of having red hair was a foregone conclusion. It tells you absolutely nothing new about the state of the coin.</li>
+                        <li>Since your observation provides no new information to distinguish the Heads world from the Tails world, the probability should remain the original 50/50.</li>
+                    </ol>
+                    <p>SIA formalizes this by stating you are <em>a priori</em> more likely to exist in a universe that contains more people. The Heads world creates two people, while the Tails world creates one. This initial 2:1 bias in favor of the Heads world perfectly cancels out the evidence from not being green-haired, bringing the probability back to <strong>1/2</strong>.</p>
+                    <div class="simulation-container">
+                        <h3>Simulation of the 1/2 Result</h3>
+                        <p>This simulation rephrases the problem. You start at <strong>Location A</strong> and use a teleporter to get to <strong>Location B</strong>.</p>
+                        <ul>
+                            <li><strong>50% chance (Tails):</strong> The teleporter works perfectly, moving you from A to B.</li>
+                            <li><strong>50% chance (Heads):</strong> The teleporter malfunctions, creating a copy of you at B while you remain at A.</li>
+                        </ul>
+                        <p>You find yourself at <strong>Location B</strong> (equivalent to having red hair). You must now bet on whether there is a copy of you at Location A (i.e., whether the coin was Heads).</p>
+                        <ul>
+                             <li>A "1/3 believer" concludes Heads is less likely (1/3 vs 2/3), so they should bet <strong>"No Malfunction" (Tails)</strong>. Let's say they win/lose $1 on each bet.</li>
+                             <li>A "1/2 believer" sees no edge and doesn't bet (earning $0).</li>
+                        </ul>
+                        <p>Click "Teleport" to see how the "1/3 believer's" strategy plays out. Does it seem rational?</p>
+                        <div id="teleporter-viz">
+                            <div class="location-container">
+                                <div class="location-label">Location A</div>
+                                <div class="location" id="locationA"><div class="person"></div></div>
+                            </div>
+                            <div class="location-container">
+                                <div class="location-label">Location B</div>
+                                <div class="location" id="locationB"></div>
+                            </div>
+                        </div>
+                        <div class="sim-controls">
+                            <button onclick="runTeleport()">Teleport</button>
+                            <button id="toggleTeleportBtn" class="off" onclick="toggleAutoTeleport()">Start Auto-Teleport</button>
+                        </div>
+                        <div class="stats" id="teleporter-stats">
+                            <div class="stat-item"><span class="stat-label">Malfunctions (Heads)</span><strong id="malfunctions">0</strong></div>
+                            <div class="stat-item"><span class="stat-label">Total Teleports</span><strong id="totalTrials">0</strong></div>
+                            <div class="stat-item"><span class="stat-label">Successes (Tails)</span><strong id="successes">0</strong></div>
+                            <div class="stat-item"><span class="stat-label">Earnings (1/3 Strategy)</span><strong id="earnings1_3">$0</strong></div>
+                        </div>
+                    </div>
+                `;
+                updateTeleporterStats();
+            }
+            container.style.display = 'block';
+        }
+
+        function spawnBall() {
+            if (!engine) return;
+            const width = render.options.width;
+            const ballRadius = 8;
+            const ball = Matter.Bodies.circle(
+                width / 2 + (Math.random() - 0.5) * 2, 
+                20, 
+                ballRadius, 
+                { restitution: 0.1, friction: 0 }
+            );
+            ball.customProps = { state: 'initial', color: '#888', touchingPin: false };
+            Matter.World.add(engine.world, ball);
+        }
+
+        function toggleAutoSpawn() {
+            isAutoSpawning = !isAutoSpawning;
+            const toggleBtn = document.getElementById('toggleBtn');
+            if (isAutoSpawning) {
+                ballInterval = setInterval(spawnBall, 200);
+                toggleBtn.textContent = 'Stop Auto-Spawn';
+                toggleBtn.className = 'on';
+            } else {
+                clearInterval(ballInterval);
+                ballInterval = null;
+                toggleBtn.textContent = 'Start Auto-Spawn';
+                toggleBtn.className = 'off';
+            }
+        }
+
+        function startPinballSimulation() {
+            const canvas = document.getElementById('simulationCanvas');
+            if (!canvas) return;
+            const width = canvas.width;
+            const height = canvas.height;
+
+            engine = Matter.Engine.create();
+            engine.world.gravity.y = 1; 
+            render = Matter.Render.create({
+                canvas: canvas,
+                engine: engine,
+                options: { width: width, height: height, wireframes: false, background: '#fff' }
+            });
+            runner = Matter.Runner.create();
+            
+            const counts = { tailsRed: 0, headsRed: 0, headsGreen: 0 };
+            const ballRadius = 8;
+            const pinRadius = 60;
+            const pinOptions = { isStatic: true, friction: 0, restitution: 0.1, label: 'pin' };
+            
+            const pin1 = Matter.Bodies.circle(width / 2, 160, pinRadius, pinOptions);
+            const pin2 = Matter.Bodies.circle(width / 2 + pinRadius + ballRadius, 320, pinRadius, pinOptions);
+            
+            const floor = Matter.Bodies.rectangle(width / 2, height + 30, width, 60, { isStatic: true });
+
+            Matter.World.add(engine.world, [pin1, pin2, floor]);
+            
+            function updateStats() {
+                document.getElementById('tailsRedCount').textContent = counts.tailsRed;
+                document.getElementById('headsRedCount').textContent = counts.headsRed;
+                document.getElementById('headsGreenCount').textContent = counts.headsGreen;
+                
+                const totalRed = counts.tailsRed + counts.headsRed;
+                if (totalRed > 0) {
+                    const prob = counts.headsRed / totalRed;
+                    document.getElementById('probDisplay').textContent = prob.toFixed(3);
+                } else {
+                    document.getElementById('probDisplay').textContent = 'N/A';
+                }
+            }
+            
+            Matter.Events.on(engine, 'collisionStart', function(event) {
+                event.pairs.forEach(pair => {
+                    let ball = null;
+                    if (pair.bodyA.label === 'pin' && !pair.bodyB.isStatic) ball = pair.bodyB;
+                    if (pair.bodyB.label === 'pin' && !pair.bodyA.isStatic) ball = pair.bodyA;
+                    
+                    if (ball && !ball.isStatic) {
+                         ball.customProps.touchingPin = true;
+                         if (ball.customProps.state === 'initial' && (pair.bodyA === pin1 || pair.bodyB === pin1)) {
+                            Matter.Body.applyForce(ball, ball.position, { x: 0.002 * (Math.random() < 0.5 ? -1 : 1), y: -0.005 });
+                            ball.customProps.state = 'on_pin1';
+                         } else if (ball.customProps.state === 'falling_to_pin2' && (pair.bodyA === pin2 || pair.bodyB === pin2)) {
+                             Matter.Body.applyForce(ball, ball.position, { x: 0.002 * (Math.random() < 0.5 ? -1 : 1), y: -0.005 });
+                             ball.customProps.state = 'on_pin2';
+                         }
+                    }
+                });
+            });
+            
+            Matter.Events.on(engine, 'collisionEnd', function(event) {
+                event.pairs.forEach(pair => {
+                    let ball = null;
+                    if (pair.bodyA.label === 'pin') ball = pair.bodyB;
+                    if (pair.bodyB.label === 'pin') ball = pair.bodyA;
+                    if (ball && !ball.isStatic) ball.customProps.touchingPin = false;
+                });
+            });
+
+            Matter.Events.on(engine, 'afterUpdate', function() {
+                const bodiesToRemove = [];
+                engine.world.bodies.forEach(body => {
+                    if (body.isStatic) return;
+
+                    if (!body.customProps.touchingPin) {
+                        Matter.Body.setVelocity(body, { x: 0, y: body.velocity.y });
+                    }
+
+                    if (body.customProps.state === 'on_pin1' && body.position.y > pin1.position.y) {
+                        if (body.position.x < pin1.position.x) { // TAILS
+                            body.customProps.label = 'T';
+                            body.customProps.outcome = 'tailsRed';
+                            body.customProps.color = 'crimson';
+                            body.customProps.state = 'finished';
+                            counts.tailsRed++;
+                            updateStats();
+                        } else { // HEADS
+                            body.customProps.label = 'H';
+                            body.customProps.state = 'falling_to_pin2';
+                        }
+                    }
+
+                    if (body.customProps.state === 'on_pin2' && body.position.y > pin2.position.y) {
+                        if (body.position.x < pin2.position.x) { // RED
+                            body.customProps.outcome = 'headsRed';
+                            body.customProps.color = 'crimson';
+                            counts.headsRed++;
+                        } else { // GREEN
+                            body.customProps.outcome = 'headsGreen';
+                            body.customProps.color = 'limegreen';
+                            counts.headsGreen++;
+                        }
+                        body.customProps.state = 'finished';
+                        updateStats();
+                    }
+
+                    if (body.position.y > height + ballRadius) {
+                        bodiesToRemove.push(body);
+                    }
+                });
+
+                bodiesToRemove.forEach(body => Matter.World.remove(engine.world, body));
+            });
+            
+            Matter.Events.on(render, 'afterRender', function() {
+                const context = render.context;
+                context.font = '16px Arial';
+                context.textAlign = 'center';
+                context.textBaseline = 'middle';
+                
+                context.fillStyle = 'white';
+                context.fillText('Tails | Heads', pin1.position.x, pin1.position.y);
+                context.fillText('Red | Green', pin2.position.x, pin2.position.y);
+                
+                engine.world.bodies.forEach(body => {
+                    if (body.isStatic) return;
+                    if (body.customProps) {
+                        body.render.fillStyle = body.customProps.color;
+                        if (body.customProps.label) {
+                             context.font = 'bold 10px Arial';
+                             if(body.customProps.label === 'H') {
+                                 context.fillStyle = 'black';
+                             } else {
+                                 context.fillStyle = 'white';
+                             }
+                             context.fillText(body.customProps.label, body.position.x, body.position.y);
+                        }
+                    }
+                });
+            });
+
+            Matter.Runner.run(runner, engine);
+            Matter.Render.run(render);
+        }
+
+        function runTeleport() {
+            teleporterState.trials++;
+            const locationA = document.getElementById('locationA');
+            const locationB = document.getElementById('locationB');
+
+            // Reset visuals
+            locationA.innerHTML = '';
+            locationB.innerHTML = '';
+            locationA.style.backgroundColor = '#ccc';
+            locationB.style.backgroundColor = '#ccc';
+
+            const malfunction = Math.random() < 0.5; // 50% chance
+
+            if (malfunction) { // Heads world
+                teleporterState.malfunctions++;
+                // Visualize person at A and B
+                locationA.innerHTML = '<div class="person"></div>';
+                locationB.innerHTML = '<div class="person"></div>';
+                locationA.style.backgroundColor = 'limegreen'; // Stayed at A = green hair equivalent
+                locationB.style.backgroundColor = 'crimson';   // Arrived at B = red hair equivalent
+                
+                // "1/3 Strategy" bets "No Malfunction" (Tails), so it loses.
+                teleporterState.earnings1_3--; 
+            } else { // Tails world
+                teleporterState.successes++;
+                // Visualize person only at B
+                locationB.innerHTML = '<div class="person"></div>';
+                locationB.style.backgroundColor = 'crimson';
+                
+                // "1/3 Strategy" bets "No Malfunction" (Tails), so it wins.
+                teleporterState.earnings1_3++;
+            }
+            updateTeleporterStats();
+        }
+
+        function toggleAutoTeleport() {
+            isAutoTeleporting = !isAutoTeleporting;
+            const toggleBtn = document.getElementById('toggleTeleportBtn');
+            if (isAutoTeleporting) {
+                autoTeleportInterval = setInterval(runTeleport, 200);
+                toggleBtn.textContent = 'Stop Auto-Teleport';
+                toggleBtn.className = 'on';
+            } else {
+                clearInterval(autoTeleportInterval);
+                autoTeleportInterval = null;
+                toggleBtn.textContent = 'Start Auto-Teleport';
+                toggleBtn.className = 'off';
+            }
+        }
+
+        function updateTeleporterStats() {
+            document.getElementById('totalTrials').textContent = teleporterState.trials;
+            document.getElementById('malfunctions').textContent = teleporterState.malfunctions;
+            document.getElementById('successes').textContent = teleporterState.successes;
+            document.getElementById('earnings1_3').textContent = '$' + teleporterState.earnings1_3;
+        }
+    </script>
+</body>
+</html>
