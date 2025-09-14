@@ -228,7 +228,7 @@
         let engine, render, runner, ballInterval, autoTeleportInterval;
         let isAutoSpawning = false;
         let isAutoTeleporting = false;
-        let teleporterState = { trials: 0, malfunctions: 0, successes: 0, earnings1_3: 0 };
+        let teleporterState = { trials: 0, malfunctions: 0, successes: 0 };
 
         function cleanupSimulation() {
             if (ballInterval) clearInterval(ballInterval);
@@ -271,16 +271,15 @@
                     <p>Essentially, you reason that in the Heads world, you <em>might have been</em> green-haired. The fact that you weren't is evidence against the Heads world.</p>
                     <div class="simulation-container">
                         <h3>Simulation of the 1/3 Result</h3>
-                        <p>Imagine the creation process is a physical machine. A single ball, representing <strong>your soul</strong>, is dropped in. Its path through the machine determines which of the possible people you will become.</p>
-                        <p>The simulation below models this journey:</p>
+                        <p>This simulation models the core of the Self-Sampling Assumption: you are a random sample drawn from the set of all possible observers. Each ball represents a potential observer—a "soul"—and its path determines which person you become.</p>
+                        <p>The simulation follows this logic:</p>
                         <ul>
-                            <li>A grey ball (a "soul") is dropped.</li>
-                            <li>It hits the first disc, representing <strong>God's Coin Flip</strong>. A random nudge sends it rolling left or right.</li>
-                            <li>If it rolls left (<strong>Tails</strong>), the ball is marked 'T' and becomes <strong>red-haired</strong>. Its journey is complete.</li>
-                            <li>If it rolls right (<strong>Heads</strong>), the ball is marked 'H' and continues to the second disc.</li>
-                            <li>The second disc represents the <strong>Hair Color Choice</strong>. The ball is again sent rolling left (becoming <strong>red-haired</strong>) or right (becoming <strong>green-haired</strong>).</li>
+                            <li>A ball is dropped, representing one potential consciousness.</li>
+                            <li><strong>God's Coin Flip:</strong> The first disc directs the ball left (Tails) or right (Heads) with 50/50 probability.</li>
+                            <li>If <strong>Tails</strong>, the ball becomes red. A red-haired person is created.</li>
+                            <li>If <strong>Heads</strong>, the ball continues to a second disc representing the hair-color choice. This creates a red-haired person half the time and a green-haired one the other half.</li>
                         </ul>
-                        <p>Notice that for every <strong>one</strong> red ball that comes from the 'Heads' path, there are, on average, <strong>two</strong> red balls that come from the 'Tails' path. Therefore, if your ball comes out red, it makes sense to think that your soul most probably ended up in the red-haired person in the <strong>Tails</strong> world.</p>
+                        <p>Over many trials, you will see that for every <strong>one</strong> red ball produced by the 'Heads' path, about <strong>two</strong> red balls are produced by the 'Tails' path. This means that if you find yourself to be a red-haired observer (a red ball), you are twice as likely to have come from the Tails world. Therefore, the probability you are in a Heads world is 1 out of 3. Watch as the <strong>P(Heads | Red)</strong> in the stats below converges toward 0.333.</p>
 
                         <canvas id="simulationCanvas" width="500" height="500"></canvas>
                         <div class="sim-controls">
@@ -310,23 +309,22 @@
                     <p>SIA formalizes this by stating you are <em>a priori</em> more likely to exist in a universe that contains more people. The Heads world creates two people, while the Tails world creates one. This initial 2:1 bias in favor of the Heads world perfectly cancels out the evidence from not being green-haired, bringing the probability back to <strong>1/2</strong>.</p>
                     <div class="simulation-container">
                         <h3>Simulation of the 1/2 Result</h3>
-                        <p>This simulation rephrases the problem. You start at <strong>Location A</strong> and use a teleporter to get to <strong>Location B</strong>.</p>
+                        <p>This simulation rephrases the problem. You are on a spaceship and use a teleporter to beam down to a planet base.</p>
                         <ul>
-                            <li><strong>50% chance (Tails):</strong> The teleporter works perfectly, moving you from A to B.</li>
-                            <li><strong>50% chance (Heads):</strong> The teleporter malfunctions, creating a copy of you at B while you remain at A.</li>
+                            <li><strong>50% chance (Tails / Success):</strong> The teleporter works perfectly. A "red-haired" you arrives at <strong>Location A</strong>.</li>
+                            <li><strong>50% chance (Heads / Malfunction):</strong> The teleporter malfunctions. A "red-haired" copy of you is created at <strong>Location A</strong>, and a "green-haired" copy is created at <strong>Location B</strong>.</li>
                         </ul>
-                        <p>You find yourself at <strong>Location B</strong> (equivalent to having red hair). You must now bet on whether there is a copy of you at Location A (i.e., whether the coin was Heads).</p>
-                        <ul>
-                             <li>A "1/3 believer" concludes Heads is less likely (1/3 vs 2/3), so they should bet <strong>"No Malfunction" (Tails)</strong>. Let's say they win/lose $1 on each bet.</li>
-                             <li>A "1/2 believer" sees no edge and doesn't bet (earning $0).</li>
-                        </ul>
-                        <p>Click "Teleport" to see how the "1/3 believer's" strategy plays out. Does it seem rational?</p>
+                        <p>This simulation demonstrates the core logic of the 1/2 answer. Notice that a person appears at <strong>Location A</strong> in <em>every single trial</em>, regardless of whether the teleporter succeeds or malfunctions. Because the existence of the "red-haired" observer at Location A is a guaranteed outcome, it provides no new evidence to distinguish between the two scenarios. Therefore, the probability that the teleporter malfunctioned (Heads) remains its original 50% chance. Watch as the empirical probability in the stats below converges toward 0.500 over many trials.</p>
                         <div id="teleporter-viz">
                             <div class="location-container">
-                                <div class="location-label">Location A</div>
-                                <div class="location" id="locationA"><div class="person"></div></div>
+                                <div class="location-label">Spaceship</div>
+                                <div class="location" id="spaceship"><div class="person"></div></div>
                             </div>
                             <div class="location-container">
+                                <div class="location-label">Location A</div>
+                                <div class="location" id="locationA"></div>
+                            </div>
+                             <div class="location-container">
                                 <div class="location-label">Location B</div>
                                 <div class="location" id="locationB"></div>
                             </div>
@@ -337,9 +335,9 @@
                         </div>
                         <div class="stats" id="teleporter-stats">
                             <div class="stat-item"><span class="stat-label">Malfunctions (Heads)</span><strong id="malfunctions">0</strong></div>
-                            <div class="stat-item"><span class="stat-label">Total Teleports</span><strong id="totalTrials">0</strong></div>
+                            <div class="stat-item"><span class="stat-label">Total Trials</span><strong id="totalTrials">0</strong></div>
                             <div class="stat-item"><span class="stat-label">Successes (Tails)</span><strong id="successes">0</strong></div>
-                            <div class="stat-item"><span class="stat-label">Earnings (1/3 Strategy)</span><strong id="earnings1_3">$0</strong></div>
+                            <div class="stat-item"><span class="stat-label">P(Malfunction | Location A)</span><strong id="probHeadsAtA">N/A</strong></div>
                         </div>
                     </div>
                 `;
@@ -358,7 +356,7 @@
                 ballRadius, 
                 { restitution: 0.1, friction: 0 }
             );
-            ball.customProps = { state: 'initial', color: '#888', touchingPin: false };
+            ball.customProps = { state: 'initial', color: '#111', touchingPin: false };
             Matter.World.add(engine.world, ball);
         }
 
@@ -524,37 +522,35 @@
 
         function runTeleport() {
             teleporterState.trials++;
+            const spaceship = document.getElementById('spaceship');
             const locationA = document.getElementById('locationA');
             const locationB = document.getElementById('locationB');
 
-            // Reset visuals
+            spaceship.innerHTML = '<div class="person"></div>';
             locationA.innerHTML = '';
             locationB.innerHTML = '';
             locationA.style.backgroundColor = '#ccc';
             locationB.style.backgroundColor = '#ccc';
 
-            const malfunction = Math.random() < 0.5; // 50% chance
+            setTimeout(() => {
+                spaceship.innerHTML = '';
 
-            if (malfunction) { // Heads world
-                teleporterState.malfunctions++;
-                // Visualize person at A and B
-                locationA.innerHTML = '<div class="person"></div>';
-                locationB.innerHTML = '<div class="person"></div>';
-                locationA.style.backgroundColor = 'limegreen'; // Stayed at A = green hair equivalent
-                locationB.style.backgroundColor = 'crimson';   // Arrived at B = red hair equivalent
-                
-                // "1/3 Strategy" bets "No Malfunction" (Tails), so it loses.
-                teleporterState.earnings1_3--; 
-            } else { // Tails world
-                teleporterState.successes++;
-                // Visualize person only at B
-                locationB.innerHTML = '<div class="person"></div>';
-                locationB.style.backgroundColor = 'crimson';
-                
-                // "1/3 Strategy" bets "No Malfunction" (Tails), so it wins.
-                teleporterState.earnings1_3++;
-            }
-            updateTeleporterStats();
+                const malfunction = Math.random() < 0.5;
+
+                if (malfunction) { // Heads world
+                    teleporterState.malfunctions++;
+                    locationA.innerHTML = '<div class="person"></div>';
+                    locationB.innerHTML = '<div class="person"></div>';
+                    locationA.style.backgroundColor = 'crimson';
+                    locationB.style.backgroundColor = 'limegreen';
+                } else { // Tails world
+                    teleporterState.successes++;
+                    locationA.innerHTML = '<div class="person"></div>';
+                    locationA.style.backgroundColor = 'crimson';
+                }
+
+                updateTeleporterStats();
+            }, 200);
         }
 
         function toggleAutoTeleport() {
@@ -573,10 +569,16 @@
         }
 
         function updateTeleporterStats() {
-            document.getElementById('totalTrials').textContent = teleporterState.trials;
             document.getElementById('malfunctions').textContent = teleporterState.malfunctions;
             document.getElementById('successes').textContent = teleporterState.successes;
-            document.getElementById('earnings1_3').textContent = '$' + teleporterState.earnings1_3;
+            document.getElementById('totalTrials').textContent = teleporterState.trials;
+
+            if (teleporterState.trials > 0) {
+                const prob = teleporterState.malfunctions / teleporterState.trials;
+                document.getElementById('probHeadsAtA').textContent = prob.toFixed(3);
+            } else {
+                document.getElementById('probHeadsAtA').textContent = 'N/A';
+            }
         }
     </script>
 </body>
