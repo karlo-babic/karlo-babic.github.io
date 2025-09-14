@@ -74,6 +74,8 @@
             border: 1px solid #ddd;
             display: block;
             margin: 10px auto;
+            max-width: 100%;
+            height: auto;
         }
         .sim-controls {
             text-align: center;
@@ -159,6 +161,37 @@
         .location-label {
             margin-bottom: 10px;
             font-weight: bold;
+        }
+
+        /* --- MOBILE FRIENDLY STYLES --- */
+        @media (max-width: 600px) {
+            body {
+                margin: 10px;
+                padding: 0;
+            }
+            .container {
+                padding: 15px;
+                margin: 0;
+                box-shadow: none;
+            }
+            .buttons {
+                /* Stack buttons vertically */
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+            }
+            .main-button {
+                margin: 0;
+            }
+            .stats {
+                /* Change from 2 columns to 1 column */
+                grid-template-columns: 1fr;
+            }
+            #teleporter-viz {
+                /* Stack locations vertically instead of side-by-side */
+                flex-direction: column;
+                gap: 20px;
+            }
         }
     </style>
 </head>
