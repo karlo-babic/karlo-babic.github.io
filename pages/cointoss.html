@@ -503,6 +503,10 @@
                 updateTeleporterStats();
             }
             container.style.display = 'block';
+            if (window.matchMedia("(max-width: 600px)").matches) {
+                // On mobile, scroll smoothly
+                container.scrollIntoView({ behavior: 'smooth' });
+            }
         }
 
         function spawnBall() {
