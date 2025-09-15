@@ -163,6 +163,21 @@
             font-weight: bold;
         }
 
+        .jump-button {
+            display: inline-block;
+            padding: 10px 20px;
+            margin-top: 15px;
+            background-color: #6c757d;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            text-align: center;
+            transition: background-color 0.3s;
+        }
+        .jump-button:hover {
+            background-color: #5a6268;
+        }
+
         /* --- MOBILE FRIENDLY STYLES --- */
         @media (max-width: 600px) {
             body {
@@ -261,6 +276,10 @@
                 title.innerHTML = "Your Answer: 1/3 (The Self-Sampling Assumption)";
                 text.innerHTML = `
                     <p>You believe the probability is 1/3. This answer follows from what philosophers call the <strong>Self-Sampling Assumption (SSA)</strong>. It can be understood through formal Bayesian logic or a more intuitive "random soul" analogy.</p>
+
+                    <div style="text-align: center;">
+                        <a href="#simulation-1-3" class="jump-button">Jump to Simulation</a>
+                    </div>
                     
                     <hr style="margin: 25px 0;">
 
@@ -327,7 +346,7 @@
                     </ul>
                     <p>Essentially, you reason that because the Heads world creates <em>another possible observer you could have been</em> (the green-haired one), your existence as a red-haired person is evidence against the Heads world.</p>
                     
-                    <div class="simulation-container">
+                    <div class="simulation-container" id="simulation-1-3">
                         <h3>Simulation of the 1/3 Result</h3>
                         <p>This simulation models the core of the Self-Sampling Assumption. Each ball represents one potential consciousness—a "soul"—being randomly assigned to a body.</p>
                         <p>The simulation follows this logic:</p>
@@ -356,6 +375,10 @@
                 title.innerHTML = "Your Answer: 1/2 (The Self-Indication Assumption)";
                 text.innerHTML = `
                     <p>You believe the probability is 1/2. This conclusion follows from what philosophers call the <strong>Self-Indication Assumption (SIA)</strong>, but it can also be reached through a more direct, intuitive logic.</p>
+
+                    <div style="text-align: center;">
+                        <a href="#simulation-1-2" class="jump-button">Jump to Simulation</a>
+                    </div>
 
                     <hr style="margin: 25px 0;">
 
@@ -442,7 +465,7 @@
                     </ol>
                     <p><strong>Conclusion:</strong> This logic focuses only on the population you know you're in (the red-haired ones) and shows that this population is split evenly between the two possible outcomes of the coin flip.</p>
 
-                    <div class="simulation-container">
+                    <div class="simulation-container" id="simulation-1-2">
                         <h3>Simulation of the 1/2 Result</h3>
                         <p>This simulation reframes the problem to highlight the "Guaranteed Outcome" logic. Imagine you are on a spaceship and use a teleporter.</p>
                         <ul>
