@@ -260,27 +260,34 @@
             if (choice === '1/3') {
                 title.innerHTML = "Your Answer: 1/3 (The Self-Sampling Assumption)";
                 text.innerHTML = `
-                    <p>You believe the probability is 1/3. This is the result of standard Bayesian reasoning, based on what philosophers call the <strong>Self-Sampling Assumption (SSA)</strong>.</p>
-                    <p><strong>This implies a metaphysical framework where 'you' are a random sample from the set of all possible observers.</strong> You see your consciousness as an abstract entity that was randomly assigned to one of the people "God" created. The math works like this:</p>
+                    <p>You believe the probability is 1/3. This answer is derived from standard Bayesian reasoning and rests on what philosophers call the <strong>Self-Sampling Assumption (SSA)</strong>.</p>
+                    <p><strong>The core metaphysical idea is that you should reason as if "you" are a random sample drawn from the set of all possible observers.</strong> Imagine your consciousness as an abstract entity that was randomly assigned to one of the people "God" created.</p>
+                    <p>The math works like this:</p>
                     <ul>
-                        <li>The probability of the coin landing Tails is 1/2. In this case, you are created with red hair. So, the total probability of being a red-haired person in a Tails world is <code>P(Tails & Red) = 1/2</code>.</li>
-                        <li>The probability of the coin landing Heads is 1/2. In this world, there's a further 1/2 chance of being the red-haired person. So, the total probability of being a red-haired person in a Heads world is <code>P(Heads & Red) = 1/2 * 1/2 = 1/4</code>.</li>
-                        <li>The total probability of observing red hair is the sum of these possibilities: <code>P(Red) = P(Tails & Red) + P(Heads & Red) = 1/2 + 1/4 = 3/4</code>.</li>
-                        <li>The conditional probability of the coin being Heads, given you have red hair, is then: <br><code>P(Heads | Red) = P(Heads & Red) / P(Red) = (1/4) / (3/4) = 1/3</code>.</li>
+                        <li>There are three possible observers who could be created: Red-in-Tails-World, Red-in-Heads-World, and Green-in-Heads-World.</li>
+                        <li>The coin flip makes each world equally likely (1/2 probability each).</li>
+                        <li>So, the prior probability of <em>being</em> any specific observer is:
+                            <ul>
+                                <li><code>P(being Red-in-Tails-World) = 1/2</code></li>
+                                <li><code>P(being Red-in-Heads-World) = 1/2 (Heads) * 1/2 (Red) = 1/4</code></li>
+                                <li><code>P(being Green-in-Heads-World) = 1/2 (Heads) * 1/2 (Green) = 1/4</code></li>
+                            </ul>
+                        </li>
+                        <li>You observe that you have red hair. This eliminates the possibility of being the green-haired person. The two remaining possibilities are being the red-haired person from the Tails world or the red-haired person from the Heads world.</li>
+                        <li>Since the probability of being Red-in-Tails is twice as high as being Red-in-Heads (1/2 vs 1/4), the conditional probability is:<br><code>P(Heads | Red) = P(Red-in-Heads) / [P(Red-in-Heads) + P(Red-in-Tails)] = (1/4) / (1/4 + 1/2) = 1/3</code>.</li>
                     </ul>
-                    <p>Essentially, you reason that in the Heads world, you <em>might have been</em> green-haired. The fact that you weren't is evidence against the Heads world.</p>
+                    <p>Essentially, you reason that because the Heads world creates <em>another possible observer you could have been</em> (the green-haired one), your existence as a red-haired person is evidence against the Heads world.</p>
                     <div class="simulation-container">
                         <h3>Simulation of the 1/3 Result</h3>
-                        <p>This simulation models the core of the Self-Sampling Assumption: you are a random sample drawn from the set of all possible observers. Each ball represents a potential observer—a "soul"—and its path determines which person you become.</p>
+                        <p>This simulation models the core of the Self-Sampling Assumption. Each ball represents one potential consciousness—a "soul"—being randomly assigned to a body.</p>
                         <p>The simulation follows this logic:</p>
                         <ul>
-                            <li>A ball is dropped, representing one potential consciousness.</li>
+                            <li><strong>The Soul:</strong> A ball is dropped, representing one potential consciousness.</li>
                             <li><strong>God's Coin Flip:</strong> The first disc directs the ball left (Tails) or right (Heads) with 50/50 probability.</li>
                             <li>If <strong>Tails</strong>, the ball becomes red. A red-haired person is created.</li>
-                            <li>If <strong>Heads</strong>, the ball continues to a second disc representing the hair-color choice. This creates a red-haired person half the time and a green-haired one the other half.</li>
+                            <li>If <strong>Heads</strong>, the ball continues to a second disc representing the observer-selection process. This creates a red-haired person half the time and a green-haired person the other half.</li>
                         </ul>
-                        <p>Over many trials, you will see that for every <strong>one</strong> red ball produced by the 'Heads' path, about <strong>two</strong> red balls are produced by the 'Tails' path. This means that if you find yourself to be a red-haired observer (a red ball), you are twice as likely to have come from the Tails world. Therefore, the probability you are in a Heads world is 1 out of 3. Watch as the <strong>P(Heads | Red)</strong> in the stats below converges toward 0.333.</p>
-
+                        <p>Over many trials, you will see that for every <strong>one</strong> red ball produced by the 'Heads' path, about <strong>two</strong> red balls are produced by the 'Tails' path. This means that if you find yourself to be a red-haired observer (a red ball), you are twice as likely to have come from the Tails world. Therefore, the probability you are in a Heads world is 1 out of 3. Watch as <strong>P(Heads | Red)</strong> in the stats below converges toward 0.333.</p>
                         <canvas id="simulationCanvas" width="500" height="500"></canvas>
                         <div class="sim-controls">
                             <button id="spawnBtn" onclick="spawnBall()">Spawn Ball</button>
@@ -298,24 +305,69 @@
             } else if (choice === '1/2') {
                 title.innerHTML = "Your Answer: 1/2 (The Self-Indication Assumption)";
                 text.innerHTML = `
-                    <p>You believe the probability is 1/2. This is also a perfectly valid conclusion, which follows from what philosophers call the <strong>Self-Indication Assumption (SIA)</strong>.</p>
-                    <p><strong>This implies a metaphysical framework where your existence itself is evidence.</strong> There is no "you" before the experiment begins. Your existence is a consequence of the coin flip. You don't see yourself as a disembodied consciousness randomly assigned a body. Instead, the logic is:</p>
+                    <p>You believe the probability is 1/2. This conclusion follows from what philosophers call the <strong>Self-Indication Assumption (SIA)</strong>, but it can also be reached through a more direct, intuitive logic.</p>
+
+                    <hr style="margin: 25px 0;">
+
+                    <h3>Explanation 1: Formal Logic (The Self-Indication Assumption)</h3>
+                    <p>This is the "official" philosophical argument, which modifies Bayesian reasoning.</p>
+                    <p><strong>Core Idea:</strong> Your existence itself is evidence. You are more likely to exist in a world that contains more observers. This changes your initial ("prior") beliefs about the worlds.</p>
+                    <h4>Logic and Math Steps:</h4>
                     <ol>
-                        <li>The coin was flipped. It was a fair 50/50 event, independent of you.</li>
-                        <li>You know that no matter how the coin landed, a person with red hair was <strong>guaranteed</strong> to be created.</li>
-                        <li>Therefore, your observation of having red hair was a foregone conclusion. It tells you absolutely nothing new about the state of the coin.</li>
-                        <li>Since your observation provides no new information to distinguish the Heads world from the Tails world, the probability should remain the original 50/50.</li>
+                        <li><strong>Adjust the Prior Probabilities:</strong> The Heads world creates 2 observers, while the Tails world creates 1. SIA states that the initial probability of being in a world is proportional to its population. Therefore, your prior belief should be biased 2:1 in favor of Heads:
+                            <ul>
+                                <li><code>P(Heads) = 2/3</code></li>
+                                <li><code>P(Tails) = 1/3</code></li>
+                            </ul>
+                        </li>
+                        <li><strong>Apply Evidence using Bayes's Theorem:</strong> Your evidence is "I have red hair." The probability of observing this, given each world, is:
+                            <ul>
+                                <li><code>P(Red Hair | Heads) = 1/2</code> (since you could have been green-haired)</li>
+                                <li><code>P(Red Hair | Tails) = 1</code> (since only red-haired people exist)</li>
+                            </ul>
+                        </li>
+                        <li><strong>Calculate the Final Probability:</strong> Using the full Bayesian formula with the adjusted prior:
+                            <br><code>P(Heads | Red) = [P(Red | Heads) * P(Heads)] / [P(Red | Heads)P(Heads) + P(Red | Tails)P(Tails)]</code>
+                            <br><code>= [(1/2) * (2/3)] / [(1/2)(2/3) + (1)(1/3)] = (1/3) / (2/3) = <strong>1/2</strong></code></li>
                     </ol>
-                    <p>SIA formalizes this by stating you are <em>a priori</em> more likely to exist in a universe that contains more people. The Heads world creates two people, while the Tails world creates one. This initial 2:1 bias in favor of the Heads world perfectly cancels out the evidence from not being green-haired, bringing the probability back to <strong>1/2</strong>.</p>
+                    <p><strong>Conclusion:</strong> The initial bias in favor of the more populous Heads world perfectly cancels out the evidence from not being green-haired, returning the probability to exactly 1/2.</p>
+
+                    <hr style="margin: 25px 0;">
+
+                    <h3>Explanation 2: Intuitive Logic (The "Guaranteed Outcome")</h3>
+                    <p>This is a more direct, frequentist argument that avoids complex Bayesian updates.</p>
+                    <p><strong>Core Idea:</strong> A red-haired person is a <strong>guaranteed outcome</strong> of God's coin flip.</p>
+                    <h4>Logic and Math Steps:</h4>
+                    <ol>
+                        <li><strong>Imagine the Experiment Repeated 1000 Times:</strong>
+                            <ul>
+                                <li>Approximately <strong>500 trials</strong> will result in Tails.</li>
+                                <li>Approximately <strong>500 trials</strong> will result in Heads.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Count the Red-Haired People Created:</strong>
+                            <ul>
+                                <li>The 500 Tails trials create <strong>500 red-haired people</strong>.</li>
+                                <li>The 500 Heads trials also create <strong>500 red-haired people</strong> (along with 500 green-haired people, who are irrelevant to your situation).</li>
+                            </ul>
+                        </li>
+                        <li><strong>Analyze the Group You Belong To:</strong> You know you are one of the red-haired people. In total, <code>500 + 500 = 1000</code> red-haired people were created across all 1000 trials.
+                        </li>
+                        <li><strong>Draw the Conclusion:</strong> Out of all the red-haired people who could possibly exist, exactly half of them came from Heads worlds and half came from Tails worlds. Therefore, if you are a red-haired person, there is a 50% chance you are in a Heads world.
+                        <br><code>P(Heads | Red) = (Red-Haired People from Heads Worlds) / (Total Red-Haired People) = 500 / 1000 = <strong>1/2</strong></code>
+                        </li>
+                    </ol>
+                    <p><strong>Conclusion:</strong> This logic focuses only on the population you know you're in (the red-haired ones) and shows that this population is split evenly between the two possible outcomes of the coin flip.</p>
+
                     <div class="simulation-container">
                         <h3>Simulation of the 1/2 Result</h3>
-                        <p>This simulation rephrases the problem. You are on a spaceship and use a teleporter to beam down to a planet base.</p>
+                        <p>This simulation reframes the problem to highlight the "Guaranteed Outcome" logic. Imagine you are on a spaceship and use a teleporter.</p>
                         <ul>
                             <li><strong>50% chance (Tails / Success):</strong> The teleporter works perfectly. A "red-haired" you arrives at <strong>Location A</strong>.</li>
-                            <li><strong>50% chance (Heads / Malfunction):</strong> The teleporter malfunctions. A "red-haired" copy of you is created at <strong>Location A</strong>, and a "green-haired" copy is created at <strong>Location B</strong>.</li>
+                            <li><strong>50% chance (Heads / Malfunction):</strong> The teleporter creates two copies. A "red-haired" copy of you appears at <strong>Location A</strong>, and a "green-haired" copy appears at <strong>Location B</strong>.</li>
                         </ul>
-                        <p>You find yourself at <strong>Location A</strong> (you are the "red-haired" observer). What is the probability that the teleporter malfunctioned?
-                        <p>This simulation demonstrates the core logic of the 1/2 answer. Notice that a person appears at <strong>Location A</strong> in <em>every single trial</em>, regardless of whether the teleporter succeeds or malfunctions. Because the existence of the "red-haired" observer at Location A is a guaranteed outcome, it provides no new evidence to distinguish between the two scenarios. Therefore, the probability that the teleporter malfunctioned (Heads) remains its original 50% chance. Watch as the empirical probability in the stats below converges toward 0.500 over many trials.</p>
+                        <p>You find yourself at <strong>Location A</strong> (you are the "red-haired" observer). What's the probability the teleporter malfunctioned?</p>
+                        <p>Notice that a person appears at <strong>Location A</strong> in <em>every single trial</em>, regardless of the outcome. The existence of the observer at Location A is a guaranteed event. Because it happens in both scenarios, observing that you are at Location A provides no new information to help you decide if a malfunction occurred. Therefore, the probability of a malfunction (Heads) remains its original 50% chance. Watch as the empirical probability below converges toward 0.500.</p>
                         <div id="teleporter-viz">
                             <div class="location-container">
                                 <div class="location-label">Spaceship</div>
