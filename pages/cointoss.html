@@ -260,23 +260,73 @@
             if (choice === '1/3') {
                 title.innerHTML = "Your Answer: 1/3 (The Self-Sampling Assumption)";
                 text.innerHTML = `
-                    <p>You believe the probability is 1/3. This answer is derived from standard Bayesian reasoning and rests on what philosophers call the <strong>Self-Sampling Assumption (SSA)</strong>.</p>
-                    <p><strong>The core metaphysical idea is that you should reason as if "you" are a random sample drawn from the set of all possible observers.</strong> Imagine your consciousness as an abstract entity that was randomly assigned to one of the people "God" created.</p>
-                    <p>The math works like this:</p>
-                    <ul>
-                        <li>There are three possible observers who could be created: Red-in-Tails-World, Red-in-Heads-World, and Green-in-Heads-World.</li>
-                        <li>The coin flip makes each world equally likely (1/2 probability each).</li>
-                        <li>So, the prior probability of <em>being</em> any specific observer is:
+                    <p>You believe the probability is 1/3. This answer follows from what philosophers call the <strong>Self-Sampling Assumption (SSA)</strong>. It can be understood through formal Bayesian logic or a more intuitive "random soul" analogy.</p>
+                    
+                    <hr style="margin: 25px 0;">
+
+                    <h3>Explanation 1: Formal Logic (The Self-Sampling Assumption)</h3>
+                    <p>This is the standard application of Bayes's Theorem, assuming you are a random observer.</p>
+                    <p><strong>Core Idea:</strong> Your evidence is "I have red hair." You want to calculate <code>P(Heads | Red Hair)</code>. The SSA implies that if a world contains more observers, you have a higher chance of being one of them, but also a higher chance of being a <em>different</em> one.</p>
+                    
+                    <h4>Logic and Math Steps:</h4>
+                    <ol>
+                        <li>
+                            <strong>Define the Priors:</strong> The coin is fair, so the initial ("prior") probabilities for the two worlds are equal.
                             <ul>
-                                <li><code>P(being Red-in-Tails-World) = 1/2</code></li>
-                                <li><code>P(being Red-in-Heads-World) = 1/2 (Heads) * 1/2 (Red) = 1/4</code></li>
-                                <li><code>P(being Green-in-Heads-World) = 1/2 (Heads) * 1/2 (Green) = 1/4</code></li>
+                                <li><code>P(Heads) = 1/2</code></li>
+                                <li><code>P(Tails) = 1/2</code></li>
                             </ul>
                         </li>
-                        <li>You observe that you have red hair. This eliminates the possibility of being the green-haired person. The two remaining possibilities are being the red-haired person from the Tails world or the red-haired person from the Heads world.</li>
-                        <li>Since the probability of being Red-in-Tails is twice as high as being Red-in-Heads (1/2 vs 1/4), the conditional probability is:<br><code>P(Heads | Red) = P(Red-in-Heads) / [P(Red-in-Heads) + P(Red-in-Tails)] = (1/4) / (1/4 + 1/2) = 1/3</code>.</li>
+                        <li>
+                            <strong>Define the Likelihoods:</strong> We need the probability of your evidence (having red hair) given each world. This is where the SSA comes in. It implies that if you're in the Heads world, you had a 1-in-2 chance of being the red-haired person instead of the green-haired one.
+                            <ul>
+                                <li><code>P(Red Hair | Heads) = 1/2</code></li>
+                                <li><code>P(Red Hair | Tails) = 1</code> (You are guaranteed to be red-haired)</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>Calculate the Total Probability of Your Evidence:</strong> Using the law of total probability, we find the overall probability of an observer having red hair.
+                            <br><code>P(Red Hair) = P(Red|Heads)P(Heads) + P(Red|Tails)P(Tails)</code>
+                            <br><code>= (1/2)(1/2) + (1)(1/2) = 1/4 + 1/2 = 3/4</code>
+                        </li>
+                        <li>
+                            <strong>Apply Bayes's Theorem:</strong>
+                            <br><code>P(Heads | Red) = [P(Red | Heads) * P(Heads)] / P(Red)</code>
+                            <br><code>= [(1/2) * (1/2)] / (3/4) = (1/4) / (3/4) = <strong>1/3</strong></code></li>
+                    </ol>
+                    <p><strong>Conclusion:</strong> The existence of another possible observer (the green-haired one) in the Heads world "dilutes" the probability of you being the red-haired one in that world. This dilution makes the Heads world less likely, given your observation.</p>
+
+                    <hr style="margin: 25px 0;">
+
+                    <h3>Explanation 2: Intuitive Logic (The "Random Soul" Analogy)</h3>
+                    <p>This is a more direct way to think about the Self-Sampling Assumption. Imagine your consciousness is a "soul" that was randomly assigned to one of the bodies "God" created after the coin flip.</p>
+
+                    <p>The logic works like this:</p>
+                    <ul>
+                        <li>
+                            There are three possible "slots" your soul could be assigned to: the <strong>Red-in-Tails-World</strong> body, the <strong>Red-in-Heads-World</strong> body, and the <strong>Green-in-Heads-World</strong> body.
+                        </li>
+                        <li>
+                            Let's calculate the prior probability of your soul landing in each specific slot:
+                            <ul>
+                                <li><code>P(soul is Red-in-Tails) = P(Tails) * 1 = 1/2</code></li>
+                                <li><code>P(soul is Red-in-Heads) = P(Heads) * 1/2 = 1/2 * 1/2 = 1/4</code></li>
+                                <li><code>P(soul is Green-in-Heads) = P(Heads) * 1/2 = 1/2 * 1/2 = 1/4</code></li>
+                            </ul>
+                        </li>
+                        <li>
+                            You observe that you have red hair. This eliminates the possibility of your soul being in the green-haired body.
+                        </li>
+                        <li>
+                            The two remaining possibilities are Red-in-Tails (with a prior probability of 1/2) and Red-in-Heads (with a prior probability of 1/4).
+                        </li>
+                        <li>
+                            Since the initial probability of your soul being placed in the Tails world's red-haired body is twice as high as being placed in the Heads world's red-haired body, the conditional probability is:<br>
+                            <code>P(Heads | Red) = P(Red-in-Heads) / [P(Red-in-Heads) + P(Red-in-Tails)] = (1/4) / (1/4 + 1/2) = 1/3</code>.
+                        </li>
                     </ul>
                     <p>Essentially, you reason that because the Heads world creates <em>another possible observer you could have been</em> (the green-haired one), your existence as a red-haired person is evidence against the Heads world.</p>
+                    
                     <div class="simulation-container">
                         <h3>Simulation of the 1/3 Result</h3>
                         <p>This simulation models the core of the Self-Sampling Assumption. Each ball represents one potential consciousness—a "soul"—being randomly assigned to a body.</p>
@@ -309,7 +359,7 @@
 
                     <hr style="margin: 25px 0;">
 
-                    <h3>Explanation 1: The Formal Logic (The Self-Indication Assumption)</h3>
+                    <h3>Explanation 1: Formal Logic (The Self-Indication Assumption)</h3>
                     <p>This is the "official" philosophical argument, which modifies Bayesian reasoning.</p>
                     <p><strong>Core Idea:</strong> Your existence itself is evidence. You are more likely to find yourself in a world that contains more observers. This changes your initial ("prior") beliefs about the worlds.</p>
 
