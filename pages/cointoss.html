@@ -309,9 +309,10 @@
 
                     <hr style="margin: 25px 0;">
 
-                    <h3>Explanation 1: Formal Logic (The Self-Indication Assumption)</h3>
+                    <h3>Explanation 1: The Formal Logic (The Self-Indication Assumption)</h3>
                     <p>This is the "official" philosophical argument, which modifies Bayesian reasoning.</p>
-                    <p><strong>Core Idea:</strong> Your existence itself is evidence. You are more likely to exist in a world that contains more observers. This changes your initial ("prior") beliefs about the worlds.</p>
+                    <p><strong>Core Idea:</strong> Your existence itself is evidence. You are more likely to find yourself in a world that contains more observers. This changes your initial ("prior") beliefs about the worlds.</p>
+
                     <h4>Logic and Math Steps:</h4>
                     <ol>
                         <li><strong>Adjust the Prior Probabilities:</strong> The Heads world creates 2 observers, while the Tails world creates 1. SIA states that the initial probability of being in a world is proportional to its population. Therefore, your prior belief should be biased 2:1 in favor of Heads:
@@ -332,10 +333,40 @@
                     </ol>
                     <p><strong>Conclusion:</strong> The initial bias in favor of the more populous Heads world perfectly cancels out the evidence from not being green-haired, returning the probability to exactly 1/2.</p>
 
+                    <h4>A More Intuitive Walkthrough (Using 'Likelihood Scores')</h4>
+                    <p>Let's assign a "likelihood score" to each world and update it as we apply each piece of logic. We start with a 50/50 chance for each world.</p>
+
+                    <ol>
+                        <li>
+                            <strong>Start with the Coin Flip:</strong> Initially, both worlds are equally likely. Let's give them a starting score.
+                            <ul>
+                                <li>Heads World Score: 1</li>
+                                <li>Tails World Score: 1</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>Apply the "Existence Bonus" (SIA):</strong> The SIA says you're more likely to exist in a world with more people. The Heads world has two observers, while the Tails world has one. So, we multiply each world's score by its population.
+                            <ul>
+                                <li>Heads World Score: <code>1 * 2 = 2</code></li>
+                                <li>Tails World Score: <code>1 * 1 = 1</code></li>
+                            </ul>
+                            <em>At this point, before you know your hair color, you believe the Heads world is twice as likely.</em>
+                        </li>
+                        <li>
+                            <strong>Apply the "Hair Color Evidence":</strong> Now, you see you have red hair. This new evidence modifies the scores again. We multiply each score by the probability that an observer in that world has red hair.
+                            <ul>
+                                <li>Heads World Score: <code>2 * P(Red | Heads) = 2 * (1/2) = 1</code></li>
+                                <li>Tails World Score: <code>1 * P(Red | Tails) = 1 * (1) = 1</code></li>
+                            </ul>
+                        </li>
+                    </ol>
+
+                    <p><strong>The Final Result:</strong> After all reasoning is applied, the final scores are tied. The "Existence Bonus" (a factor of 2 for Heads) was perfectly cancelled out by the "Hair Color Evidence" (a factor of 1/2 for Heads). Since their final likelihood scores are equal, the probability of being in the Heads world is <strong>1/2</strong></p>
+
                     <hr style="margin: 25px 0;">
 
                     <h3>Explanation 2: Intuitive Logic (The "Guaranteed Outcome")</h3>
-                    <p>This is a more direct, frequentist argument that avoids complex Bayesian updates.</p>
+                    <p>This is a more direct, frequentist argument that avoids Bayesian updates.</p>
                     <p><strong>Core Idea:</strong> A red-haired person is a <strong>guaranteed outcome</strong> of God's coin flip.</p>
                     <h4>Logic and Math Steps:</h4>
                     <ol>
