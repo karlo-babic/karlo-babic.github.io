@@ -275,6 +275,10 @@ body.parchment-theme {
 /* ------------------------- */
 
 @media (max-width: 1000px) {
+    html {
+        font-size: calc(var(--base-font-size) - 2px);
+    }
+
     /* Adjust the main page grid for single-column layout */
     .page-container {
         grid-template-columns: 1fr;
