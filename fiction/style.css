@@ -286,7 +286,7 @@ body.parchment-theme {
             "header"
             "nav"
             "main";
-        padding: 1rem;
+        padding: 1rem 0rem;
         gap: 1.5rem;
     }
 
