@@ -1,0 +1,261 @@
+/**
+ * style.css
+ *
+ * Styles for the Story Viewer Webpage.
+ * Uses CSS variables for easy theming.
+ */
+
+/* ------------------------- */
+/* --- Variable Defaults (Light Theme) --- */
+/* ------------------------- */
+:root {
+    --bg-color: #fdfdfd;
+    --text-color: #333;
+    --header-color: #000;
+    --meta-color: #666;
+    --accent-color: #0056b3;
+    --accent-hover-color: #003d80;
+    --border-color: #ddd;
+    --subtle-bg-color: #e9ecef;
+    --tag-bg-color: #f1f1f1;
+
+    --font-body: 'Lora', serif;
+    --font-heading: 'Montserrat', sans-serif;
+
+    background-image: none;
+}
+
+/* ------------------------- */
+/* --- General Styling --- */
+/* ------------------------- */
+body {
+    font-family: var(--font-body);
+    line-height: 1.7;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 2rem;
+    background-image: var(--background-image);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+h1, h2, h3 {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: var(--header-color);
+}
+
+a {
+    color: var(--accent-color);
+    text-decoration: none;
+    transition: color 0.2s ease-in-out;
+}
+
+a:hover {
+    color: var(--accent-hover-color);
+}
+
+/* ------------------------- */
+/* --- Layout --- */
+/* ------------------------- */
+.page-container {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+        "header header"
+        "nav    main";
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+header {
+    grid-area: header;
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1rem;
+    position: relative;
+}
+
+#story-navigation {
+    grid-area: nav;
+}
+
+#story-display {
+    grid-area: main;
+}
+
+/* ------------------------- */
+/* --- Components --- */
+/* ------------------------- */
+
+/* Theme Switcher */
+#theme-switcher {
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    transform: translateY(-50%);
+}
+
+#theme-switcher button {
+    background: var(--subtle-bg-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 0.3rem 0.7rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: var(--font-heading);
+    font-size: 0.8rem;
+    margin: 0 0.2rem;
+}
+
+/* Story Navigation */
+#story-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+#story-list li {
+    margin-bottom: 0.5rem;
+}
+
+#story-list a {
+    display: block;
+    padding: 0.5rem;
+    border-radius: 4px;
+}
+
+#story-list a.active {
+    background-color: var(--subtle-bg-color);
+    font-weight: bold;
+}
+
+/* Story Content */
+#story-container {
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+#story-header {
+    text-align: center;
+    margin-bottom: 3rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1.5rem;
+}
+
+#story-title {
+    margin-bottom: 0.5rem;
+    font-size: 2.5rem;
+}
+
+#story-meta {
+    color: var(--meta-color);
+    font-family: var(--font-heading);
+    font-size: 0.9rem;
+    display: flex; /* Use flexbox for better alignment */
+    flex-direction: column; /* Stack stats and genres vertically */
+    align-items: center; /* Center them horizontally */
+    gap: 0.75rem; /* Add space between the stats and genre lines */
+}
+
+#story-meta.story-stats span {
+    margin: 0 0.75rem;
+    white-space: nowrap;
+}
+
+#story-meta span {
+    margin: 0 0.75rem;
+}
+
+#story-meta .genre-tag {
+    display: inline-block;
+    background-color: var(--tag-bg-color);
+    padding: 0.1rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    margin: 0.2rem;
+}
+
+#story-content p {
+    text-align: justify;
+    margin-bottom: 1.5em;
+}
+
+#story-content h1,
+#story-content h2,
+#story-content h3 {
+    text-align: left;
+}
+#story-content blockquote {
+    border-left: 4px solid var(--border-color);
+    padding-left: 1rem;
+    margin-left: 0;
+    font-style: italic;
+    color: var(--meta-color);
+}
+#story-content code {
+    background-color: var(--subtle-bg-color);
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-family: monospace;
+}
+#story-content pre code {
+    display: block;
+    padding: 1rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* ------------------------- */
+/* --- Themes --- */
+/* ------------------------- */
+body.dark-theme {
+    --bg-color: #121212;
+    --text-color: #e0e0e0;
+    --header-color: #ffffff;
+    --meta-color: #999;
+    --accent-color: #8ab4f8;
+    --accent-hover-color: #a3c5fb;
+    --border-color: #444;
+    --subtle-bg-color: #2a2a2a;
+    --tag-bg-color: #333;
+}
+
+body.sepia-theme {
+    --bg-color: #fbf0d9;
+    --text-color: #5b4636;
+    --header-color: #433124;
+    --meta-color: #7d6b5a;
+    --accent-color: #8c6f5a;
+    --accent-hover-color: #6d5543;
+    --border-color: #e0d5c1;
+    --subtle-bg-color: #e9e0cf;
+    --tag-bg-color: #e0d5c1;
+}
+
+
+/* ------------------------- */
+/* --- Responsive Design --- */
+/* ------------------------- */
+@media (max-width: 1000px) {
+    .page-container {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "header"
+            "nav"
+            "main";
+        padding: 1rem;
+        gap: 1.5rem;
+    }
+    #story-navigation {
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 1rem;
+    }
+    #theme-switcher {
+        position: static;
+        transform: none;
+        margin-top: 1rem;
+    }
+}

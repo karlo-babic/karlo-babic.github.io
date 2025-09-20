@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Stories</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English&family=Lora:ital,wght@0,400..700;1,400..700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="page-container">
+        <header>
+            <h1>Collection of my Short Stories</h1>
+            <div id="theme-switcher">
+                <button data-theme="light">Light</button>
+                <button data-theme="dark">Dark</button>
+                <button data-theme="sepia">Sepia</button>
+            </div>
+        </header>
+        <nav id="story-navigation">
+            <h2>Stories</h2>
+            <ul id="story-list">
+                <!-- Story links will be populated by JavaScript -->
+                <li class="loading">Loading stories...</li>
+            </ul>
+        </nav>
+        <main id="story-display">
+            <article id="story-container">
+                <header id="story-header">
+                    <h1 id="story-title"></h1>
+                    <div id="story-meta"></div>
+                </header>
+                <section id="story-content">
+                    <p>Select a story from the list to begin reading.</p>
+                </section>
+            </article>
+        </main>
+    </div>
+    <script type="module" src="main.js"></script>
+</body>
+</html>
