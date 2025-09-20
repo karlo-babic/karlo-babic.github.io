@@ -1,7 +1,7 @@
 ---
 title: Dream Job
 date: 2023-06-20
-genres: Science fiction, Biopunk
+genres: Science fiction, Cyberpunk
 ---
 
 Psych: Hi Zeo, we haven't talked in a while now. How are you?
