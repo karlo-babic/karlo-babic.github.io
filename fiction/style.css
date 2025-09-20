@@ -198,9 +198,21 @@ header {
     margin: 0.2rem;
 }
 
+/* --- BOOK TYPOGRAPHY STYLES --- */
+
 #story-content p {
     text-align: justify;
-    margin-bottom: 1.5em;
+    margin-top: 0;
+    margin-bottom: 0;
+    text-indent: 2em;
+}
+
+/* Remove indent for the first paragraph of a section */
+#story-content h1 + p,
+#story-content h2 + p,
+#story-content h3 + p,
+#story-content hr + p {
+    text-indent: 0;
 }
 
 #story-content h1,
@@ -208,13 +220,34 @@ header {
 #story-content h3 {
     text-align: left;
 }
+
+/* Styled Scene Break */
+#story-content hr {
+    border: 0;
+    height: 0;
+    margin: 3em 0;
+    text-align: center;
+}
+
+#story-content hr::before {
+    content: '***';
+    font-size: 1.5em;
+    letter-spacing: 0.5em;
+    color: var(--meta-color);
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
 #story-content blockquote {
     border-left: 4px solid var(--border-color);
     padding-left: 1rem;
-    margin-left: 0;
+    margin-left: 1em; /* Add some left margin to indent it */
     font-style: italic;
     color: var(--meta-color);
 }
+
 #story-content code {
     background-color: var(--subtle-bg-color);
     padding: 0.2em 0.4em;
