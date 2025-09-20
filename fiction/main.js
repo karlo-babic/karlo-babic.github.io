@@ -18,6 +18,7 @@ import { parseMarkdown } from '../../scripts/programs/engines/markdown_parser.js
  */
 const STORY_FILES = [
     'dream-job.md',
+    'testing.md',
 ];
 
 const FONT_SIZE_CONFIG = {
@@ -92,10 +93,21 @@ function calculateReadingInfo(text) {
  * @param {{properties: object, content: string}} story - The story object.
  */
 function renderStory(story) {
+    // Clean up previous genre classes from the body and apply new ones
+    document.body.classList.remove('genre-fantasy', 'genre-scifi');
+    if (story.properties.genres) {
+        const lowerGenres = story.properties.genres.toLowerCase();
+        if (lowerGenres.includes('fantasy')) {
+            document.body.classList.add('genre-fantasy');
+        } else if (lowerGenres.includes('science fiction') || lowerGenres.includes('sci-fi')) {
+            document.body.classList.add('genre-scifi');
+        }
+    }
+
     // Render properties
     const { title = 'Untitled Story', date, genres } = story.properties;
     storyTitleEl.textContent = title;
-    document.title = title; // Update page title
+    document.title = title;
 
     // Calculate reading info from the story's content.
     const { wordCount, minutesToRead } = calculateReadingInfo(story.content);

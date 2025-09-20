@@ -163,8 +163,47 @@ header {
 }
 
 #story-title {
-    margin-bottom: 0.5rem;
+    /* Typographic Enhancements */
+    font-family: var(--font-heading); /* Default font */
     font-size: 2.5rem;
+    font-variant: small-caps;
+    letter-spacing: 0.1em;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+
+    /* Layout and Framing */
+    position: relative; /* Anchor for pseudo-elements */
+    margin-top: 1.5rem;
+    margin-bottom: 2.5rem; /* Increased vertical space */
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Genre-specific font overrides */
+body.genre-fantasy #story-title {
+    font-family: 'Cinzel Decorative', var(--font-heading);
+}
+
+body.genre-fantasy #story-content h1,
+body.genre-fantasy #story-content h2,
+body.genre-fantasy #story-content h3 {
+    font-family: 'Cinzel Decorative', var(--font-heading);
+}
+
+body.genre-scifi #story-title {
+    font-family: 'Share Tech Mono', var(--font-heading);
+    font-variant: normal; /* Reset small-caps for monospaced font */
+    letter-spacing: normal; /* Reset letter-spacing */
+}
+
+body.genre-scifi #story-content h1,
+body.genre-scifi #story-content h2,
+body.genre-scifi #story-content h3 {
+    font-family: 'Share Tech Mono', var(--font-heading);
+}
+
+/* Adjust text shadow for dark themes */
+body.dark-theme #story-title {
+    text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.4);
 }
 
 #story-meta {
@@ -215,29 +254,36 @@ header {
     text-indent: 0;
 }
 
-#story-content h1,
-#story-content h2,
+/* Chapter Title Header */
+#story-content h1 {
+    text-align: center;
+    font-size: 2.2rem;
+    margin-top: 2em;
+    margin-bottom: 1.5em;
+}
+
+/* Sub-section Headers */
+#story-content h2 {
+    text-align: left;
+    font-size: 1.7rem;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+}
+
+/* Minor Headers */
 #story-content h3 {
     text-align: left;
+    font-size: 1.4rem;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
 }
 
 /* Styled Scene Break */
 #story-content hr {
     border: 0;
-    height: 0;
-    margin: 3em 0;
-    text-align: center;
-}
-
-#story-content hr::before {
-    content: '***';
-    font-size: 1.5em;
-    letter-spacing: 0.5em;
-    color: var(--meta-color);
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
+    border-top: 1px solid var(--meta-color);
+    width: 50px; /* Adjust width as needed */
+    margin: 3em auto; /* 'auto' centers it */
 }
 
 #story-content blockquote {
