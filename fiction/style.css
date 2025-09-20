@@ -164,8 +164,7 @@ header {
 
 #story-title {
     /* Typographic Enhancements */
-    font-family: var(--font-heading); /* Default font */
-    font-size: 2.5rem;
+    font-family: var(--font-heading);
     font-variant: small-caps;
     letter-spacing: 0.1em;
     text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
@@ -173,9 +172,28 @@ header {
     /* Layout and Framing */
     position: relative; /* Anchor for pseudo-elements */
     margin-top: 1.5rem;
-    margin-bottom: 2.5rem; /* Increased vertical space */
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 2.5rem;
+    padding: 1.5rem 0; /* Vertical padding for space */
+}
+
+/* Line above the title */
+#story-title::before,
+#story-title::after {
+    content: ''; /* Necessary for pseudo-elements to render */
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px; /* Adjust width of the line */
+    height: 1px;
+    background-color: var(--border-color);
+}
+
+#story-title::before {
+    top: 0; /* Position the top line */
+}
+
+#story-title::after {
+    bottom: 0; /* Position the bottom line */
 }
 
 /* Genre-specific font overrides */
