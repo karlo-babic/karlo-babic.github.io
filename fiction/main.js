@@ -20,6 +20,13 @@ const STORY_FILES = [
     'dream-job.md',
 ];
 
+const FONT_SIZE_CONFIG = {
+    min: 12,        // Minimum font size in pixels
+    max: 24,        // Maximum font size in pixels
+    step: 1,        // How many pixels to change on each click
+    default: 16,    // Default font size in pixels
+};
+
 // --- DOM ELEMENT REFERENCES ---
 
 const storyListEl = document.getElementById('story-list');
@@ -231,6 +238,56 @@ function setupThemeSwitcher() {
     applyTheme(savedTheme);
 }
 
+/**
+ * Manages the font size controller, allowing users to adjust the text size.
+ */
+function setupFontSizeSwitcher() {
+    const switcherEl = document.getElementById('font-size-switcher');
+    if (!switcherEl) return;
+
+    const { min, max, step, default: defaultSize } = FONT_SIZE_CONFIG;
+
+    /**
+     * Applies a new font size to the document root and saves it.
+     * @param {number} newSize The new font size in pixels.
+     */
+    const applyFontSize = (newSize) => {
+        // Clamp the size within the defined min/max bounds.
+        const clampedSize = Math.max(min, Math.min(max, newSize));
+        
+        document.documentElement.style.setProperty('--base-font-size', `${clampedSize}px`);
+        localStorage.setItem('story-font-size', clampedSize);
+    };
+    
+    switcherEl.addEventListener('click', (event) => {
+        const button = event.target.closest('button');
+        if (!button) return;
+
+        const action = button.dataset.action;
+        const currentSize = parseFloat(localStorage.getItem('story-font-size')) || defaultSize;
+        
+        let newSize;
+        switch (action) {
+            case 'increase':
+                newSize = currentSize + step;
+                break;
+            case 'decrease':
+                newSize = currentSize - step;
+                break;
+            case 'reset':
+                newSize = defaultSize;
+                break;
+            default:
+                return;
+        }
+        applyFontSize(newSize);
+    });
+
+    // Load and apply the saved font size on initial page load.
+    const savedSize = parseFloat(localStorage.getItem('story-font-size')) || defaultSize;
+    applyFontSize(savedSize);
+}
+
 
 /**
  * Initializes the application.
@@ -243,6 +300,7 @@ function init() {
     populateNav();
     handleRouting();
     setupThemeSwitcher();
+    setupFontSizeSwitcher();
     window.addEventListener('hashchange', handleRouting);
 }
 

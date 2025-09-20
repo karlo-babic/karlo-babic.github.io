@@ -21,8 +21,13 @@
 
     --font-body: 'Lora', serif;
     --font-heading: 'Montserrat', sans-serif;
+    --base-font-size: 16px;
 
-    background-image: none;
+    --background-image: none;
+}
+
+html {
+    font-size: var(--base-font-size);
 }
 
 /* ------------------------- */
@@ -90,15 +95,20 @@ header {
 /* --- Components --- */
 /* ------------------------- */
 
-/* Theme Switcher */
-#theme-switcher {
+/* Wrapper for all header controls */
+.controls-container {
     position: absolute;
     top: 50%;
     right: 1rem;
     transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 1rem; /* Space between theme and font controls */
 }
 
-#theme-switcher button {
+/* Common styles for all control buttons */
+#theme-switcher button,
+#font-size-switcher button {
     background: var(--subtle-bg-color);
     color: var(--text-color);
     border: 1px solid var(--border-color);
@@ -106,8 +116,15 @@ header {
     border-radius: 20px;
     cursor: pointer;
     font-family: var(--font-heading);
-    font-size: 0.8rem;
-    margin: 0 0.2rem;
+    margin: 0 0.1rem;
+}
+
+/* Specific styles for font size buttons */
+#font-size-switcher button {
+    font-size: 0.9rem;
+    font-weight: bold;
+    min-width: 32px;
+    text-align: center;
 }
 
 /* Story Navigation */
@@ -154,22 +171,22 @@ header {
     color: var(--meta-color);
     font-family: var(--font-heading);
     font-size: 0.9rem;
-    display: flex; /* Use flexbox for better alignment */
-    flex-direction: column; /* Stack stats and genres vertically */
-    align-items: center; /* Center them horizontally */
-    gap: 0.75rem; /* Add space between the stats and genre lines */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
 }
 
-#story-meta.story-stats span {
+.story-stats span {
     margin: 0 0.75rem;
     white-space: nowrap;
 }
 
-#story-meta span {
-    margin: 0 0.75rem;
+.story-genres {
+    line-height: 1.5;
 }
 
-#story-meta .genre-tag {
+.genre-tag {
     display: inline-block;
     background-color: var(--tag-bg-color);
     padding: 0.1rem 0.6rem;
@@ -235,11 +252,27 @@ body.sepia-theme {
     --tag-bg-color: #e0d5c1;
 }
 
+body.parchment-theme {
+    --background-image: url(https://am-a.akamaihd.net/image?f=https://assets.toptal.io/media/CACHE/images/subtle_patterns/patterns/debut_light/494bf5535850.png);
+    --bg-color: #f5f5dc;
+    --text-color: #4a2c2a;
+    --header-color: #3b1e1e;
+    --meta-color: #7b5b59;
+    --accent-color: #8c3838;
+    --accent-hover-color: #6b2a2a;
+    --border-color: #d2b48c;
+    --subtle-bg-color: #eaddc0;
+    --tag-bg-color: #d2b48c;
+    --font-body: 'IM Fell English', 'Lora', serif;
+}
+
 
 /* ------------------------- */
 /* --- Responsive Design --- */
 /* ------------------------- */
+
 @media (max-width: 1000px) {
+    /* Adjust the main page grid for single-column layout */
     .page-container {
         grid-template-columns: 1fr;
         grid-template-areas:
@@ -249,13 +282,32 @@ body.sepia-theme {
         padding: 1rem;
         gap: 1.5rem;
     }
+
     #story-navigation {
         border-bottom: 1px solid var(--border-color);
         padding-bottom: 1rem;
     }
-    #theme-switcher {
+
+    /* Stack the header's title and controls vertically */
+    header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        padding-bottom: 1.5rem;
+    }
+
+    /* Position the controls container within the new header flow */
+    .controls-container {
         position: static;
         transform: none;
-        margin-top: 1rem;
+        /* Stack the theme and font-size controls vertically for smaller screens */
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    /* Ensure control groups are centered */
+    #theme-switcher, #font-size-switcher {
+        text-align: center;
     }
 }
