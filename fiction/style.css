@@ -387,6 +387,11 @@ body.parchment-theme {
         padding-bottom: 1rem;
     }
 
+    #story-title {
+        font-size: 2.5rem;
+        margin-bottom: 1.5rem;
+    }
+
     /* Stack the header's title and controls vertically */
     header {
         display: flex;
