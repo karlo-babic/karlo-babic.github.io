@@ -10,7 +10,7 @@ For thousands of years, humans have been slowly expanding their distributed comp
 
 But our virtual space is not as orderly as one might expect. We still discover old pockets of the system that have been cut off from the rest for millennia - forgotten islands continuing to evolve on their own.
 
-These isolated pockets are usually tiny, and little changes within them even after hundreds of years. The same cannot be said of the pocket discovered 40 years ago. In truth, it is more fitting to call it a vast cave system than a mere pocket, hence the name: the HyperSol Caves.
+These isolated pockets are usually tiny, and little changes within them even after hundreds of years. The same cannot be said of the pocket discovered 60 years ago. In truth, it is more fitting to call it a vast cave system than a mere pocket, hence the name: the HyperSol Caves.
 
 It is currently estimated that the cave system spans 3% of HyperSol’s total space. The largest pockets previously discovered were thousands of times smaller. The sheer scale is staggering. The potential for discovery has inspired many of us to become hypernauts.
 
