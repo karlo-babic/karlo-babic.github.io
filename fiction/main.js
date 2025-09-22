@@ -17,6 +17,7 @@ import { parseMarkdown } from '../../scripts/programs/engines/markdown_parser.js
  * Add new story filenames here to make them appear on the webpage.
  */
 const STORY_FILES = [
+    'hypersol-caves.md',
     'dream-job.md',
     'testing.md',
 ];
