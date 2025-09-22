@@ -6,7 +6,7 @@ genres: Science fiction, Cyberpunk
 
 ## Hypernaut
 
-For thousands of years humans have been slowly expanding their distributed computer network throughout the solar system. Now, 15,000 years after the human era, that megastructure we call HyperSol is the home of our virtual empire.
+For thousands of years, humans have been slowly expanding their distributed computer network throughout the solar system. Now, 15,000 years after the human era, that megastructure we call HyperSol is the home of our virtual empire.
 
 But our virtual space is not as orderly as one might expect. We still discover old pockets of the system that have been cut off from the rest for millennia - forgotten islands continuing to evolve on their own.
 
@@ -32,9 +32,9 @@ I am Tomas, but my friends call me Tom. This is the story of my last day as a ja
 
 ## Hypernaut
 
-The entrances into pockets we discover are most often found in places nobody has looked for in decades, hidden behind or within obscure constructs long abandoned. The last small pocket I found was through a passage inside one of the modules of an old simulator. Inside it I discovered a few simple micro-organisms, evolved from an ancient version of scrubber bots, originally designed to clear HyperSol’s spaces of unused data.
+The entrances into pockets we discover are most often found in places nobody has looked for in decades, hidden behind or within obscure constructs long abandoned. The last small pocket I found was through a passage inside one of the modules of an old simulator. Inside it I discovered a few simple microorganisms, evolved from an ancient version of scrubber bots, originally designed to clear HyperSol’s spaces of unused data.
 
-The HyperSol Caves, however, were found in the aftermath of a terrorist attack that destroyed one of the oldest constructs we knew of - the Earth weather simulator. We believe the simulator was built because humans were fighting a losing battle against a changing planet, and they hoped that by modeling Earth they could find a way to save it.
+The HyperSol Caves, however, were found in the aftermath of a terrorist attack that destroyed one of the oldest constructs we knew of, the Earth weather simulator. We believe the simulator was built because humans were fighting a losing battle against a changing planet, and they hoped that by modeling Earth they could find a way to save it.
 
 These caves are unlike anything we have ever encountered. Many have tried to design environments that appear natural rather than artificial. Some succeed for a short time, but the novelty always wears off. The constructs within the caves, however, have been evolving for thousands of years. To understand their behavior, we must understand the entire process of their evolution. And it is not only about individual constructs: the caves as a whole have evolved together, creating a vast and intricate network of causation.
 
@@ -58,8 +58,10 @@ Fortunately, the decoding tools designed for Earth sims worked here as well. I s
 
 Then I looked up from my datastream and saw a ghostly humanoid figure sluggishly walking outside the simulator construct. The projection examined the evolved constructs around it with something like curiosity. Perhaps it was another hypernaut? But I had never seen one of us use a humanoid body for exploration - what would be the point?
 
-The figure noticed me, and in an instant it disappeared.
+The figure noticed me, and in an instant it disappeared. Lucky for me, my scanner captured the whole event. Using the captured signal, I filtered and extracted the sentient-looking part of the simulation along with its surroundings, just to be sure.
 
 ## Janitor
 
-Even though today is the first day at my new job, everything I do feels deeply ingrained in me. It is as if my thoughts and actions have been flowing along the same paths an uncountable number of times. My mind feels like a primeval river, its bed deep and its channels rigid.
+That was insane. Maybe somebody is pranking me. No, the level of detail was too high. And what was that thing that was looking at me from the other side of the meadow?
+
+Maybe some fresh air will bring me back to my senses. I open the window and, through it, see the alien jungle and the meadow I saw in hyperspace. The being with no eyes still stands there, observing.
