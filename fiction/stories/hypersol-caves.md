@@ -50,7 +50,7 @@ At the far end of a space that could, strangely enough, be described as a meadow
 
 ## Hypernaut
 
-After five months of exploration, deep within the caves, I detected complex signals that carried what I could only describe as signs of sentience. The signals repeated almost exactly every forty hours, but they felt alive. For the first few hours, the pattern was always identical, but later stages often diverged in subtle ways.
+After five months of exploration, deep within the caves, I detected complex signals that carried what I could only describe as signs of sentience. The signals repeated almost exactly every ~40 hours, but they felt alive. For the first few hours, the pattern was always identical, but later stages often diverged in subtle ways.
 
 I traced the source to the bottom level of a subsystem I was exploring. It came from an isolated construct, very similar to the primeval Earth programs. I kept my distance while working on it.
 
