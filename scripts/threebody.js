@@ -155,7 +155,8 @@ export let threebody = new Threebody(threebodyPos);
 export function threebodyInit() {
     if (threebody.running) return;
     
-    threebodyElement.innerHTML  = `<div id="body0" style="position:absolute;"><img src="imgs/dot_blue.png" width="2" class="glow-particle"></div>`;
+    threebodyElement.innerHTML  = `<img src="imgs/dots.png" width="40" style="visibility: hidden;">`
+    threebodyElement.innerHTML += `<div id="body0" style="position:absolute;"><img src="imgs/dot_blue.png" width="2" class="glow-particle"></div>`;
     threebodyElement.innerHTML += `<div id="body1" style="position:absolute;"><img src="imgs/dot.png" width="3" class="glow-particle"></div>`;
     threebodyElement.innerHTML += `<div id="body2" style="position:absolute;"><img src="imgs/dot.png" width="3" class="glow-particle"></div>`;
     threebodyElement.innerHTML += `<div id="body3" style="position:absolute;"><img src="imgs/dot.png" width="3" class="glow-particle"></div>`;
