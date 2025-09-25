@@ -6,7 +6,7 @@ genres: Science fiction, Cyberpunk
 
 ## Hypernaut
 
-For thousands of years, humans have been slowly expanding their distributed computer network throughout the solar system. Now, 15,000 years after the human era, that megastructure we call HyperSol is the home of our virtual empire.
+For thousands of years, humans have been slowly expanding their distributed computer network throughout the solar system. Now, 15,000 years after humanity’s end, that megastructure we call HyperSol is the home of our virtual empire.
 
 But our virtual space is not as orderly as one might expect. We still discover old pockets of the system that have been cut off from the rest for millennia - forgotten islands continuing to evolve on their own.
 
@@ -52,7 +52,7 @@ At the far end of a space that could, strangely enough, be described as a meadow
 
 After five months of exploration, deep within the caves, I detected complex signals that carried what I could only describe as signs of sentience. The signals repeated almost exactly every ~40 hours, but they felt alive. For the first few hours, the pattern was always identical, but later stages often diverged in subtle ways.
 
-I traced the source to the bottom level of a subsystem I was exploring. It came from an isolated construct, very similar to the primeval Earth programs. I kept my distance while working on it.
+I traced the source to the bottom level of a subsystem I was exploring. It came from an isolated construct similar to the primeval Earth programs, which appeared to be a simulation stuck in a loop. I kept my distance while working on it.
 
 Fortunately, the decoding tools designed for Earth programs worked here as well. I sent hundreds of probing signals into the construct, but nothing unusual came back.
 
