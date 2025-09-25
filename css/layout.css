@@ -1,9 +1,16 @@
 /* css/layout.css - High-level page structure and content block positioning */
 
+/* Container for the main responsive layout */
+.main-layout-container {
+    display: flex;
+    flex-direction: column; /* Mobile-first: stack elements vertically */
+    align-items: center;
+    gap: 2rem;
+    padding: 1rem 0;
+}
+
 .content-block {
-    max-width: 250px;
-    margin-left: auto;
-    margin-right: auto;
+    width: 250px; /* Use a fixed width to prevent layout shifts */
     padding: 1rem 2rem;
 }
 
@@ -24,4 +31,15 @@
 #quote {
     opacity: 0;
     transition: opacity 0.6s ease-in-out;
+}
+
+/* Styles for the desktop two-column layout */
+@media (min-width: 800px) {
+    .main-layout-container {
+        flex-direction: row;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 4rem;
+        padding: 2rem 1rem;
+    }
 }

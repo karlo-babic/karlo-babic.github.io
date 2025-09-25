@@ -37,129 +37,131 @@
 
     <!--------------------------------------------------------------->
     <br />
-    <div class="content-block">
-        
-        <!-- About Me Section (Collapsible) -->
-        <div>
-            <div class="h2">
-                <a href="#" id="rocket-placeholder">
-                    <img id="rocket" src="imgs/rocket_off.png" width="12" title="rocket">
-                </a>
-                <span class="collapsible-title">bout me</span>
-                <div id="threebody">
-                    <a href="#" id="threebody-link">
-                        <img id="threebody-img" src="imgs/dots.png" width="40" title="three body problem">
-                    </a>
-                </div>
-            </div>
-            <div class="collapsible-content">
-                <p class="p1">
-                    <a href="CV_karlo.pdf" class="a">resume.pdf</a>
-                    <br />
-                    <a href="https://scholar.google.com/citations?user=8e562aAAAAAJ&hl=en" class="a">scholar.google.com</a>
-                    <div class="featured-paper-wrapper">
-                        <a href="https://ieeexplore.ieee.org/abstract/document/10534761" class="a featured-paper">[featured paper]</a>
-                    </div>
-                </p>
-            </div>
-            <br />
-        </div>
-
-        <!-- Research Section (Collapsible) -->
-        <div>
-            <div class="h2 collapsible-title">
-                <span>research</span>
-            </div>
-            <div class="collapsible-content">
-                <p class="p1">
-                    <a href="graph-meme-pool" class="a">Graph Meme Pool</a>
-                    <br>
-                    <a href="https://github.com/karlo-babic/pyrv#readme" class="a">PyRv Learning</a>
-                </p>
-            </div>
-            <br />
-        </div>
-              
-        <!-- Lectures Section (Collapsible) -->
-        <div>
-            <div class="h2 collapsible-title">
-                <span>lectures</span>
-            </div>
-            <div class="collapsible-content">
-                <p class="p1">
-                    <a href="/paradigms" class="a">Programming Paradigms</a>
-                    <br>
-                    <a href="/gamedev" class="a">Game Development</a>
-                </p>
-            </div>
-            <br />
-        </div>
-
-        <!-- Pages Section (Collapsible) -->
-        <div>
-            <div class="h2 collapsible-title">
-                <span>pages</span>
-            </div>
-            <div class="collapsible-content">
-                <p class="p1">
-                    <a href="/pages/cointoss" class="a">God's Coin Toss</a>
-                </p>
-            </div>
-            <br />
-        </div>
-
-        <!-- Gamedev Section (Collapsible) -->
-        <div>
-            <div class="h2 collapsible-title">
-                <span>games</span>
-            </div>
-            <div class="collapsible-content">
-                <p class="p1">
-                    <a href="https://flatdotgames.itch.io/paperfall?secret=SUFbL6vPxOrutW3VXlBlXjprfVw" class="a">Paperfall</a>
-                    <br>
-                    <a href="/console?run=glideroflife" class="a">Glider of Life</a>
-                </p>
-            </div>
-            <br />
-        </div>
-
-        <!-- Fiction Section (Collapsible) -->
-        <div>
-            <div class="h2 collapsible-title">
-                <span>fiction</span>
-            </div>
-            <div class="collapsible-content">
-                <p class="p1">
-                    <a href="/fiction/#hypersol-caves" class="a">HyperSol Caves</a>
-                    <br>
-                    <a href="/fiction/#dream-job" class="a">Dream Job</a>
-                </p>
-            </div>
-            <br />
-        </div>
-
-    </div>
-    
-    <!-- Console Window -->
-    <div id="console-window">
-        <div id="console-screen"></div>
-        <div id="console-controls">
-            <!-- Restart Button -->
-            <button id="restart-program" class="console-btn" title="Restart Program">⟲</button>
+    <div class="main-layout-container">
+        <div class="content-block">
             
-            <div class="dropdown" id="program-dropdown">
-                <button id="current-program-btn" class="console-btn dropdown-btn"></button>
-                <div id="program-list" class="dropdown-content"></div>
+            <!-- About Me Section (Collapsible) -->
+            <div>
+                <div class="h2">
+                    <a href="#" id="rocket-placeholder">
+                        <img id="rocket" src="imgs/rocket_off.png" width="12" title="rocket">
+                    </a>
+                    <span class="collapsible-title">bout me</span>
+                    <div id="threebody">
+                        <a href="#" id="threebody-link">
+                            <img id="threebody-img" src="imgs/dots.png" width="40" title="three body problem">
+                        </a>
+                    </div>
+                </div>
+                <div class="collapsible-content">
+                    <p class="p1">
+                        <a href="CV_karlo.pdf" class="a">resume.pdf</a>
+                        <br />
+                        <a href="https://scholar.google.com/citations?user=8e562aAAAAAJ&hl=en" class="a">scholar.google.com</a>
+                        <div class="featured-paper-wrapper">
+                            <a href="https://ieeexplore.ieee.org/abstract/document/10534761" class="a featured-paper">[featured paper]</a>
+                        </div>
+                    </p>
+                </div>
+                <br />
             </div>
-            <button id="next-program" class="console-btn" title="Next Program">⏭</button>
+    
+            <!-- Research Section (Collapsible) -->
+            <div>
+                <div class="h2 collapsible-title">
+                    <span>research</span>
+                </div>
+                <div class="collapsible-content">
+                    <p class="p1">
+                        <a href="graph-meme-pool" class="a">Graph Meme Pool</a>
+                        <br>
+                        <a href="https://github.com/karlo-babic/pyrv#readme" class="a">PyRv Learning</a>
+                    </p>
+                </div>
+                <br />
+            </div>
                   
-            <!-- Wrapper for input and suggestion -->
-            <div id="console-input-wrapper">
-                <input type="text" id="program-input" class="console-input">
-                <span id="console-suggestion"></span>
+            <!-- Lectures Section (Collapsible) -->
+            <div>
+                <div class="h2 collapsible-title">
+                    <span>lectures</span>
+                </div>
+                <div class="collapsible-content">
+                    <p class="p1">
+                        <a href="/paradigms" class="a">Programming Paradigms</a>
+                        <br>
+                        <a href="/gamedev" class="a">Game Development</a>
+                    </p>
+                </div>
+                <br />
             </div>
-
-            <button id="fullscreen-btn" class="console-btn" title="Open in New Tab">⤢</button>
+    
+            <!-- Pages Section (Collapsible) -->
+            <div>
+                <div class="h2 collapsible-title">
+                    <span>pages</span>
+                </div>
+                <div class="collapsible-content">
+                    <p class="p1">
+                        <a href="/pages/cointoss" class="a">God's Coin Toss</a>
+                    </p>
+                </div>
+                <br />
+            </div>
+    
+            <!-- Gamedev Section (Collapsible) -->
+            <div>
+                <div class="h2 collapsible-title">
+                    <span>games</span>
+                </div>
+                <div class="collapsible-content">
+                    <p class="p1">
+                        <a href="https://flatdotgames.itch.io/paperfall?secret=SUFbL6vPxOrutW3VXlBlXjprfVw" class="a">Paperfall</a>
+                        <br>
+                        <a href="/console?run=glideroflife" class="a">Glider of Life</a>
+                    </p>
+                </div>
+                <br />
+            </div>
+    
+            <!-- Fiction Section (Collapsible) -->
+            <div>
+                <div class="h2 collapsible-title">
+                    <span>fiction</span>
+                </div>
+                <div class="collapsible-content">
+                    <p class="p1">
+                        <a href="/fiction/#hypersol-caves" class="a">HyperSol Caves</a>
+                        <br>
+                        <a href="/fiction/#dream-job" class="a">Dream Job</a>
+                    </p>
+                </div>
+                <br />
+            </div>
+    
+        </div>
+        
+        <!-- Console Window -->
+        <div id="console-window">
+            <div id="console-screen"></div>
+            <div id="console-controls">
+                <!-- Restart Button -->
+                <button id="restart-program" class="console-btn" title="Restart Program">⟲</button>
+                
+                <div class="dropdown" id="program-dropdown">
+                    <button id="current-program-btn" class="console-btn dropdown-btn"></button>
+                    <div id="program-list" class="dropdown-content"></div>
+                </div>
+                <button id="next-program" class="console-btn" title="Next Program">⏭</button>
+                      
+                <!-- Wrapper for input and suggestion -->
+                <div id="console-input-wrapper">
+                    <input type="text" id="program-input" class="console-input">
+                    <span id="console-suggestion"></span>
+                </div>
+    
+                <button id="fullscreen-btn" class="console-btn" title="Open in New Tab">⤢</button>
+            </div>
         </div>
     </div>
 

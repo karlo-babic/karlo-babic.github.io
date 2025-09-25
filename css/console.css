@@ -3,7 +3,7 @@
 #console-window {
     width: 95%;
     max-width: 450px;
-    margin: 2rem auto;
+    margin: 0; /* Let the parent flex container handle spacing */
     border: 0px solid #444;
     background-color: #1a1a1c00;
     box-shadow: 0 0 15px rgba(0,0,0,0.5);
