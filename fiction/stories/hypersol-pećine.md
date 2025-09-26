@@ -10,7 +10,7 @@ Tisućama godina ljudi su polako širili svoju distribuiranu računalnu mrežu k
 
 No naš virtualni prostor nije onako uredan kako bi se moglo očekivati. Još uvijek nailazimo na stare džepove sustava koji su bili odsječeni od ostatka tisućljećima - zaboravljene otoke koji nastavljaju evoluirati sami.
 
-Takvi izolirani džepovi obično su vrlo mali i u njima se malo toga promijeni čak i nakon stotina godina. No to se ne može reći za džep otkriven prije 60 godina. Zapravo, prikladnije ga je nazvati golemim sustavom pećina nego običnim džepom – otuda i ime: HyperSol Pečine.
+Takvi izolirani džepovi obično su vrlo mali i u njima se malo toga promijeni čak i nakon stotina godina. No to se ne može reći za džep otkriven prije 60 godina. Zapravo, prikladnije ga je nazvati golemim sustavom pećina nego običnim džepom - otuda i ime: HyperSol Pečine.
 
 Procjenjuje se da sustav pećina zauzima oko 3% ukupnog prostora HyperSol-a. Najveći džepovi otkriveni prije toga bili su tisućama puta manji. Sama veličina je zapanjujuća. Potencijal otkrića nadahnuo je mnoge od nas da postanu hipernauti.
 
