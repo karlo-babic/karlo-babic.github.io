@@ -100,7 +100,7 @@ function renderStory(story) {
         const lowerGenres = story.properties.genres.toLowerCase();
         if (lowerGenres.includes('fantasy')) {
             document.body.classList.add('genre-fantasy');
-        } else if (lowerGenres.includes('science fiction') || lowerGenres.includes('sci-fi')) || lowerGenres.includes('znanstvena fantastika')) {
+        } else if (lowerGenres.includes('science fiction') || lowerGenres.includes('sci-fi') || lowerGenres.includes('znanstvena fantastika')) {
             document.body.classList.add('genre-scifi');
         }
     }
