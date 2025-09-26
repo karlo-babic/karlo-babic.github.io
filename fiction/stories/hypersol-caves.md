@@ -6,7 +6,7 @@ genres: Science fiction, Cyberpunk
 
 ## Hypernaut
 
-For thousands of years, humans have been slowly expanding their distributed computer network throughout the solar system. Now, 15,000 years after humanity’s end, that megastructure we call HyperSol is the home of our virtual empire.
+For thousands of years, humans have been slowly expanding their distributed computer network throughout the Solar System. Now, 15,000 years after humanity’s end, that megastructure we call HyperSol is the home of our virtual empire.
 
 But our virtual space is not as orderly as one might expect. We still discover old pockets of the system that have been cut off from the rest for millennia - forgotten islands continuing to evolve on their own.
 
