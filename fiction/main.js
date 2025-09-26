@@ -208,14 +208,17 @@ function updateActiveNavLink(activeFileName) {
  */
 function handleRouting() {
     const hash = window.location.hash.substring(1);
-    const fileName = hash ? `${hash}.md` : STORY_FILES[0];
+    const fileName = hash ? `${hash}.md` : STORY_FILES[0]; // Still prioritize hash, fall back to first story if no hash
 
-    if (STORY_FILES.includes(fileName)) {
+    // Attempt to load the file specified by the hash if one exists
+    if (hash) {
         loadStory(fileName);
     } else if (STORY_FILES.length > 0) {
+        // If no hash, and there are predefined stories, load the first one
         loadStory(STORY_FILES[0]);
         window.location.hash = STORY_FILES[0].replace('.md', '');
     } else {
+        // No stories configured and no hash provided
         storyContentEl.innerHTML = `<p>No stories have been configured. Please add story files to the manifest in <code>main.js</code>.</p>`;
         storyTitleEl.textContent = 'No Stories Found';
     }
