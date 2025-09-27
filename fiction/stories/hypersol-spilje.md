@@ -64,4 +64,4 @@ Figura me zapazila i u trenu nestala. Srećom, moj skener je snimio cijeli doga�
 
 To je bilo ludo. Možda me netko zeza. Ne, razina detalja je bila nevjerojatna. A što je uopće bilo ono što me promatralo s druge strane livade?
 
-Možda će me svjež zrak vratiti u normalu. Otvaram prozor i kroz njega ugledam istu onu vanzemaljsku džungle i livadu koju sam vidio u hiperprostoru. Biće bez očiju i dalje stoji tamo, promatrajući me.
+Možda će me svjež zrak vratiti u normalu. Otvaram prozor i kroz njega ugledam istu onu vanzemaljsku džunglu i livadu koju sam vidio u hiperprostoru. Biće bez očiju i dalje stoji tamo, promatrajući me.
