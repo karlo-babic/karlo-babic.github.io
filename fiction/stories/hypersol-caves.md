@@ -2,6 +2,10 @@
 title: The HyperSol Caves
 date: 2025-09-22
 genres: Science fiction, Cyberpunk
+
+translationId: hypersol-caves
+language: en
+filename: hypersol-caves.md
 ---
 
 ## Hypernaut

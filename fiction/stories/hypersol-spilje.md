@@ -2,6 +2,10 @@
 title: HyperSol Špilje
 date: 2025-09-22
 genres: Znanstvena fantastika, Cyberpunk
+
+translationId: hypersol-caves
+language: hr
+filename: hypersol-spilje.md
 ---
 
 ## Hipernaut

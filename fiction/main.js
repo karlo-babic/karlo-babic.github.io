@@ -18,6 +18,7 @@ import { parseMarkdown } from '../../scripts/programs/engines/markdown_parser.js
  */
 const STORY_FILES = [
     'hypersol-caves.md',
+    'hypersol-spilje.md', // Example of a translated file
     'dream-job.md',
     'testing.md',
 ];
@@ -29,6 +30,23 @@ const FONT_SIZE_CONFIG = {
     default: 16,    // Default font size in pixels
 };
 
+// --- STATE ---
+
+/**
+ * Holds a structured collection of all stories, grouped by translationId.
+ * Populated by buildStoryCollection() on startup.
+ * @type {Object.<string, Object.<string, object>>}
+ * @example
+ * {
+ *   "hypersol-caves": {
+ *     "en": { title: "...", language: "en", fileName: "...", slug: "..." },
+ *     "hr": { title: "...", language: "hr", fileName: "...", slug: "..." }
+ *   }
+ * }
+ */
+let storyCollection = {};
+
+
 // --- DOM ELEMENT REFERENCES ---
 
 const storyListEl = document.getElementById('story-list');
@@ -36,6 +54,7 @@ const storyTitleEl = document.getElementById('story-title');
 const storyMetaEl = document.getElementById('story-meta');
 const storyContentEl = document.getElementById('story-content');
 const storyNavEl = document.getElementById('story-navigation');
+const langSwitcherEl = document.getElementById('language-switcher');
 
 
 // --- CORE FUNCTIONS ---
@@ -44,13 +63,15 @@ const storyNavEl = document.getElementById('story-navigation');
  * Parses the text content of a story file, separating the front matter
  * (properties) from the main markdown content.
  * @param {string} fileContent - The full raw text from the markdown file.
+ * @param {string} fileName - The name of the file, used for fallbacks.
  * @returns {{properties: object, content: string}|null} An object with parsed
  *   properties and the story content, or null if parsing fails.
  */
-function parseStoryFile(fileContent) {
+function parseStoryFile(fileContent, fileName) {
+    const slug = fileName.replace('.md', '');
     const parts = fileContent.split('---');
     if (parts.length < 3) {
-        console.error("Invalid story format: Missing front matter delimiters (---).");
+        console.error(`Invalid story format in ${fileName}: Missing front matter delimiters (---).`);
         return null;
     }
 
@@ -65,6 +86,16 @@ function parseStoryFile(fileContent) {
             properties[key.trim().toLowerCase()] = value;
         }
     });
+    
+    // Add fallback properties if they are missing
+    properties.slug = slug;
+    properties.filename = fileName;
+    if (!properties.translationid) {
+        properties.translationid = slug.replace(/-\w{2}$/, ''); // Guess ID by removing language suffix like '-hr'
+    }
+    if (!properties.language) {
+        properties.language = 'en'; // Default language is English
+    }
 
     return { properties, content };
 }
@@ -88,6 +119,35 @@ function calculateReadingInfo(text) {
     
     return { wordCount, minutesToRead };
 }
+
+/**
+ * Renders the language switcher UI for a story, if translations are available.
+ * @param {object} storyProperties - The properties object of the current story.
+ */
+function renderLanguageSwitcher(storyProperties) {
+    langSwitcherEl.innerHTML = ''; // Clear previous switcher
+    const { translationid: translationId, language: currentLang } = storyProperties;
+
+    if (!translationId || !storyCollection[translationId]) return;
+
+    const storyGroup = storyCollection[translationId];
+    const availableLanguages = Object.values(storyGroup);
+
+    if (availableLanguages.length > 1) {
+        const switcherContent = availableLanguages
+            .map(langVersion => {
+                const langName = langVersion.languagename || langVersion.language.toUpperCase();
+                if (langVersion.language === currentLang) {
+                    return `<span class="active-lang">${langName}</span>`;
+                } else {
+                    return `<a href="#${langVersion.slug}">${langName}</a>`;
+                }
+            })
+            .join('');
+        langSwitcherEl.innerHTML = switcherContent;
+    }
+}
+
 
 /**
  * Renders a parsed story object into the DOM.
@@ -133,6 +193,9 @@ function renderStory(story) {
     
     storyMetaEl.innerHTML = metaHtml;
 
+    // Render the language switcher if applicable
+    renderLanguageSwitcher(story.properties);
+
     // Render story content using the imported markdown parser
     storyContentEl.innerHTML = parseMarkdown(story.content);
 }
@@ -144,6 +207,10 @@ function renderStory(story) {
 async function loadStory(fileName) {
     if (!fileName) return;
     
+    // Update the URL hash without triggering a hashchange event to keep URL clean
+    const slug = fileName.replace('.md', '');
+    history.replaceState(null, '', `#${slug}`);
+    
     storyContentEl.innerHTML = '<p>Loading...</p>';
 
     try {
@@ -152,7 +219,7 @@ async function loadStory(fileName) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const markdownText = await response.text();
-        const story = parseStoryFile(markdownText);
+        const story = parseStoryFile(markdownText, fileName);
 
         if (story) {
             renderStory(story);
@@ -168,20 +235,23 @@ async function loadStory(fileName) {
 }
 
 /**
- * Populates the navigation list with links to all available stories.
+ * Populates the navigation list with links to story groups.
  */
 function populateNav() {
     storyListEl.innerHTML = ''; // Clear "Loading..." text
-    STORY_FILES.forEach(fileName => {
+    Object.keys(storyCollection).forEach(translationId => {
+        const storyGroup = storyCollection[translationId];
+        // Prefer the English version for the nav link, or fall back to the first available.
+        const mainVersion = storyGroup['en'] || Object.values(storyGroup)[0];
+
+        if (!mainVersion) return;
+
         const listItem = document.createElement('li');
         const link = document.createElement('a');
 
-        const storyId = fileName.replace('.md', '');
-        const storyName = storyId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-
-        link.href = `#${storyId}`;
-        link.textContent = storyName;
-        link.dataset.fileName = fileName;
+        link.href = `#${mainVersion.slug}`;
+        link.textContent = mainVersion.title || 'Untitled Story';
+        link.dataset.translationId = translationId;
 
         listItem.appendChild(link);
         storyListEl.appendChild(listItem);
@@ -193,9 +263,22 @@ function populateNav() {
  * @param {string} activeFileName - The filename of the currently displayed story.
  */
 function updateActiveNavLink(activeFileName) {
+    const slug = activeFileName.replace('.md', '');
+    let activeTranslationId = null;
+
+    // Find the translationId for the active file
+    for (const id in storyCollection) {
+        const group = storyCollection[id];
+        if (Object.values(group).some(v => v.slug === slug)) {
+            activeTranslationId = id;
+            break;
+        }
+    }
+    
+    // Update the nav links
     const links = storyNavEl.querySelectorAll('a');
     links.forEach(link => {
-        if (link.dataset.fileName === activeFileName) {
+        if (link.dataset.translationId === activeTranslationId) {
             link.classList.add('active');
         } else {
             link.classList.remove('active');
@@ -207,21 +290,49 @@ function updateActiveNavLink(activeFileName) {
  * Handles routing based on the URL hash.
  */
 function handleRouting() {
-    const hash = window.location.hash.substring(1);
-    const fileName = hash ? `${hash}.md` : STORY_FILES[0]; // Still prioritize hash, fall back to first story if no hash
-
-    // Attempt to load the file specified by the hash if one exists
-    if (hash) {
+    const slug = window.location.hash.substring(1);
+    const fileName = slug ? `${slug}.md` : STORY_FILES[0];
+    
+    // Verify that the requested story file exists in our manifest
+    if (STORY_FILES.includes(fileName)) {
         loadStory(fileName);
     } else if (STORY_FILES.length > 0) {
-        // If no hash, and there are predefined stories, load the first one
+        // Fallback to the first story if the hash is invalid
         loadStory(STORY_FILES[0]);
-        window.location.hash = STORY_FILES[0].replace('.md', '');
     } else {
-        // No stories configured and no hash provided
+        // No stories configured
         storyContentEl.innerHTML = `<p>No stories have been configured. Please add story files to the manifest in <code>main.js</code>.</p>`;
         storyTitleEl.textContent = 'No Stories Found';
     }
+}
+
+/**
+ * Fetches all story files and parses their front matter to build the storyCollection.
+ */
+async function buildStoryCollection() {
+    const storyPromises = STORY_FILES.map(async (fileName) => {
+        try {
+            const response = await fetch(`stories/${fileName}`);
+            if (!response.ok) return null;
+            const text = await response.text();
+            const story = parseStoryFile(text, fileName);
+            return story ? story.properties : null;
+        } catch (error) {
+            console.error(`Failed to fetch properties for ${fileName}:`, error);
+            return null;
+        }
+    });
+
+    const allProperties = await Promise.all(storyPromises);
+
+    allProperties.forEach(props => {
+        if (!props) return;
+        const { translationid: id, language } = props;
+        if (!storyCollection[id]) {
+            storyCollection[id] = {};
+        }
+        storyCollection[id][language] = props;
+    });
 }
 
 /**
@@ -308,15 +419,22 @@ function setupFontSizeSwitcher() {
 /**
  * Initializes the application.
  */
-function init() {
+async function init() {
     if (!storyListEl || !storyTitleEl || !storyMetaEl || !storyContentEl) {
         console.error("Initialization failed: One or more required DOM elements are missing.");
         return;
     }
+
+    // First, fetch all story data to build our internal collection
+    await buildStoryCollection();
+    
+    // Now that we have the data, we can build the UI and handle routing
     populateNav();
     handleRouting();
     setupThemeSwitcher();
     setupFontSizeSwitcher();
+
+    // Listen for hash changes to load different stories/languages
     window.addEventListener('hashchange', handleRouting);
 }
 

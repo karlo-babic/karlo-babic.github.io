@@ -148,7 +148,6 @@ header {
     background-color: var(--subtle-bg-color);
     font-weight: bold;
 }
-
 /* Story Content */
 #story-container {
     max-width: 720px;
@@ -160,6 +159,35 @@ header {
     margin-bottom: 3rem;
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 1.5rem;
+}
+
+/* Language switcher styles */
+#language-switcher {
+    margin-top: 1.5rem;
+    font-family: var(--font-heading);
+    font-size: 0.9rem;
+    color: var(--meta-color);
+}
+
+/* Hide the container when it has no content */
+#language-switcher:empty {
+    display: none;
+}
+
+#language-switcher a {
+    margin: 0 0.5rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+}
+#language-switcher a:hover {
+    background-color: var(--subtle-bg-color);
+}
+
+/* Style for the currently active language */
+#language-switcher .active-lang {
+    margin: 0 0.5rem;
+    font-weight: bold;
+    color: var(--header-color);
 }
 
 #story-title {
