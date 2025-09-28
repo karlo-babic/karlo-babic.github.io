@@ -14,27 +14,33 @@ function escapeHtml(text) {
 }
 
 /**
- * Tries to fetch a file by checking for multiple supported extensions.
+ * Tries to fetch a file by checking for multiple supported extensions across multiple directories.
+ * It searches directories in a prioritized order.
  * @param {string} filename The base name of the file to fetch.
  * @returns {Promise<{content: string, ext: string}>} A promise that resolves with the file content and its extension.
  */
 async function fetchFile(filename) {
+    // Prioritized list of directories to search within.
+    const basePaths = ['./data/sections/', './data/'];
     // Defines the search order for file extensions.
-    const extensions = ['md', 'txt', 'json']; //html excluded for now
-    for (const ext of extensions) {
-        try {
-            const path = `./data/${filename}.${ext}`;
-            const response = await fetch(path);
-            if (response.ok) {
-                const content = await response.text(); // Get raw text content first.
-                return { content, ext };
+    const extensions = ['md', 'txt', 'json'];
+
+    for (const basePath of basePaths) {
+        for (const ext of extensions) {
+            try {
+                const path = `${basePath}${filename}.${ext}`;
+                const response = await fetch(path);
+                if (response.ok) {
+                    const content = await response.text();
+                    return { content, ext }; // File found, return immediately.
+                }
+            } catch (error) {
+                // Ignore network errors and continue to the next attempt.
             }
-        } catch (error) {
-            // This catch is for network errors; fetch() rejects on those.
-            // We can ignore it and let the loop continue to the next extension.
         }
     }
-    // If the loop completes without finding any file, throw an error.
+    
+    // If all loops complete, the file was not found in any specified location.
     throw new Error(`File not found with any supported extension.`);
 }
 
@@ -63,19 +69,15 @@ const Read = {
             // Route the content to the correct renderer based on its extension.
             switch (ext) {
                 case 'md':
-                    // For MD files, we parse and format them based on their structure.
                     htmlOutput = parseMarkdown(content);
                     break;
                 case 'html':
-                    // For HTML files, we pass the content through directly.
                     htmlOutput = content;
                     break;
                 case 'txt':
-                    // For text files, we escape them and wrap in <pre> tags to preserve formatting.
                     htmlOutput = `<pre>${escapeHtml(content)}</pre>`;
                     break;
                 case 'json':
-                    // For JSON files, we parse and format them based on their structure.
                     const data = JSON.parse(content);
                     if (Array.isArray(data)) {
                         htmlOutput = data.join('<hr style="border-color: #444; margin: 1em 0;">');

@@ -272,6 +272,13 @@ export const Console = {
         this.activeProgram = null;
         this.screenEl.innerHTML = '';
         
+        // Update the current program index to match the program being loaded.
+        // This ensures the dropdown UI stays in sync.
+        const programIndex = this.availablePrograms.indexOf(programName);
+        if (programIndex !== -1) {
+            this.currentProgramIndex = programIndex;
+        }
+
         // Store the arguments used to launch this program instance.
         this.currentProgramArgs = args;
 

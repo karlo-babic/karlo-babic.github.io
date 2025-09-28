@@ -23,10 +23,37 @@ document.addEventListener('DOMContentLoaded', () => {
         threebodyInit();
     });
 
+    // Add event listeners for section titles to load content into the console
+    const sectionTitles = document.querySelectorAll('[data-section-file]');
+    sectionTitles.forEach(title => {
+        title.addEventListener('click', (e) => {
+            e.preventDefault(); 
+            
+            const filename = title.dataset.sectionFile;
+            if (filename) {
+                const commandString = `read ${filename}`;
+                Console.addToHistory(commandString);
+                Console.loadProgram('read', { positional: [filename], named: {} });
+
+                // Scroll the console into view for better user experience
+                const consoleWindow = document.getElementById('console-window');
+                if (consoleWindow) {
+                    consoleWindow.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        });
+    });
+
     // --- Initialize all modules ---
     startFuzzyEca();
     Eye.start();
-    Console.init('gameoflife');
+    
+    // Initialize console, checking for a program specified in the URL,
+    // otherwise defaulting to 'gameoflife'.
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialProgram = urlParams.get('run') || 'gameoflife';
+    Console.init(initialProgram);
+
     setTimeout(showQuote, 100);
 
     // Start the master animation loop
