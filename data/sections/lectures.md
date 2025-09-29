@@ -1,2 +1,4 @@
-[**Programming Paradigms**](/paradigms)
-[**Game Development**](/gamedev)
+- **Programming Paradigms**
+  - [Oz Version](/paradigms)
+  - [Python Version](/paradigms-py)
+- [**Game Development**](/gamedev)
