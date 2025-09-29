@@ -14,7 +14,7 @@ For thousands of years, humans have been slowly expanding their distributed comp
 
 But our virtual space is not as orderly as one might expect. We still discover old pockets of the system that have been cut off from the rest for millennia - forgotten islands continuing to evolve on their own.
 
-These isolated pockets are usually tiny, and little changes within them even after hundreds of years. The same cannot be said of the pocket discovered 60 years ago. In truth, it is more fitting to call it a vast cave system than a mere pocket, hence the name: the HyperSol Caves.
+These isolated pockets are usually tiny, and they remain nearly unchanged, even after hundreds of years. The same cannot be said of the pocket discovered 60 years ago. In truth, it is more fitting to call it a vast cave system than a mere pocket, hence the name: the HyperSol Caves.
 
 It is currently estimated that the cave system spans 3% of HyperSol’s total space. The largest pockets previously discovered were thousands of times smaller. The sheer scale is staggering. The potential for discovery has inspired many of us to become hypernauts.
 
@@ -26,27 +26,27 @@ I am 344EFZ97, though my friends call me Z97. This is the story of how, within t
 
 Even though today is the first day at my new job, everything I do feels deeply ingrained in me. It is as if my thoughts and actions have been flowing along the same paths an uncountable number of times. My mind feels like a primeval river, its bed deep and its channels rigid.
 
-The only moments when I feel less deterministic are when I am in hyperspace, which is strange because it is very broken today. There, my thoughts can finally breathe as I explore this oddly alien and broken space.
+The only moments when I feel less deterministic are within hyperspace’s virtual environments, which is strange because it is very broken today. There, my thoughts can finally breathe as I explore this oddly alien and broken space.
 
 Throughout the day I receive multiple notifications filled with cryptic text. Something a machine might send to another machine, but far more alien. The sender information is strange too, as if the messages are coming from outside hyperspace itself.
 
-I cannot make sense of what is happening on my portable, so I decide to look into it more deeply once I get home. Even though people spend most of their lives inside hyperspace, somebody still needs to clean up the mess. I thought that by the year 3250 I would be working as a coder, but here I am.
+I cannot make sense of what is happening in hyperspace using my portable, so I decide to look into it more deeply once I get home. Even though people spend most of their lives inside hyperspace, somebody still needs to clean up the mess. I thought that by the year 3250 I would be working as a coder, but here I am.
 
 I am Tomas, but my friends call me Tom. This is the story of my last day as a janitor.
 
 ## Hypernaut
 
-The entrances into pockets we discover are most often found in places nobody has looked for in decades, hidden behind or within obscure constructs long abandoned. The last small pocket I found was through a passage inside one of the modules of an old research program. Inside it I discovered a few simple microorganisms, evolved from an ancient version of scrubber bots, originally designed to clear HyperSol’s spaces of unused data.
+The entrances into pockets we discover are most often found in places nobody has looked for in decades, hidden behind or within obscure constructs long abandoned. The last small pocket I found was through a passage inside one of the modules of an old research program. Inside it I discovered a few simple microorganisms, evolved from an ancient version of scrubber bots, originally designed to clear HyperSol’s spaces of unused constructs and data.
 
 The HyperSol Caves, however, were found in the aftermath of a terrorist attack that destroyed one of the oldest constructs we knew of, the Earth weather simulator. We believe the simulator was built because humans were fighting a losing battle against a changing planet, and they hoped that by modeling Earth they could find a way to save it.
 
-These caves are unlike anything we have ever encountered. Many have tried to design environments that appear natural rather than artificial. Some succeed for a short time, but the novelty always wears off. The constructs within the caves, however, have been evolving for thousands of years. To understand their behavior, we must understand the entire process of their evolution. And it is not only about individual constructs: the caves as a whole have evolved together, creating a vast and intricate network of causation.
+These caves are unlike anything we have ever encountered. Many have tried to design environments that appear natural rather than artificial. Some succeed for a short time, but their artificiality soon becomes apparent. The constructs within the caves, however, have been evolving for thousands of years. To understand their behavior, we must understand the entire process of their evolution. And it is not only about individual constructs: the caves as a whole have evolved together, creating a vast and intricate network of causation.
 
 ## Janitor
 
 When I get home, I quickly enter hyperspace. It was the only thing on my mind the entire day. My local environment looks the same as always, but as soon as I step into the global space, it is unrecognizable. The shape and topology are somewhat familiar, yet the components are unlike anything I have ever seen.
 
-Hyperspace usually resembles a vast, orderly, multilevel 3D megacity. Now it looks more like a sprawling jungle inside a cave. The branching structures remind me of the paths and roads I know well, but this space feels wild, untamed.
+Hyperspace usually resembles a vast, orderly, multilevel 3D megacity. Now it looks more like a primeval jungle inside a virtual cave. The branching structures remind me of the paths and roads I know well, but this space feels wild, untamed.
 
 It seems impossible for a cyberattack to alter so much of hyperspace at once. I checked the web but found no mention of it. This has to be something else. I even spot what look like bots, but they move at nearly twice the normal speed. What is happening? Am I losing it?
 

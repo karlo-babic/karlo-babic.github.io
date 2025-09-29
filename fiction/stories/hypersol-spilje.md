@@ -26,27 +26,27 @@ Ja sam 344EFZ97, iako me prijatelji zovu Z97. Ovo je priča o tome kako sam, unu
 
 Iako mi je danas prvi dan na novom poslu, sve što radim djeluje kao da je već duboko usađeno u meni. Kao da su moje misli i postupci bezbroj puta prošli istim stazama. Moj um nalikuje pradavnoj rijeci, čije je korito duboko i tokovi nepromjenjivi.
 
-Jedini trenuci kad se osjećam manje determinirano su kada sam u hiperprostoru, što je čudno jer je danas posebno nestabilan. Tamo moje misli konačno mogu disati dok istražujem ovaj čudno vanzemaljski i oštećen prostor.
+Jedini trenuci kad se osjećam manje determinirano su unutar virtualnih okruženja hiperprostora, što je čudno jer je danas posebno nestabilan. Tamo moje misli konačno mogu disati dok istražujem ovaj čudno vanzemaljski i oštećen prostor.
 
 Tijekom dana primam niz notifikacija ispunjenih enigmatičnim tekstom. Nešto što bi stroj mogao poslati drugom stroju, ali ipak daleko čudnije. Čak su i podaci o pošiljatelju neobični, kao da poruke dolaze izvan samog hiperprostora.
 
-Ne mogu dokučiti što se događa na svom prijenosniku, pa odlučujem to istražiti kasnije, kod kuće. Iako ljudi provode većinu života unutar hiperprostora, netko i dalje mora čistiti za njima. Mislio sam da ću do 3250. raditi kao programer, ali evo me.
+Ne mogu dokučiti što se događa u hiperprostoru koristeći svoj prijenosnik, pa odlučujem to detaljnije istražiti kad dođem kući. Iako ljudi provode većinu života unutar hiperprostora, netko i dalje mora čistiti za njima. Mislio sam da ću do 3250. raditi kao programer, ali evo me.
 
 Zovem se Tomas, ali prijatelji me zovu Tom. Ovo je priča o mom posljednjem danu na poslu domara.
 
 ## Hipernaut
 
-Ulazi u džepove koje otkrivamo najčešće se nalaze na mjestima koja nitko nije tražio desetljećima, skriveni unutar ili iza davno napuštenih konstrukata. Do posljednjeg malog džepa koji sam pronašao vodio je prolaz smješten unutar jednog modula starog istraživačkog programa. Unutra sam otkrio nekoliko jednostavnih mikroorganizama, evoluiranih iz drevne verzije smetlar-botova koji su izvorno bili stvoreni da čiste prostor HyperSol-a od nekorištenih podataka.
+Ulazi u džepove koje otkrivamo najčešće se nalaze na mjestima koja nitko nije tražio desetljećima, skriveni unutar ili iza davno napuštenih konstrukata. Do posljednjeg malog džepa koji sam pronašao vodio je prolaz smješten unutar jednog modula starog istraživačkog programa. Unutra sam otkrio nekoliko jednostavnih mikroorganizama, evoluiranih iz drevne verzije smetlar-botova koji su izvorno bili stvoreni da čiste prostor HyperSol-a od nekorištenih konstrukata i podataka.
 
 HyperSol Špilje, međutim, pronađene su nakon terorističkog napada koji je uništio jedan od najstarijih poznatih konstrukata - simulator vremenskih uvjeta na Zemlji. Vjerujemo da je simulator nastao jer su ljudi vodili bitku protiv promjena na planeti koju su gubili i nadali se da će modeliranjem Zemlje pronaći način kako je spasiti.
 
-Ove špilje razlikuju se od svega s čime smo se do sada susreli. Mnogi su pokušali dizajnirati okoline koje djeluju prirodno, a ne umjetno. Neki su u tome na kratko uspjeli, ali zanimljivost brzo iščezne. Konstrukti unutar špilja, međutim, evoluirali su tisućama godina. Da bismo razumjeli njihovo ponašanje, moramo shvatiti cijeli proces njihove evolucije. I nije riječ samo o pojedinačnim konstruktima: špilje su se kao cjelina razvijale zajedno, tvoreći golemu i složenu mrežu uzročno-posljedičnih veza.
+Ove špilje razlikuju se od svega s čime smo se do sada susreli. Mnogi su pokušali dizajnirati okoline koje djeluju prirodno, a ne umjetno. Neki su u tome na kratko uspjeli, ali artificijelnost ubrzo postaje očita. Konstrukti unutar špilja, međutim, evoluirali su tisućama godina. Da bismo razumjeli njihovo ponašanje, moramo shvatiti cijeli proces njihove evolucije. I nije riječ samo o pojedinačnim konstruktima: špilje su se kao cjelina razvijale zajedno, tvoreći golemu i složenu mrežu uzročno-posljedičnih veza.
 
 ## Domar
 
 Kad dođem kući, odmah ulazim u hiperprostor. To mi je cijeli dan bilo na pameti. Moje lokalno okruženje izgleda isto kao i uvijek, ali čim kročim u globalni prostor, sve je neprepoznatljivo. Oblik i topologija donekle su poznati, ali su komponente posve drugačije od svega što sam ikad vidio.
 
-Hiperprostor obično izgleda poput golemog, uređenog, višeslojnog 3D megagrada. Sada više podsjeća na divlju džunglu unutar špilje. Strukture koje se šire podsjećaju me na poznate staze i ceste, ali prostor djeluje divlje, neukrotivo.
+Hiperprostor obično izgleda poput golemog, uređenog, višeslojnog 3D megagrada. Sada više nalikuje na prapovijesnu džunglu unutar virtualne špilje. Strukture koje se šire podsjećaju me na poznate staze i ceste, ali prostor djeluje divlje, neukrotivo.
 
 Čini se nemogućim da jedan cybernapad može promijeniti toliko hiperprostora odjednom. Provjerio sam na webu, ali nigdje nije bilo spomena o tome. Mora biti nešto drugo. Čak ugledam i bića koja izgledaju kao botovi, ali kreću se gotovo dvostruko brže nego inače. Što se događa? Jesam li poludio?
 
