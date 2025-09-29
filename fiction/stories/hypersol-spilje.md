@@ -10,7 +10,7 @@ filename: hypersol-spilje.md
 
 ## Hipernaut
 
-Tisućama godina ljudi su polako širili svoju distribuiranu računalnu mrežu kroz Sunčev sustav. Danas, 15 000 godina nakon kraja čovječanstva, ta megastruktura koju zovemo HyperSol dom je našeg virtualnog carstva.
+Tisućama godina ljudi su polako širili svoju distribuiranu računalnu mrežu kroz Sunčev sustav. Danas, 15 000 godina nakon kraja čovječanstva, HyperSol - golema računalna megastruktura - sadržava naše virtualno carstvo, rođeno davno iz Zemljinog virtualnog Hiperprostora.
 
 No naš virtualni prostor nije onako uredan kako bi se moglo očekivati. Još uvijek nailazimo na stare džepove sustava koji su bili odsječeni od ostatka tisućljećima - zaboravljene otoke koji nastavljaju evoluirati sami.
 
@@ -26,13 +26,13 @@ Ja sam 344EFZ97, iako me prijatelji zovu Z97. Ovo je priča o tome kako sam, unu
 
 Iako mi je danas prvi dan na novom poslu, sve što radim djeluje kao da je već duboko usađeno u meni. Kao da su moje misli i postupci bezbroj puta prošli istim stazama. Moj um nalikuje pradavnoj rijeci, čije je korito duboko i tokovi nepromjenjivi.
 
-Jedini trenuci kad se osjećam manje determinirano su unutar virtualnih okruženja hiperprostora, što je čudno jer je danas posebno nestabilan. Tamo moje misli konačno mogu disati dok istražujem ovaj čudno vanzemaljski i oštećen prostor.
+Jedini trenuci kad se osjećam manje determinirano su unutar virtualnih okruženja Hiperprostora, što je čudno jer je danas posebno nestabilan. Tamo moje misli konačno mogu disati dok istražujem ovaj čudno vanzemaljski i oštećen prostor.
 
-Tijekom dana primam niz notifikacija ispunjenih enigmatičnim tekstom. Nešto što bi stroj mogao poslati drugom stroju, ali ipak daleko čudnije. Čak su i podaci o pošiljatelju neobični, kao da poruke dolaze izvan samog hiperprostora.
+Tijekom dana primam niz notifikacija ispunjenih enigmatičnim tekstom. Nešto što bi stroj mogao poslati drugom stroju, ali ipak daleko čudnije. Čak su i podaci o pošiljatelju neobični, kao da poruke dolaze izvan samog Hiperprostora.
 
-Ne mogu dokučiti što se događa u hiperprostoru koristeći svoj prijenosnik, pa odlučujem to detaljnije istražiti kad dođem kući. Iako ljudi provode većinu života unutar hiperprostora, netko i dalje mora čistiti za njima. Mislio sam da ću do 3250. raditi kao programer, ali evo me.
+Ne mogu dokučiti što se događa u Hiperprostoru koristeći svoj prijenosnik, pa odlučujem to detaljnije istražiti kad dođem kući. Iako ljudi provode većinu života unutar Hiperprostora, netko i dalje mora čistiti za njima. Mislio sam da ću do 3250. raditi kao programer, ali evo me.
 
-Zovem se Tomas, ali prijatelji me zovu Tom. Ovo je priča o mom posljednjem danu na poslu domara.
+Zovem se Tomas, ali prijatelji me zovu Tom. Ovo je priča o mom posljednjem danu na poslu domara - danu koji je započeo prije 15 000 godina.
 
 ## Hipernaut
 
@@ -44,13 +44,13 @@ Ove špilje razlikuju se od svega s čime smo se do sada susreli. Mnogi su poku�
 
 ## Domar
 
-Kad dođem kući, odmah ulazim u hiperprostor. To mi je cijeli dan bilo na pameti. Moje lokalno okruženje izgleda isto kao i uvijek, ali čim kročim u globalni prostor, sve je neprepoznatljivo. Oblik i topologija donekle su poznati, ali su komponente posve drugačije od svega što sam ikad vidio.
+Kad dođem kući, odmah ulazim u Hiperprostor. To mi je cijeli dan bilo na pameti. Moje lokalno okruženje izgleda isto kao i uvijek, ali čim kročim u globalni prostor, sve je neprepoznatljivo. Oblik i topologija donekle su poznati, ali su komponente posve drugačije od svega što sam ikad vidio.
 
 Hiperprostor obično izgleda poput golemog, uređenog, višeslojnog 3D megagrada. Sada više nalikuje na prapovijesnu džunglu unutar virtualne špilje. Strukture koje se šire podsjećaju me na poznate staze i ceste, ali prostor djeluje divlje, neukrotivo.
 
-Čini se nemogućim da jedan cybernapad može promijeniti toliko hiperprostora odjednom. Provjerio sam na webu, ali nigdje nije bilo spomena o tome. Mora biti nešto drugo. Čak ugledam i bića koja izgledaju kao botovi, ali kreću se gotovo dvostruko brže nego inače. Što se događa? Jesam li poludio?
+Čini se nemogućim da jedan cybernapad može promijeniti toliko Hiperprostora odjednom. Provjerio sam na webu, ali nigdje nije bilo spomena o tome. Mora biti nešto drugo. Čak ugledam i bića koja izgledaju kao botovi, ali kreću se gotovo dvostruko brže nego inače. Što se događa? Jesam li poludio?
 
-Na kraju prostora koji se, začudo, može opisati kao livada, vidim biće bez očiju, a ipak osjećam kako gleda ravno u mene. Ne, ne, ne. Jebeš ovo. Nema više hiperprostora večeras.
+Na kraju prostora koji se, začudo, može opisati kao livada, vidim biće bez očiju, a ipak osjećam kako gleda ravno u mene. Ne, ne, ne. Jebeš ovo. Nema više Hiperprostora večeras.
 
 ## Hipernaut
 
@@ -68,4 +68,4 @@ Figura me zapazila i u trenu nestala. Srećom, moj skener je snimio cijeli doga�
 
 To je bilo ludo. Možda me netko zeza. Ne, razina detalja je bila nevjerojatna. A što je uopće bilo ono što me promatralo s druge strane livade?
 
-Možda će me svjež zrak vratiti u normalu. Otvaram prozor i kroz njega ugledam istu onu vanzemaljsku džunglu i livadu koju sam vidio u hiperprostoru. Biće bez očiju i dalje stoji tamo, promatrajući me.
+Možda će me svjež zrak vratiti u normalu. Otvaram prozor i kroz njega ugledam istu onu vanzemaljsku džunglu i livadu koju sam vidio u Hiperprostoru. Biće bez očiju i dalje stoji tamo, promatrajući me.

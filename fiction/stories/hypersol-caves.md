@@ -10,7 +10,7 @@ filename: hypersol-caves.md
 
 ## Hypernaut
 
-For thousands of years, humans have been slowly expanding their distributed computer network throughout the Solar System. Now, 15,000 years after humanity’s end, that megastructure we call HyperSol is the home of our virtual empire.
+For thousands of years, humans have been slowly expanding their distributed computer network throughout the Solar System. Now, 15,000 years after humanity’s end, HyperSol - the vast computer megastructure - holds our virtual empire, born ages ago from Earth’s virtual Hyperspace.
 
 But our virtual space is not as orderly as one might expect. We still discover old pockets of the system that have been cut off from the rest for millennia - forgotten islands continuing to evolve on their own.
 
@@ -26,13 +26,13 @@ I am 344EFZ97, though my friends call me Z97. This is the story of how, within t
 
 Even though today is the first day at my new job, everything I do feels deeply ingrained in me. It is as if my thoughts and actions have been flowing along the same paths an uncountable number of times. My mind feels like a primeval river, its bed deep and its channels rigid.
 
-The only moments when I feel less deterministic are within hyperspace’s virtual environments, which is strange because it is very broken today. There, my thoughts can finally breathe as I explore this oddly alien and broken space.
+The only moments when I feel less deterministic are within Hyperspace’s virtual environments, which is strange because it is very broken today. There, my thoughts can finally breathe as I explore this oddly alien and broken space.
 
-Throughout the day I receive multiple notifications filled with cryptic text. Something a machine might send to another machine, but far more alien. The sender information is strange too, as if the messages are coming from outside hyperspace itself.
+Throughout the day I receive multiple notifications filled with cryptic text. Something a machine might send to another machine, but far more alien. The sender information is strange too, as if the messages are coming from outside Hyperspace itself.
 
-I cannot make sense of what is happening in hyperspace using my portable, so I decide to look into it more deeply once I get home. Even though people spend most of their lives inside hyperspace, somebody still needs to clean up the mess. I thought that by the year 3250 I would be working as a coder, but here I am.
+I cannot make sense of what is happening in Hyperspace using my portable, so I decide to look into it more deeply once I get home. Even though people spend most of their lives inside Hyperspace, somebody still needs to clean up the mess. I thought that by the year 3250 I would be working as a coder, but here I am.
 
-I am Tomas, but my friends call me Tom. This is the story of my last day as a janitor.
+I am Tomas, but my friends call me Tom. This is the story of my last day as a janitor - a day that began 15,000 years ago.
 
 ## Hypernaut
 
@@ -44,13 +44,13 @@ These caves are unlike anything we have ever encountered. Many have tried to des
 
 ## Janitor
 
-When I get home, I quickly enter hyperspace. It was the only thing on my mind the entire day. My local environment looks the same as always, but as soon as I step into the global space, it is unrecognizable. The shape and topology are somewhat familiar, yet the components are unlike anything I have ever seen.
+When I get home, I quickly enter Hyperspace. It was the only thing on my mind the entire day. My local environment looks the same as always, but as soon as I step into the global space, it is unrecognizable. The shape and topology are somewhat familiar, yet the components are unlike anything I have ever seen.
 
 Hyperspace usually resembles a vast, orderly, multilevel 3D megacity. Now it looks more like a primeval jungle inside a virtual cave. The branching structures remind me of the paths and roads I know well, but this space feels wild, untamed.
 
-It seems impossible for a cyberattack to alter so much of hyperspace at once. I checked the web but found no mention of it. This has to be something else. I even spot what look like bots, but they move at nearly twice the normal speed. What is happening? Am I losing it?
+It seems impossible for a cyberattack to alter so much of Hyperspace at once. I checked the web but found no mention of it. This has to be something else. I even spot what look like bots, but they move at nearly twice the normal speed. What is happening? Am I losing it?
 
-At the far end of a space that could, strangely enough, be described as a meadow, I see a being with no eyes, yet I can feel it looking straight at me. No, no, no. Fuck this. No more hyperspace tonight.
+At the far end of a space that could, strangely enough, be described as a meadow, I see a being with no eyes, yet I can feel it looking straight at me. No, no, no. Fuck this. No more Hyperspace tonight.
 
 ## Hypernaut
 
@@ -68,4 +68,4 @@ The figure noticed me, and in an instant it disappeared. Lucky for me, my scanne
 
 That was insane. Maybe somebody is pranking me. No, the level of detail was too high. And what was that thing that was looking at me from the other side of the meadow?
 
-Maybe some fresh air will bring me back to my senses. I open the window and, through it, see the alien jungle and the meadow I saw in hyperspace. The being with no eyes still stands there, observing.
+Maybe some fresh air will bring me back to my senses. I open the window and, through it, see the alien jungle and the meadow I saw in Hyperspace. The being with no eyes still stands there, observing.
