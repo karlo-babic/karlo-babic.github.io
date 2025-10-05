@@ -17,8 +17,9 @@ import { parseMarkdown } from '../../scripts/programs/engines/markdown_parser.js
  * Add new story filenames here to make them appear on the webpage.
  */
 const STORY_FILES = [
+    'through-the-veil.md',
     'hypersol-caves.md',
-    'hypersol-spilje.md', // Example of a translated file
+    'hypersol-spilje.md',
     'dream-job.md',
     'testing.md',
 ];
@@ -165,6 +166,12 @@ function renderStory(story) {
         }
     }
 
+    // Reset and apply special formatting classes to the content container.
+    storyContentEl.classList.remove('format-poem');
+    if (story.properties.format === 'poem') {
+        storyContentEl.classList.add('format-poem');
+    }
+
     // Render properties
     const { title = 'Untitled Story', date, genres } = story.properties;
     storyTitleEl.textContent = title;
@@ -196,9 +203,19 @@ function renderStory(story) {
     // Render the language switcher if applicable
     renderLanguageSwitcher(story.properties);
 
+    // Prepare story content for rendering
+    let contentToRender = story.content;
+    if (story.properties.format === 'poem') {
+        // For 'poem' format, preserve stanza breaks. We replace blank lines
+        // with a non-breaking space so the parser wraps it in a <p> tag,
+        // creating a visible line break between stanzas.
+        contentToRender = contentToRender.replace(/\n\s*\n/g, '\n&nbsp;\n');
+    }
+
     // Render story content using the imported markdown parser
-    storyContentEl.innerHTML = parseMarkdown(story.content);
+    storyContentEl.innerHTML = parseMarkdown(contentToRender);
 }
+
 
 /**
  * Fetches and displays a story based on its filename.
@@ -235,7 +252,7 @@ async function loadStory(fileName) {
 }
 
 /**
- * Populates the navigation list with links to story groups.
+ * Populates the navigation list with links to stories.
  */
 function populateNav() {
     storyListEl.innerHTML = ''; // Clear "Loading..." text
@@ -245,6 +262,12 @@ function populateNav() {
         const mainVersion = storyGroup['en'] || Object.values(storyGroup)[0];
 
         if (!mainVersion) return;
+
+        // If the main story version is marked as hidden, skip adding it to the navigation.
+        // The story will still be accessible via a direct URL hash.
+        if (mainVersion.hidden && mainVersion.hidden.toLowerCase() === 'true') {
+            return;
+        }
 
         const listItem = document.createElement('li');
         const link = document.createElement('a');

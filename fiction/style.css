@@ -295,6 +295,21 @@ body.genre-scifi #story-content h3 {
     text-indent: 0;
 }
 
+/* Styles for content with 'poem' format */
+#story-content.format-poem p {
+    /* Override standard paragraph book styles for a poetic layout */
+    text-indent: 0;
+    text-align: center;
+}
+
+/* Remove indent for the first paragraph of a section */
+#story-content h1 + p,
+#story-content h2 + p,
+#story-content h3 + p,
+#story-content hr + p {
+    text-indent: 0;
+}
+
 /* Chapter Title Header */
 #story-content h1 {
     text-align: center;
