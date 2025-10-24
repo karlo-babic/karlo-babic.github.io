@@ -1,9 +1,9 @@
 ---
 title: Through the Veil
 date: 2025-09-22
-genres: Philosophical Science Fiction, Cosmic Horror
+genres: Philosophical Science Fiction
 format: poem
-hidden: true
+hidden: false
 ---
 
 I thought that only I existed.
