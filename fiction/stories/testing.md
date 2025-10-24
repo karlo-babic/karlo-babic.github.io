@@ -2,6 +2,7 @@
 title: Testing 123
 date: 2025-09-20
 genres: Testing, 123, Fantasy
+hidden: true
 ---
 
 # Header 1
