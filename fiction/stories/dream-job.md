@@ -4,7 +4,7 @@ date: 2023-06-20
 genres: Science fiction, Cyberpunk
 ---
 
-<audio controls src="raw.githubusercontent.com/karlo-babic/karlo-babic.github.io/refs/heads/master/fiction/stories/dream-job.wav"></audio>
+<audio controls src="https://raw.githubusercontent.com/karlo-babic/karlo-babic.github.io/master/fiction/stories/dream-job.wav"></audio>
 
 Psych: Hi Zeo, we haven't talked in a while now. How are you?
 
