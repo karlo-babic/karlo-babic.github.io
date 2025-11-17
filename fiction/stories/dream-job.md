@@ -4,6 +4,8 @@ date: 2023-06-20
 genres: Science fiction, Cyberpunk
 ---
 
+<audio controls src="raw.githubusercontent.com/karlo-babic/karlo-babic.github.io/refs/heads/master/fiction/stories/dream-job.wav"></audio>
+
 Psych: Hi Zeo, we haven't talked in a while now. How are you?
 
 Zeo: Well, the damn intrusive thoughts keep messing with my dreams. I can't even watch a movie without it affecting the dreamware I have to mediate to users.
