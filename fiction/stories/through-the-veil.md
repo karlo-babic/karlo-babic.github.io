@@ -6,6 +6,8 @@ format: poem
 hidden: false
 ---
 
+<audio controls src="https://raw.githubusercontent.com/karlo-babic/karlo-babic.github.io/master/fiction/stories/through-the-veil.mp3"></audio>
+
 I thought that only I existed.
 
 Then, a few points of light appeared in the endless black veil around me.
