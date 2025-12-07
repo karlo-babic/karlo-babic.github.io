@@ -30,6 +30,11 @@ class Rocket {
 
 	iters = 0;
 	itersWithoutControl = 0;
+    
+    // Used to generate smooth random movement during idle
+    wanderAngle = 0; 
+	// Tracks previous mouse position to calculate cursor velocity
+    lastMousePos = { x: 0, y: 0 };
 
 	constructor(docElement) {
 		this.docElement = docElement;
@@ -71,28 +76,106 @@ class Rocket {
 	}
 
 	_automaticControl() {
-		if (this.itersWithoutControl <= MAX_ITERS_WITHOUT_CONTROL) return;
-		let MAX_VELOCITY_DIRECTION = 2.6;
-		let MOUSE_HOMING_STRENGTH = 0.8;
-		let mouseRelativePos = { x: Mouse.x - this.position.x, y: Mouse.y - this.position.y };
-		let homingVelocity = {
-			x: this.velocity.x - mouseRelativePos.x * MOUSE_HOMING_STRENGTH,
-			y: this.velocity.y - (mouseRelativePos.y * MOUSE_HOMING_STRENGTH - GRAVITY_ACC * 10)
-		};
-		let homingVelocityAngle = Math.atan2(homingVelocity.y, homingVelocity.x);
-		let homingVelocityAngleRelative = normalizeRadians(homingVelocityAngle - this.rotation - Math.PI / 2 - Math.PI);
-		let homingSpeed = Math.sqrt(homingVelocity.x ** 2 + homingVelocity.y ** 2);
-		if (homingSpeed > 0.2) {
-			if (Math.abs(homingVelocityAngleRelative) > MAX_VELOCITY_DIRECTION) this.propulse = true;
-			if (Math.abs(this.angularSpeed - homingVelocityAngleRelative) > 0.2) {
-				this.angularSpeed -= 0.03 * Math.sign(homingVelocityAngleRelative);
-			}
-		}
-		if (this.angularSpeed - homingVelocityAngleRelative >= 0) {
-			this.angularSpeed = this.angularSpeed * 0.9;
-		}
-	}
+		if (this.itersWithoutControl <= MAX_ITERS_WITHOUT_CONTROL) {
+            // Keep tracking mouse position even under manual control to prevent speed spikes upon release
+            this.lastMousePos = { x: Mouse.x, y: Mouse.y };
+            return;
+        }
 
+        const screenSize = getScreenSize();
+
+        // 1. Calculate Mouse Speed
+        const mouseVelX = Mouse.x - this.lastMousePos.x;
+        const mouseVelY = Mouse.y - this.lastMousePos.y;
+        const mouseSpeed = Math.sqrt(mouseVelX ** 2 + mouseVelY ** 2);
+        this.lastMousePos = { x: Mouse.x, y: Mouse.y };
+
+        // 2. Determine "Fear" Radius based on mouse speed
+        // If mouse is moving fast, the rocket gets scared from further away
+        const baseFearRadius = 150;
+        const speedSensitivity = 25; 
+        const fearRadius = baseFearRadius + (mouseSpeed * speedSensitivity);
+
+        const dx = this.position.x - Mouse.x;
+        const dy = this.position.y - Mouse.y;
+        const distToMouse = Math.sqrt(dx * dx + dy * dy);
+
+        // 3. Calculate Desired Vector (Summation of forces)
+        
+        // Update wander angle for organic idle movement
+        this.wanderAngle += (Math.random() - 0.5) * 0.2;
+
+        // Default Idle State: Random wander with upward bias (counter-gravity)
+        let targetX = Math.cos(this.wanderAngle) * 0.8;
+        let targetY = Math.sin(this.wanderAngle) * 0.4 - 1.0; 
+        
+        let panicLevel = 0; // 0 = calm, >0 = scared
+
+        // Force: Escape from Mouse
+        if (distToMouse < fearRadius) {
+            const intensity = 1 - (distToMouse / fearRadius);
+            panicLevel += intensity;
+            
+            // Push away from mouse
+            targetX += (dx / distToMouse) * intensity * 12;
+            targetY += (dy / distToMouse) * intensity * 12;
+        }
+
+        // Force: Avoid Borders (Wall Fear)
+        const wallMargin = 200;
+        const wallForce = 6;
+        
+        if (this.position.x < wallMargin) {
+            targetX += ((wallMargin - this.position.x) / wallMargin) * wallForce;
+            panicLevel += 0.5;
+        }
+        if (this.position.x > screenSize.width - wallMargin) {
+            targetX -= ((this.position.x - (screenSize.width - wallMargin)) / wallMargin) * wallForce;
+            panicLevel += 0.5;
+        }
+        if (this.position.y < wallMargin) {
+            targetY += ((wallMargin - this.position.y) / wallMargin) * wallForce;
+            panicLevel += 0.5;
+        }
+        if (this.position.y > screenSize.height - wallMargin) {
+            targetY -= ((this.position.y - (screenSize.height - wallMargin)) / wallMargin) * wallForce;
+            panicLevel += 0.5;
+        }
+
+        // 4. Steer towards the calculated Target Vector
+        // Calculate angle of the target vector
+        const targetAngle = Math.atan2(targetY, targetX);
+        
+        // Convert target vector angle to rocket rotation (0 rad = Up in this physics model)
+        const desiredRotation = targetAngle + Math.PI / 2;
+        const angleDiff = normalizeRadians(desiredRotation - this.rotation);
+
+        // Apply torque to align with desired rotation
+        if (Math.abs(angleDiff) > 0.1) {
+            this.angularSpeed += 0.025 * Math.sign(angleDiff);
+        } else {
+            // Dampen rotation when aligned
+            this.angularSpeed *= 0.9;
+        }
+
+        // 5. Propulsion Logic
+        const facingTarget = Math.abs(angleDiff) < 0.6;
+
+        if (panicLevel > 0) {
+            // If scared, thrust to escape provided we are facing roughly the right way
+            if (facingTarget) this.propulse = true;
+        } else {
+            // Idle behavior: Thrust only to maintain altitude (hover)
+            // If falling or too low on screen, puff the engine
+            const sinking = this.velocity.y > 0.5;
+            const tooLow = this.position.y > screenSize.height * 0.6;
+            
+            if (facingTarget && (sinking || tooLow)) {
+                 this.propulse = true;
+            }
+        }
+	}
+	
 	_calcPhysics() {
 		this.angularSpeed = Math.max(-MAX_ANGULAR_SPEED, Math.min(MAX_ANGULAR_SPEED, this.angularSpeed));
 		if (this.propulse) {
@@ -124,15 +207,15 @@ class Rocket {
 		this.iters += 1;
 	}
 
-_checkReturnToOrigin() {
-    const atOrigin = Math.abs(this.position.x - this.origPosition.x) < 5 &&
-                     Math.abs(this.position.y - this.origPosition.y) < 5;
-    if (atOrigin && Math.abs(this.rotation) < 0.4 && this.iters >= 50) {
-        AppEvents.emit('rocket:docked');
-        this.stop();
-    }
-}
-
+	_checkReturnToOrigin() {
+		const atOrigin = Math.abs(this.position.x - this.origPosition.x) < 5 &&
+		Math.abs(this.position.y - this.origPosition.y) < 5;
+		if (atOrigin && Math.abs(this.rotation) < 0.4 && this.iters >= 50) {
+			AppEvents.emit('rocket:docked');
+			this.stop();
+		}
+	}
+	
 	display() {
         let onoff = this.propulse ? "on" : "off";
         this.docElement.src = `imgs/rocket_${onoff}.png`;
