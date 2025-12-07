@@ -3,6 +3,7 @@ import { startFuzzyEca, updateCanvasArea } from './fuzzyECA.js';
 import { Eye, TextField } from './observerEye.js';
 import { rocketInit, rocket, Smoke } from './rocket.js';
 import { threebodyInit, threebody } from './threebody.js';
+import { paperInit, paper } from './paper.js';
 import { showQuote } from './quotes.js';
 import { Console } from './console.js';
 
@@ -21,6 +22,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('threebody-link').addEventListener('click', (event) => {
         event.preventDefault();
         threebodyInit();
+    });
+
+    document.getElementById('paper-placeholder').addEventListener('click', (event) => {
+        event.preventDefault();
+        paperInit();
     });
 
     // Add event listeners for section titles to load content into the console
@@ -100,6 +106,10 @@ function mainLoop(currentTime) {
     
     if (rocket && rocket.active) {
         rocket.update(deltaTime);
+    }
+
+    if (paper && paper.active) {
+        paper.update(deltaTime);
     }
 
     Mouse.update();
