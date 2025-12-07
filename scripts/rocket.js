@@ -1,5 +1,12 @@
 import { Keyboard, Mouse, AppEvents, getScreenSize, normalizeRadians, toggleDisplay } from './utils.js';
 
+// Preload images to ensure they are cached before the animation begins
+const PRELOAD_ASSETS = ["imgs/rocket_off.png", "imgs/rocket_on.png", "imgs/smoke.png"];
+PRELOAD_ASSETS.forEach(src => {
+    const img = new Image();
+    img.src = src;
+});
+
 // --- Module Constants ---
 const PROPULSION_STRENGTH = 3;
 const MASS = 0.5;

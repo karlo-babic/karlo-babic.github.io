@@ -89,7 +89,7 @@ class Threebody {
         const dx = body2.position.x - body1.position.x;
         const dy = body2.position.y - body1.position.y;
         const distance = Math.sqrt(dx * dx + dy * dy) + 0.001;
-        const force = Math.min(G * body1.mass * body2.mass / Math.pow(distance, 1.65), MAX_FORCE);
+        const force = Math.min(G * body1.mass * body2.mass / Math.pow(distance, 1.7), MAX_FORCE);
         const fx = force * dx / distance;
         const fy = force * dy / distance;
         return { fx, fy, distance };
@@ -135,12 +135,14 @@ function transformToGoodreads() {
         </a>
     `;
 
-    // Stop the physics simulation for body 0 by setting its mass to zero.
-    // This will prevent it from moving after it has transformed.
-    /*if (threebody) {
-        threebody.bodies[0].mass = 0;
-        threebody.bodies[0].velocity = { x: 0, y: 0 };
-    }*/
+    // Stop the click from bubbling up to the parent .section-title element.
+    // Without this, clicking the link would trigger the section expansion logic.
+    const link = body0.querySelector('a');
+    if (link) {
+        link.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+    }
 }
 
 
