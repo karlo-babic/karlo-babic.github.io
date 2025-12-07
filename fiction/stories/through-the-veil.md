@@ -1,6 +1,6 @@
 ---
 title: Through the Veil
-date: 2025-09-22
+date: 2025-10-05
 genres: Philosophical Science Fiction
 format: poem
 hidden: false
