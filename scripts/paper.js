@@ -17,10 +17,16 @@ const ROTATION_BOUNDRY = 0.3;
 const ROTATION_FACTOR = 0.05;
 
 // --- Autopilot Constants ---
-const AUTO_IDLE_DELAY = 1.5; // Seconds before autopilot engages
+const AUTO_IDLE_DELAY = 1.5;
 
-// --- Health (Constant for physics calculations) ---
+// --- Combat Constants ---
 const MAX_HEALTH = 100;
+const KILL_SPEED_THRESHOLD = 12; // Speed required to be lethal
+const KILL_ANGLE_THRESHOLD = 0.4; // Radians (~23 degrees). Reduced from 0.8 to require precision.
+const COLLISION_DISTANCE = 40;
+
+// Track additional players
+const secondaryPapers = [];
 
 class Paper {
     active = false;
@@ -28,6 +34,7 @@ class Paper {
 
     // Physics State
     position = { x: 0, y: 0 };
+    origin = { x: 0, y: 0 }; // Stores the initial spawn point
     velocity = { x: 0, y: 0 };
     rotation = 0; // radians
     rotationForce = 0;
@@ -35,53 +42,120 @@ class Paper {
     // Autopilot State
     idleTimer = AUTO_IDLE_DELAY;
 
-    // Dimensions for centering
+    // Dimensions
     size = { width: 0, height: 0 };
 
-    constructor(docElement) {
+    // Input Configuration
+    inputMap = { left: "ArrowLeft", right: "ArrowRight" };
+
+    constructor(docElement, inputMap = null) {
         this.docElement = docElement;
+        if (inputMap) {
+            this.inputMap = inputMap;
+        }
     }
 
     activate() {
         if (this.active) return;
         this.active = true;
 
-        // Capture dimensions and initial position
         const rect = this.docElement.getBoundingClientRect();
-        this.size.width = rect.width;
-        this.size.height = rect.height;
+        this.size.width = rect.width || 30;
+        this.size.height = rect.height || 30;
 
-        this.position.x = rect.left + window.scrollX + rect.width / 2;
-        this.position.y = rect.top + window.scrollY + rect.height / 2;
+        // Calculate absolute position on page
+        let startX = rect.left + window.scrollX + rect.width / 2;
+        let startY = rect.top + window.scrollY + rect.height / 2;
 
-        // Switch to fixed positioning for animation
+        // If this is a secondary paper spawned dynamically (likely at 0,0), 
+        // use the main paper's origin if available to ensure shared spawn point.
+        if (paper?.origin?.x) {
+            this.origin = { ...paper.origin };
+        } else {
+            this.origin = { x: startX, y: startY };
+        }
+
+        this.position = { ...this.origin };
+
         this.docElement.style.position = 'fixed';
         this.docElement.style.margin = '0';
         this.docElement.style.zIndex = '1000';
     }
 
+    respawn() {
+        // Return to the point of origin
+        this.position.x = this.origin.x;
+        this.position.y = this.origin.y;
+        this.velocity = { x: 0, y: 0 };
+        this.rotation = 0;
+        this.rotationForce = 0;
+        this.idleTimer = 0;
+    }
+
     update(deltaTime) {
         if (!this.active) return;
 
-        // Prevent physics explosion on tab switching or lag spikes
         if (deltaTime > 0.1) deltaTime = 0.02;
-
-        // Godot logic runs in _physics_process (usually 60 FPS).
-        // To maintain identical behavior in a variable timestep environment,
-        // we scale the per-frame additive logic by the ratio of actual time to a 60 FPS frame.
         const timeScale = deltaTime * 60;
 
         this._physicsInput(timeScale, deltaTime);
         this._airDynamics(timeScale);
-        this._move(deltaTime); // Movement uses standard deltaTime (pixels per second)
-        
+        this._move(deltaTime);
         this._screenWrap();
+        
+        // If this is the main player, coordinate the loop for others and check collisions
+        if (this === paper) {
+            this._manageMultiplayer(deltaTime);
+        }
+
         this.display();
     }
 
+    _manageMultiplayer(deltaTime) {
+        secondaryPapers.forEach(p => {
+            p.update(deltaTime);
+            
+            // Check collisions mutually
+            this._checkKill(p);
+            p._checkKill(this);
+        });
+    }
+
+    _checkKill(target) {
+        if (!target.active) return;
+
+        const dx = target.position.x - this.position.x;
+        const dy = target.position.y - this.position.y;
+        const dist = Math.hypot(dx, dy);
+
+        if (dist < COLLISION_DISTANCE) {
+            const mySpeed = Math.hypot(this.velocity.x, this.velocity.y);
+            const targetSpeed = Math.hypot(target.velocity.x, target.velocity.y);
+
+            // 1. Must be moving fast enough to cut
+            // 2. Must be moving significantly faster than the target (or target is slow)
+            if (mySpeed > KILL_SPEED_THRESHOLD && mySpeed > targetSpeed + 2) {
+                
+                // 3. Angle Check: Is my velocity vector pointing towards the victim?
+                const angleToVictim = Math.atan2(dy, dx);
+                const myMoveAngle = Math.atan2(this.velocity.y, this.velocity.x);
+                
+                // Calculate difference and normalize to -PI to PI
+                let angleDiff = myMoveAngle - angleToVictim;
+                while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+                while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+                // If the movement vector is aligned with the target ("Sharp angle")
+                if (Math.abs(angleDiff) < KILL_ANGLE_THRESHOLD) {
+                    target.respawn();
+                }
+            }
+        }
+    }
+
     _physicsInput(timeScale, deltaTime) {
-        const leftInput = Keyboard.keys["ArrowLeft"] || Keyboard.keys["KeyA"];
-        const rightInput = Keyboard.keys["ArrowRight"] || Keyboard.keys["KeyD"];
+        const leftInput = Keyboard.keys[this.inputMap.left];
+        const rightInput = Keyboard.keys[this.inputMap.right];
         const hasInput = leftInput || rightInput;
 
         if (hasInput) {
@@ -105,13 +179,12 @@ class Paper {
         } else {
             this.idleTimer += deltaTime;
 
-            // Standard Damping
             this.rotationForce -= AIR_RESISTANCE * this.rotationForce * MASS * timeScale;
             if (Math.abs(this.rotationForce) <= ROTATION_SMOOTHNESS * timeScale) {
                 this.rotationForce = 0;
             }
 
-            // Autopilot Behavior
+            // Autopilot Behavior (Enabled for all players)
             if (this.idleTimer > AUTO_IDLE_DELAY) {
                 // 1. Oscillate gently
                 const sway = Math.sin(this.idleTimer * 0.8) * 0.05;
@@ -122,21 +195,22 @@ class Paper {
                 // 3. Counter-steer based on horizontal velocity to prevent excessive drifting
                 const velocityDampening = -this.velocity.x * 0.0004;
 
-                // 4. Slightly prefer the direction (horizontal) of the mouse cursor
-                const mouseDx = Mouse.x - this.position.x;
-                const mouseBias = Math.max(-0.02, Math.min(0.02, mouseDx * 10));
+                // 4. Mouse Bias (Only applies to Player 1)
+                let mouseBias = 0;
+                if (this === paper) {
+                    const mouseDx = Mouse.x - this.position.x;
+                    mouseBias = Math.max(-0.02, Math.min(0.02, mouseDx * 10));
+                }
 
                 const autoForce = (sway + horizontalCorrection + velocityDampening + mouseBias) * timeScale;
                 this.rotationForce += autoForce;
             }
         }
 
-        // Clamp rotation force
         if (Math.abs(this.rotationForce) > ROTATION_BOUNDRY) {
             this.rotationForce = Math.sign(this.rotationForce) * ROTATION_BOUNDRY;
         }
 
-        // Apply rotation
         const speed = Math.hypot(this.velocity.x, this.velocity.y);
         const logVal = Math.log(speed + 1);
         this.rotation += (ROTATION_FACTOR * this.rotationForce * Math.min(10, Math.max(2, logVal))) * timeScale;
@@ -182,13 +256,10 @@ class Paper {
 
     display() {
         const rotationDeg = this.rotation * (180 / Math.PI);
-        
-        // Offset translate by half-width/height to ensure this.position represents the center
         const drawX = this.position.x - (this.size.width / 2);
         const drawY = this.position.y - (this.size.height / 2);
 
         this.docElement.style.transform = `translate(${drawX}px, ${drawY}px) rotate(${rotationDeg}deg)`;
-        
         this.docElement.style.transformOrigin = "center center";
         this.docElement.style.left = '0px';
         this.docElement.style.top = '0px';
@@ -197,15 +268,38 @@ class Paper {
 
 export let paper = null;
 
+function spawnPlayerTwo() {
+    if (secondaryPapers.length > 0) return;
+
+    const p2Element = document.createElement("img");
+    p2Element.src = "imgs/paper.png";
+    p2Element.width = 30;
+    p2Element.title = "Player 2";
+    p2Element.style.filter = "sepia(1) saturate(5) hue-rotate(-50deg)"; // Red tint
+    document.body.appendChild(p2Element);
+
+    const p2 = new Paper(p2Element, { left: "KeyA", right: "KeyD" });
+    p2.activate();
+    secondaryPapers.push(p2);
+    
+    console.log("Player 2 Spawned (Controls: A/D)");
+}
+
 export function paperInit() {
     const docElement = document.getElementById("paper");
     if (!docElement) return;
 
     if (paper === null) {
-        paper = new Paper(docElement);
+        paper = new Paper(docElement, { left: "ArrowLeft", right: "ArrowRight" });
     }
 
     if (!paper.active) {
         paper.activate();
     }
+
+    window.addEventListener('keydown', (e) => {
+        if (e.key === '2') {
+            spawnPlayerTwo();
+        }
+    });
 }
