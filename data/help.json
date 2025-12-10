@@ -34,5 +34,10 @@
         "description": "A survival game based on Conway's Game of Life.",
         "usage": "glideroflife",
         "details": "Control a single glider with the arrow keys. Navigate the grid to collect food for points while avoiding disruption by other 'wild' cells. Collecting food increases the game speed and spawns more wild cells."
+    },
+    "eliza": {
+        "description": "A simulation of a Rogerian psychotherapist.",
+        "usage": "eliza",
+        "details": "A JavaScript port of Joseph Weizenbaum's classic 1966 ELIZA program. It engages in a text-based conversation by parodying a non-directional psychotherapist."
     }
 }
