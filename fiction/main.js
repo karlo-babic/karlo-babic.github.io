@@ -112,7 +112,7 @@ function calculateReadingInfo(text) {
     const wordCount = words.length;
     
     // Average reading speed for adults is around 225 words per minute.
-    const wordsPerMinute = 225;
+    const wordsPerMinute = 150;
     
     // Calculate minutes and round to the nearest whole number.
     // Ensure the result is at least 1 minute for very short texts.
