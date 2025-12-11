@@ -16,7 +16,7 @@ export class InteractiveText {
         this.container.style.height = '100%';
         // Terminal styling: Monospace font and tighter line height
         this.container.style.fontFamily = '"Courier New", Courier, monospace';
-        this.container.style.fontSize = '1rem';
+        this.container.style.fontSize = '0.8rem';
         this.container.style.lineHeight = '1.2'; 
 
         // Output area (scrollable)
