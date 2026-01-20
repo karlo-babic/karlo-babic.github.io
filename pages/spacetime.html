@@ -1041,7 +1041,7 @@ function loop() {
     
     // Color Grading
     if (state.currentDiameter < 1e-8) theme = THEMES.micro;
-    else if (state.currentDiameter > 1e6) theme = THEMES.macro;
+    else if (state.currentDiameter > 1e13) theme = THEMES.macro;
     else theme = THEMES.human;
 
     // Apply Theme
