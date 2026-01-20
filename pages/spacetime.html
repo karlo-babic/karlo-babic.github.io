@@ -214,15 +214,16 @@
         /* The Tunnel (Objects) */
         #tunnel-view {
             position: absolute;
-            width: 80%;
-            height: 80%;
+            width: 100%;
+            height: 100%;
             border-radius: 50%;
             overflow: hidden; /* Objects clipped to circle */
             display: flex;
             align-items: center;
             justify-content: center;
-            mask-image: radial-gradient(circle, black 30%, transparent 100%);
-            -webkit-mask-image: radial-gradient(circle, black 30%, transparent 100%);
+            mask-image: radial-gradient(circle, black 70%, transparent 100%);
+            -webkit-mask-image: radial-gradient(circle, black 70%, transparent 100%);
+            z-index: 6; /* Ensure text renders above the grid and time spirals */
         }
 
         .tunnel-item {
@@ -315,7 +316,7 @@
  */
 
 // ==========================================
-// 1. DATA & CONSTANTS
+// DATA & CONSTANTS
 // ==========================================
 
 const C = 299792458; // Speed of light (m/s)
@@ -323,127 +324,91 @@ const C = 299792458; // Speed of light (m/s)
 const THEMES = {
     micro: '#008888',  // Cyan
     human: '#ffffff',  // White/Greenish
-    macro: '#550088'   // Magenta
+    macro: '#8800ff'   // Magenta
 };
 
 const DB = {
     space: [
-        // --- QUANTUM & SUBATOMIC ---
-        { name: "Planck Length", size: 1.6e-35, desc: "Smallest meaningful length" },
-        { name: "Neutrino Cross-Section", size: 1.0e-24, desc: "Effective interaction size" },
-        { name: "Top Quark", size: 1.0e-18, desc: "Upper limit of radius" },
-        { name: "Proton", size: 1.7e-15, desc: "Nucleus of Hydrogen" },
-        { name: "Uranium Nucleus", size: 1.5e-14, desc: "Heavy nucleus diameter" },
+        // --- QUANTUM & MICROSCOPIC (Size/Diameter) ---
+        { name: "Planck Length", size: 1.6e-35, desc: "Smallest theoretical size" },
+        { name: "Hydrogen Atom", size: 1.0e-10, desc: "Diameter of smallest atom" },
+        { name: "Transistor Gate", size: 1.0e-9, desc: "Feature size" },
+        { name: "DNA Helix Width", size: 2.0e-9, desc: "Diameter of DNA strand" },
+        { name: "Coronavirus", size: 1.0e-7, desc: "Diameter of virus" },
+        { name: "Red Blood Cell", size: 7.0e-6, desc: "Cell diameter" },
+        { name: "Human Hair", size: 1.0e-5, desc: "Thickness of strand" },
+        { name: "Grain of Sand", size: 5.0e-4, desc: "Diameter of coarse sand" },
         
-        // --- ATOMIC & MOLECULAR ---
-        { name: "Gamma Ray", size: 1.0e-12, desc: "Wavelength" },
-        { name: "Hydrogen Atom", size: 1.0e-10, desc: "Diameter" },
-        { name: "Water Molecule", size: 2.8e-10, desc: "Diameter" },
-        { name: "Glucose Molecule", size: 9.0e-10, desc: "Diameter" },
-        { name: "DNA Helix", size: 2.5e-9, desc: "Width" },
-        { name: "Silicon Transistor", size: 5.0e-9, desc: "Gate length (5nm node)" },
-        { name: "Virus (Rhinovirus)", size: 3.0e-8, desc: "Common cold diameter" },
-        { name: "HIV Virus", size: 1.2e-7, desc: "Diameter" },
-        { name: "Visible Light", size: 5.5e-7, desc: "Wavelength (Green)" },
+        // --- HUMAN & GEOGRAPHIC (Size/Length) ---
+        { name: "Coffee Bean", size: 0.01, desc: "Length of bean" },
+        { name: "Smartphone", size: 0.15, desc: "Height of device" },
+        { name: "Human Height", size: 1.7, desc: "Average adult" },
+        { name: "Blue Whale", size: 30, desc: "Length of largest animal" },
+        { name: "Eiffel Tower", size: 330, desc: "Height of structure" },
+        { name: "Mt. Everest", size: 8849, desc: "Height above sea level" },
+        { name: "Earth Diameter", size: 1.27e7, desc: "Planet width" },
         
-        // --- MICROSCOPIC ---
-        { name: "E. Coli Bacterium", size: 2.0e-6, desc: "Length" },
-        { name: "Red Blood Cell", size: 8.0e-6, desc: "Diameter" },
-        { name: "White Blood Cell", size: 1.5e-5, desc: "Diameter" },
-        { name: "Mist Droplet", size: 5.0e-5, desc: "Diameter" },
-        { name: "Human Hair", size: 1.0e-4, desc: "Thickness" },
-        { name: "Amoeba", size: 5.0e-4, desc: "Length" },
-        { name: "Tardigrade", size: 0.001, desc: "Length (Water Bear)" },
-        
-        // --- MACROSCOPIC ---
-        { name: "Grain of Rice", size: 0.005, desc: "Length" },
-        { name: "Coffee Bean", size: 0.01, desc: "Length" },
-        { name: "Chicken Egg", size: 0.05, desc: "Height" },
-        { name: "Human Hand", size: 0.18, desc: "Length" },
-        { name: "Human", size: 1.7, desc: "Height" },
-        { name: "Giraffe", size: 5.5, desc: "Height" },
-        { name: "Blue Whale", size: 30, desc: "Length" },
-        { name: "Boeing 747", size: 76, desc: "Length" },
-        { name: "ISS", size: 109, desc: "International Space Station Width" },
-        
-        // --- GEOGRAPHIC & LARGE STRUCTURES ---
-        { name: "Eiffel Tower", size: 330, desc: "Height" },
-        { name: "Burj Khalifa", size: 828, desc: "Height" },
-        { name: "Neutron Star", size: 2.0e4, desc: "Diameter" },
-        { name: "Grand Canyon", size: 4.5e5, desc: "Length" },
-        { name: "Great Barrier Reef", size: 2.3e6, desc: "Length" },
-        { name: "Earth", size: 1.27e7, desc: "Diameter" },
-        
-        // --- ASTRONOMICAL ---
-        { name: "Jupiter", size: 1.4e8, desc: "Diameter" },
-        { name: "Moon Orbit", size: 7.68e8, desc: "Diameter" },
-        { name: "Sun", size: 1.4e9, desc: "Diameter" },
-        { name: "Stephenson 2-18", size: 3.0e12, desc: "Largest known star diameter" },
-        { name: "Solar System", size: 9.0e12, desc: "Diameter (to Neptune)" },
-        { name: "Voyager 1 Distance", size: 2.4e13, desc: "Farthest human object" },
-        { name: "Oort Cloud", size: 1.0e16, desc: "Outer limit radius" },
-        { name: "Proxima Centauri", size: 4.0e16, desc: "Distance from Sun" },
-        { name: "Crab Nebula", size: 5.2e16, desc: "Diameter" },
-        { name: "Milky Way", size: 9.5e20, desc: "Diameter" },
-        { name: "Andromeda Galaxy", size: 2.1e21, desc: "Distance" },
-        { name: "Local Group", size: 9.5e22, desc: "Diameter" },
-        { name: "Bootes Void", size: 3.0e24, desc: "Diameter" },
-        { name: "Observable Universe", size: 8.8e26, desc: "Diameter" }
+        // --- ASTRONOMICAL (Distances vs Sizes) ---
+        { name: "Dist. to Moon", size: 3.84e8, desc: "Distance from Earth to Moon" },
+        { name: "Sun Diameter", size: 1.39e9, desc: "Width of the Star" },
+        { name: "Dist. to Sun", size: 1.5e11, desc: "1 AU (Distance from Earth)" },
+        { name: "Dist. to Voyager 1", size: 2.5e13, desc: "Farthest human object" },
+        { name: "One Light Year", size: 9.46e15, desc: "Distance light travels in 1 yr" },
+        { name: "Dist. to Proxima", size: 4.02e16, desc: "Nearest Star" },
+        { name: "Dist. to Galactic Center", size: 2.46e20, desc: "To the Milky Way Core" },
+        { name: "Milky Way Diameter", size: 1.00e21, desc: "Width of our Galaxy" },
+        { name: "Dist. to Andromeda", size: 2.40e22, desc: "Nearest Spiral Galaxy" },
+        { name: "Laniakea Diameter", size: 4.73e24, desc: "Width of local Supercluster" },
+        { name: "Observable Universe", size: 8.8e26, desc: "Visibility Limit" }
     ],
     time: [
-        // --- QUANTUM & SUB-SECOND ---
-        { name: "Planck Time", time: 5.39e-44 },
-        { name: "Light crosses Proton", time: 3.3e-24 },
-        { name: "Higgs Boson Life", time: 1.56e-22 },
-        { name: "Attosecond Pulse", time: 1.0e-18 },
-        { name: "Chemical Bond vibration", time: 1.0e-14 },
-        { name: "CPU Cycle (3GHz)", time: 3.3e-10 },
-        { name: "Light travels 1m", time: 3.3e-9 },
-        { name: "Muon Lifetime", time: 2.2e-6 },
-        { name: "Camera Shutter (Fast)", time: 0.001 },
-        { name: "Neuron Firing", time: 0.002 },
-        { name: "Honeybee Wing Flap", time: 0.005 },
-        { name: "Human Blink", time: 0.1 },
-        { name: "Human Reaction", time: 0.25 },
-        { name: "Heartbeat", time: 0.8 },
+        // --- SUB-ATOMIC & ULTRAFAST (Duration) ---
+        { name: "Planck Time", time: 5.39e-44, desc: "Smallest theoretical duration" },
+        { name: "Higgs Boson Life", time: 1.56e-22, desc: "Duration before decay" },
+        { name: "Visible Light Cycle", time: 2.0e-15, desc: "Period of green light wave" },
+        { name: "Chemical Bond Vibe", time: 1.0e-13, desc: "Period of molecular vibration" },
+        { name: "CPU Cycle (3GHz)", time: 3.33e-10, desc: "Duration of one tick" },
+        { name: "Transistor Switch", time: 1.0e-6, desc: "Time to flip state" },
         
-        // --- DAILY & HUMAN ---
-        { name: "Deep Breath", time: 5.0 },
-        { name: "Song Length", time: 240 },
-        { name: "One Hour", time: 3600 },
-        { name: "One Day", time: 86400 },
-        { name: "Work Week", time: 1.44e5 },
-        { name: "Pregnancy", time: 2.3e7 },
-        { name: "One Year", time: 3.15e7 },
-        { name: "Human Generation", time: 7.9e8 },
-        { name: "Human Life", time: 2.5e9 },
+        // --- HUMAN EXPERIENCE (Duration) ---
+        { name: "Camera Flash", time: 0.0001, desc: "Duration of strobe" },
+        { name: "Human Blink", time: 0.1, desc: "Duration" },
+        { name: "Reaction Time", time: 0.25, desc: "Visual stimulus response" },
+        { name: "Heartbeat Interval", time: 0.8, desc: "Time between beats" },
+        { name: "One Day", time: 86400, desc: "Earth rotation duration" },
+        { name: "Lunar Cycle", time: 2.55e6, desc: "Duration (29.5 days)" },
+        { name: "One Year", time: 3.16e7, desc: "Earth orbit duration" },
+        { name: "Human Lifespan", time: 2.5e9, desc: "Average duration" },
         
-        // --- HISTORICAL ---
-        { name: "Recorded History", time: 1.6e11 },
-        { name: "Agriculture Begins", time: 3.8e11 },
-        { name: "Cave Paintings", time: 9.5e11 },
-        { name: "Humans Migrate from Africa", time: 1.9e12 },
-        { name: "Homo Sapiens Appears", time: 9.4e12 },
-        { name: "Use of Fire", time: 3.1e13 },
+        // --- HISTORY (Time Ago) ---
+        { name: "Since Gunpowder", time: 3.16e10, desc: "Invented ~1,000 years ago" },
+        { name: "Since Bronze Swords", time: 1.14e11, desc: "Invented ~3,600 years ago" },
+        { name: "Since Writing Began", time: 1.58e11, desc: "Invented ~5,000 years ago" },
+        { name: "Since Agriculture", time: 3.79e11, desc: "Started ~12,000 years ago" },
+        { name: "Migration from Africa", time: 1.89e12, desc: "Happened ~60,000 years ago" },
+        { name: "Modern Humans Emerged", time: 9.47e12, desc: "Happened ~300k years ago" },
+        { name: "Genus Homo Emerged", time: 7.89e13, desc: "Happened ~2.5m years ago" },
         
-        // --- EVOLUTIONARY & GEOLOGICAL ---
-        { name: "Dinosaur Extinction", time: 2.05e15 },
-        { name: "Atlantic Ocean Forms", time: 5.0e15 },
-        { name: "First Land Animals", time: 1.1e16 },
-        { name: "Cambrian Explosion", time: 1.7e16 },
-        { name: "Oxygen Atmosphere", time: 7.5e16 },
+        // --- EVOLUTION & GEOLOGY (Time Ago) ---
+        { name: "Since Dino Extinction", time: 2.08e15, desc: "Asteroid impact (~66m ya)" },
+        { name: "Since First Mammals", time: 6.31e15, desc: "Triassic (~200m ya)" },
+        { name: "Since First Reptiles", time: 9.46e15, desc: "Carboniferous (~300m ya)" },
+        { name: "Since First Insects", time: 1.26e16, desc: "Devonian (~400m ya)" },
+        { name: "Since Land Plants", time: 1.50e16, desc: "Ordovician (~475m ya)" },
+        { name: "Since First Fish", time: 1.58e16, desc: "Cambrian (~500m ya)" },
+        { name: "Since Multicellular Life", time: 3.15e16, desc: "Life evolved (~1b ya)" },
+        { name: "Since Sex. Repro.", time: 3.79e16, desc: "Eukaryotes (~1.2b ya)" },
+        { name: "Since Photosynthesis", time: 1.07e17, desc: "Cyanobacteria (~3.4b ya)" },
+        { name: "Since Life Began", time: 1.14e17, desc: "Simple cells (~3.6b ya)" },
         
-        // --- COSMIC ---
-        { name: "Sun Orbit (Galactic Year)", time: 7.2e15 },
-        { name: "Age of Earth", time: 1.43e17 },
-        { name: "Sun's Main Sequence Life", time: 3.1e17 },
-        { name: "Age of Universe", time: 4.35e17 },
-        { name: "Stelliferous Era Ends", time: 3.1e21 }
+        // --- COSMIC SCALE (Time Ago) ---
+        { name: "Age of Earth", time: 1.43e17, desc: "Formed ~4.5b years ago" },
+        { name: "Age of Universe", time: 4.35e17, desc: "Big Bang ~13.8b years ago" }
     ]
 };
 
 // ==========================================
-// 2. APP STATE
+// APP STATE
 // ==========================================
 
 const state = {
@@ -456,7 +421,7 @@ const state = {
 };
 
 // ==========================================
-// 3. UTILITIES & FORMATTERS
+// UTILITIES & FORMATTERS
 // ==========================================
 
 function formatDistance(m) {
@@ -466,9 +431,23 @@ function formatDistance(m) {
     if (m < 1)    return (m * 1e3).toFixed(1) + " mm";
     if (m < 1000) return m.toFixed(1) + " m";
     if (m < 1e6)  return (m / 1000).toFixed(1) + " km";
-    if (m < 1.5e11) return (m / 1000).toLocaleString() + " km";
-    if (m < 9.46e15) return (m / 1.496e11).toFixed(2) + " AU";
-    return (m / 9.461e15).toFixed(2) + " ly";
+
+    // Millions of km (e.g. Sun Diameter) up to 1 AU
+    if (m < 1.496e11) {
+        let km = m / 1000;
+        if (km >= 1e6) return (km / 1e6).toFixed(2) + " million km";
+        return km.toLocaleString() + " km";
+    }
+    
+    // Astronomical Units (up to 1 Light Year)
+    if (m < 9.461e15) return (m / 1.496e11).toFixed(2) + " AU";
+    
+    // Light Years (with word scaling)
+    let ly = m / 9.461e15;
+    if (ly >= 1e12) return (ly / 1e12).toFixed(2) + " trillion ly";
+    if (ly >= 1e9)  return (ly / 1e9).toFixed(2) + " billion ly";
+    if (ly >= 1e6)  return (ly / 1e6).toFixed(2) + " million ly";
+    return ly.toLocaleString(undefined, { maximumFractionDigits: 2 }) + " ly";
 }
 
 function formatTime(s) {
@@ -483,8 +462,15 @@ function formatTime(s) {
     if (s < 3600)  return (s/60).toFixed(1) + " min";
     if (s < 86400) return (s/3600).toFixed(1) + " hrs";
     if (s < 3.15e7) return (s/86400).toFixed(1) + " days";
-    if (s < 1e9)   return (s/3.15e7).toFixed(1) + " yrs";
-    return (s/3.15e7).toExponential(1) + " yrs";
+
+    // Years (with word scaling)
+    // Using 31,557,600 seconds per year (Julian year)
+    let yrs = s / 3.15576e7;
+    if (yrs >= 1e12) return (yrs / 1e12).toFixed(2) + " trillion yrs";
+    if (yrs >= 1e9)  return (yrs / 1e9).toFixed(2) + " billion yrs";
+    if (yrs >= 1e6)  return (yrs / 1e6).toFixed(2) + " million yrs";
+    if (yrs >= 1000) return yrs.toLocaleString(undefined, { maximumFractionDigits: 0 }) + " yrs";
+    return yrs.toFixed(1) + " yrs";
 }
 
 function getClosest(val, arr, key) {
@@ -498,7 +484,7 @@ function getClosest(val, arr, key) {
 }
 
 // ==========================================
-// 4. GRAPHICS ENGINE (GRID, PARTICLES, TIME SPIRAL)
+// GRAPHICS ENGINE (GRID, PARTICLES, TIME SPIRAL)
 // ==========================================
 
 class FractalGrid {
@@ -691,10 +677,10 @@ class TimeSpiral {
         // Spiral Radius Constraints (Fit inside the viewport circle)
         const maxRadius = this.cx;
         
-        // Start very close to center (Planck Time)
-        this.innerRadius = 10; 
-        // End near the edge (Last Event)
-        this.outerRadius = maxRadius * 0.9; 
+        // Start at center (Planck Time)
+        this.innerRadius = 0; 
+        // End at the edge (Last Event)
+        this.outerRadius = maxRadius * 0.999; 
     }
 
     /**
@@ -789,28 +775,55 @@ class TimeSpiral {
             } else {
                 // Inactive Node Styling (Subtler inside view)
                 this.ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-                this.ctx.arc(pos.x, pos.y, 1.5, 0, Math.PI * 2);
+                this.ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
                 this.ctx.fill();
             }
         });
 
         // 3. Draw the "Time Head" Cursor
-        // Only draw cursor if within bounds of known history
         const currentLog = Math.log10(currentTime);
         if (currentLog >= this.minLog && currentLog <= this.maxLog) {
+            
+            // A. TETHER LINE: Connects center to the point
             this.ctx.beginPath();
-            this.ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--theme-color');
-            this.ctx.shadowBlur = 10;
-            this.ctx.shadowColor = this.ctx.fillStyle;
-            this.ctx.arc(headPos.x, headPos.y, 4, 0, Math.PI * 2);
+            this.ctx.moveTo(this.cx, this.cy);
+            this.ctx.lineTo(headPos.x, headPos.y);
+            this.ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--theme-color');
+            this.ctx.lineWidth = 2;
+            this.ctx.setLineDash([2, 4]); // Dotted line
+            this.ctx.globalAlpha = 0.5;
+            this.ctx.stroke();
+            this.ctx.setLineDash([]); // Reset
+            this.ctx.globalAlpha = 1.0;
+
+            // B. PULSING ANIMATION LOGIC
+            // Use Date.now() for smooth independent animation
+            const time = Date.now() * 0.005; 
+            const pulse = Math.sin(time) * 3; // Oscillates between -3 and 3
+
+            // C. OUTER GLOW RING (Target Reticle)
+            this.ctx.beginPath();
+            this.ctx.strokeStyle = '#ffffff';
+            this.ctx.lineWidth = 2;
+            this.ctx.arc(headPos.x, headPos.y, 10 + pulse, 0, Math.PI * 2);
+            this.ctx.stroke();
+
+            // D. SOLID CORE DOT
+            this.ctx.beginPath();
+            this.ctx.fillStyle = '#ffffff'; // Pure white core for max contrast
+            this.ctx.shadowBlur = 20;       // Heavy glow
+            this.ctx.shadowColor = getComputedStyle(document.body).getPropertyValue('--theme-color');
+            this.ctx.arc(headPos.x, headPos.y, 5, 0, Math.PI * 2);
             this.ctx.fill();
+            
+            // Reset Shadow
             this.ctx.shadowBlur = 0;
         }
     }
 }
 
 // ==========================================
-// 5. DOM & INTERACTION LOGIC
+// DOM & INTERACTION LOGIC
 // ==========================================
 
 const els = {
@@ -846,8 +859,7 @@ DB.space.forEach(obj => {
 // Navigation Functions (Auto-Pilot)
 function jumpTo(targetDiameter) {
     if (!targetDiameter) return;
-    // log10(diameter) = turns * (2PI) / (2PI) = turns
-    // No, logic is: diameter = 10 ^ (radians / 2PI)
+    // diameter = 10 ^ (radians / 2PI)
     // So: radians = log10(diameter) * 2PI
     const targetRad = Math.log10(targetDiameter) * (Math.PI * 2);
     state.targetRotation = targetRad;
@@ -968,7 +980,7 @@ window.addEventListener('wheel', (e) => {
 }, { passive: false });
 
 // ==========================================
-// 6. MAIN LOOP
+// MAIN LOOP
 // ==========================================
 
 function loop() {
@@ -987,10 +999,10 @@ function loop() {
     }
 
     // CLAMPING: Constrain Zoom to Data Limits
-    // Min: Allow zoom down to Planck Length (~1.6e-35 m)
-    const minRot = Math.log10(1e-36) * (Math.PI * 2);
-    // Max: Allow zoom up to Deep Future / Largest structures (~1e30 m)
-    const maxRot = Math.log10(1e31) * (Math.PI * 2);
+    // Min: Allow zoom down to Planck Length (1.6e-35 m)
+    const minRot = Math.log10(1e-35) * (Math.PI * 2);
+    // Max: Allow zoom up to Deep Future / Largest structures (8.8e26 m)
+    const maxRot = Math.log10(8.8e26) * (Math.PI * 2);
 
     if (state.rotation < minRot) {
         state.rotation = minRot;
@@ -1040,8 +1052,8 @@ function loop() {
     if (pct < 0) pct = 0; if (pct > 100) pct = 100;
     
     // Color Grading
-    if (state.currentDiameter < 1e-8) theme = THEMES.micro;
-    else if (state.currentDiameter > 1e13) theme = THEMES.macro;
+    if (state.currentDiameter < 1e-6) theme = THEMES.micro;
+    else if (state.currentDiameter > 1e14) theme = THEMES.macro;
     else theme = THEMES.human;
 
     // Apply Theme
