@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Spacetime Explorer</title>
+    <style>
+        :root {
+            --bg-color: #050507;
+            --theme-color: #00f3ff; /* Dynamic accent color */
+            --glass-bg: rgba(10, 10, 15, 0.85);
+            --font-mono: 'Courier New', Courier, monospace;
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --hud-width: 600px;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: white;
+            font-family: var(--font-sans);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+
+        /* Canvas Layers */
+        #particle-canvas, #grid-canvas, #time-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        #particle-canvas { z-index: 1; } /* Background stars */
+        #grid-canvas     { z-index: 3; } /* Grid lines */
+        #time-canvas     { z-index: 4; } /* Time Spiral */
+
+        /* 
+         * HUD PANELS 
+         */
+        .hud-panel {
+            position: absolute;
+            width: 90%;
+            max-width: var(--hud-width);
+            text-align: center;
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass to canvas/handle */
+            transition: color 0.5s ease;
+        }
+
+        #hud-space { top: 3vh; color: var(--theme-color); }
+        #hud-time { bottom: 3vh; color: var(--theme-color); }
+
+        .hud-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            pointer-events: auto; /* Re-enable clicks for buttons */
+        }
+
+        .hud-label {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .hud-value-primary {
+            font-family: var(--font-mono);
+            font-size: 2rem;
+            font-weight: bold;
+            text-shadow: 0 0 15px currentColor;
+            min-width: 200px;
+        }
+
+        .hud-value-secondary {
+            font-size: 1rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+            font-weight: 300;
+        }
+
+        .hud-match {
+            background: var(--glass-bg);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 6px 16px;
+            border-radius: 20px;
+            display: inline-block;
+            font-size: 0.85rem;
+            margin-top: 5px;
+            color: white;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+            pointer-events: auto; /* Required to capture clicks inside hud-panel */
+        }
+        .hud-match:hover {
+            background: rgba(255,255,255,0.2);
+            border-color: var(--theme-color);
+        }
+
+        /* Navigation Buttons */
+        .nav-btn {
+            background: transparent;
+            border: 1px solid currentColor;
+            color: currentColor;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            opacity: 0.6;
+            transition: all 0.2s;
+        }
+        .nav-btn:hover { opacity: 1; background: rgba(255,255,255,0.1); transform: scale(1.1); }
+        .nav-btn:active { transform: scale(0.9); }
+
+        /* 
+         * SCALE GAUGE (Left Side)
+         */
+        #scale-gauge {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 300px;
+            width: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            z-index: 10;
+        }
+        #gauge-fill {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 50%; /* Dynamic */
+            background: var(--theme-color);
+            box-shadow: 0 0 10px var(--theme-color);
+            transition: height 0.1s, background 0.5s;
+        }
+        .gauge-marker {
+            position: absolute;
+            left: 10px;
+            font-size: 0.7rem;
+            opacity: 0.5;
+            text-transform: uppercase;
+        }
+
+        /* 
+         * VIEWPORT & CONTROL RING
+         */
+        #viewport-container {
+            position: relative;
+            width: 340px;
+            height: 340px;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @media (min-width: 768px) {
+            #viewport-container { width: 550px; height: 550px; }
+            .hud-value-primary { font-size: 2.5rem; }
+        }
+
+        /* The Control Ring (Input) */
+        #control-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            cursor: grab;
+            z-index: 20;
+            /* Visual Tick Marks */
+            background: repeating-conic-gradient(
+                rgba(255, 255, 255, 0.03) 0deg, 
+                rgba(255, 255, 255, 0.03) 1deg, 
+                transparent 1deg, 
+                transparent 10deg
+            );
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        #control-ring:active { cursor: grabbing; }
+
+        /* The Handle Knob */
+        #handle-knob {
+            position: absolute;
+            top: 50%;
+            right: -10px;
+            width: 20px;
+            height: 40px;
+            background: var(--theme-color);
+            border-radius: 4px;
+            transform: translateY(-50%);
+            box-shadow: 0 0 15px var(--theme-color);
+            pointer-events: none;
+            transition: background 0.5s;
+        }
+
+        /* The Tunnel (Objects) */
+        #tunnel-view {
+            position: absolute;
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+            overflow: hidden; /* Objects clipped to circle */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            mask-image: radial-gradient(circle, black 30%, transparent 100%);
+            -webkit-mask-image: radial-gradient(circle, black 30%, transparent 100%);
+        }
+
+        .tunnel-item {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            will-change: transform, opacity, filter;
+            pointer-events: none;
+        }
+
+        .item-label {
+            font-size: 2rem;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 0 10px black;
+            margin-bottom: 5px;
+        }
+        .item-desc {
+            font-size: 0.9rem;
+            color: #ccc;
+            background: rgba(0,0,0,0.7);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Dynamic Background Particles -->
+    <canvas id="particle-canvas"></canvas>
+
+    <!-- Left Side: Orientation Gauge -->
+    <div id="scale-gauge">
+        <div id="gauge-fill"></div>
+        <div class="gauge-marker" style="top: 0%">Cosmic</div>
+        <div class="gauge-marker" style="top: 45%">Human</div>
+        <div class="gauge-marker" style="bottom: 0%">Quantum</div>
+    </div>
+
+    <!-- Top HUD: Space -->
+    <div id="hud-space" class="hud-panel">
+        <div class="hud-label">Diameter of View</div>
+        <div class="hud-row">
+            <button class="nav-btn" id="btn-prev-space">&lt;</button>
+            <div class="hud-value-primary" id="val-space-sci">1.00 m</div>
+            <button class="nav-btn" id="btn-next-space">&gt;</button>
+        </div>
+        <div class="hud-value-secondary" id="val-space-human">1 meter</div>
+        <div class="hud-match" id="match-space">Object: Dog</div>
+    </div>
+
+    <!-- Center Viewport -->
+    <div id="viewport-container">
+        <!-- Fractal Grid (Inside Viewport) -->
+        <canvas id="grid-canvas"></canvas>
+        <!-- Temporal Helix Layer (Moved Inside) -->
+        <canvas id="time-canvas"></canvas>
+        
+        <!-- Text/Object Tunnel -->
+        <div id="tunnel-view"></div>
+        
+        <!-- Input Ring -->
+        <div id="control-ring">
+            <div id="handle-knob"></div>
+        </div>
+    </div>
+
+    <!-- Bottom HUD: Time -->
+    <div id="hud-time" class="hud-panel">
+        <div class="hud-label">Light Travel Time (t = d/c)</div>
+        <div class="hud-row">
+            <button class="nav-btn" id="btn-prev-time">&lt;</button>
+            <div class="hud-value-primary" id="val-time-sci">3.33 ns</div>
+            <button class="nav-btn" id="btn-next-time">&gt;</button>
+        </div>
+        <div class="hud-value-secondary" id="val-time-human">3.3 nanoseconds</div>
+        <div class="hud-match" id="match-time">Event: CPU Cycle</div>
+    </div>
+
+<script>
+/**
+ * SPACETIME EXPLORER
+ * ------------------
+ * Interactive scale visualizer.
+ * 1 Rotation = 1 order of magnitude (x10 zoom).
+ */
+
+// ==========================================
+// 1. DATA & CONSTANTS
+// ==========================================
+
+const C = 299792458; // Speed of light (m/s)
+
+const THEMES = {
+    micro: '#008888',  // Cyan
+    human: '#ffffff',  // White/Greenish
+    macro: '#550088'   // Magenta
+};
+
+const DB = {
+    space: [
+        // --- QUANTUM & SUBATOMIC ---
+        { name: "Planck Length", size: 1.6e-35, desc: "Smallest meaningful length" },
+        { name: "Neutrino Cross-Section", size: 1.0e-24, desc: "Effective interaction size" },
+        { name: "Top Quark", size: 1.0e-18, desc: "Upper limit of radius" },
+        { name: "Proton", size: 1.7e-15, desc: "Nucleus of Hydrogen" },
+        { name: "Uranium Nucleus", size: 1.5e-14, desc: "Heavy nucleus diameter" },
+        
+        // --- ATOMIC & MOLECULAR ---
+        { name: "Gamma Ray", size: 1.0e-12, desc: "Wavelength" },
+        { name: "Hydrogen Atom", size: 1.0e-10, desc: "Diameter" },
+        { name: "Water Molecule", size: 2.8e-10, desc: "Diameter" },
+        { name: "Glucose Molecule", size: 9.0e-10, desc: "Diameter" },
+        { name: "DNA Helix", size: 2.5e-9, desc: "Width" },
+        { name: "Silicon Transistor", size: 5.0e-9, desc: "Gate length (5nm node)" },
+        { name: "Virus (Rhinovirus)", size: 3.0e-8, desc: "Common cold diameter" },
+        { name: "HIV Virus", size: 1.2e-7, desc: "Diameter" },
+        { name: "Visible Light", size: 5.5e-7, desc: "Wavelength (Green)" },
+        
+        // --- MICROSCOPIC ---
+        { name: "E. Coli Bacterium", size: 2.0e-6, desc: "Length" },
+        { name: "Red Blood Cell", size: 8.0e-6, desc: "Diameter" },
+        { name: "White Blood Cell", size: 1.5e-5, desc: "Diameter" },
+        { name: "Mist Droplet", size: 5.0e-5, desc: "Diameter" },
+        { name: "Human Hair", size: 1.0e-4, desc: "Thickness" },
+        { name: "Amoeba", size: 5.0e-4, desc: "Length" },
+        { name: "Tardigrade", size: 0.001, desc: "Length (Water Bear)" },
+        
+        // --- MACROSCOPIC ---
+        { name: "Grain of Rice", size: 0.005, desc: "Length" },
+        { name: "Coffee Bean", size: 0.01, desc: "Length" },
+        { name: "Chicken Egg", size: 0.05, desc: "Height" },
+        { name: "Human Hand", size: 0.18, desc: "Length" },
+        { name: "Human", size: 1.7, desc: "Height" },
+        { name: "Giraffe", size: 5.5, desc: "Height" },
+        { name: "Blue Whale", size: 30, desc: "Length" },
+        { name: "Boeing 747", size: 76, desc: "Length" },
+        { name: "ISS", size: 109, desc: "International Space Station Width" },
+        
+        // --- GEOGRAPHIC & LARGE STRUCTURES ---
+        { name: "Eiffel Tower", size: 330, desc: "Height" },
+        { name: "Burj Khalifa", size: 828, desc: "Height" },
+        { name: "Neutron Star", size: 2.0e4, desc: "Diameter" },
+        { name: "Grand Canyon", size: 4.5e5, desc: "Length" },
+        { name: "Great Barrier Reef", size: 2.3e6, desc: "Length" },
+        { name: "Earth", size: 1.27e7, desc: "Diameter" },
+        
+        // --- ASTRONOMICAL ---
+        { name: "Jupiter", size: 1.4e8, desc: "Diameter" },
+        { name: "Moon Orbit", size: 7.68e8, desc: "Diameter" },
+        { name: "Sun", size: 1.4e9, desc: "Diameter" },
+        { name: "Stephenson 2-18", size: 3.0e12, desc: "Largest known star diameter" },
+        { name: "Solar System", size: 9.0e12, desc: "Diameter (to Neptune)" },
+        { name: "Voyager 1 Distance", size: 2.4e13, desc: "Farthest human object" },
+        { name: "Oort Cloud", size: 1.0e16, desc: "Outer limit radius" },
+        { name: "Proxima Centauri", size: 4.0e16, desc: "Distance from Sun" },
+        { name: "Crab Nebula", size: 5.2e16, desc: "Diameter" },
+        { name: "Milky Way", size: 9.5e20, desc: "Diameter" },
+        { name: "Andromeda Galaxy", size: 2.1e21, desc: "Distance" },
+        { name: "Local Group", size: 9.5e22, desc: "Diameter" },
+        { name: "Bootes Void", size: 3.0e24, desc: "Diameter" },
+        { name: "Observable Universe", size: 8.8e26, desc: "Diameter" }
+    ],
+    time: [
+        // --- QUANTUM & SUB-SECOND ---
+        { name: "Planck Time", time: 5.39e-44 },
+        { name: "Light crosses Proton", time: 3.3e-24 },
+        { name: "Higgs Boson Life", time: 1.56e-22 },
+        { name: "Attosecond Pulse", time: 1.0e-18 },
+        { name: "Chemical Bond vibration", time: 1.0e-14 },
+        { name: "CPU Cycle (3GHz)", time: 3.3e-10 },
+        { name: "Light travels 1m", time: 3.3e-9 },
+        { name: "Muon Lifetime", time: 2.2e-6 },
+        { name: "Camera Shutter (Fast)", time: 0.001 },
+        { name: "Neuron Firing", time: 0.002 },
+        { name: "Honeybee Wing Flap", time: 0.005 },
+        { name: "Human Blink", time: 0.1 },
+        { name: "Human Reaction", time: 0.25 },
+        { name: "Heartbeat", time: 0.8 },
+        
+        // --- DAILY & HUMAN ---
+        { name: "Deep Breath", time: 5.0 },
+        { name: "Song Length", time: 240 },
+        { name: "One Hour", time: 3600 },
+        { name: "One Day", time: 86400 },
+        { name: "Work Week", time: 1.44e5 },
+        { name: "Pregnancy", time: 2.3e7 },
+        { name: "One Year", time: 3.15e7 },
+        { name: "Human Generation", time: 7.9e8 },
+        { name: "Human Life", time: 2.5e9 },
+        
+        // --- HISTORICAL ---
+        { name: "Recorded History", time: 1.6e11 },
+        { name: "Agriculture Begins", time: 3.8e11 },
+        { name: "Cave Paintings", time: 9.5e11 },
+        { name: "Humans Migrate from Africa", time: 1.9e12 },
+        { name: "Homo Sapiens Appears", time: 9.4e12 },
+        { name: "Use of Fire", time: 3.1e13 },
+        
+        // --- EVOLUTIONARY & GEOLOGICAL ---
+        { name: "Dinosaur Extinction", time: 2.05e15 },
+        { name: "Atlantic Ocean Forms", time: 5.0e15 },
+        { name: "First Land Animals", time: 1.1e16 },
+        { name: "Cambrian Explosion", time: 1.7e16 },
+        { name: "Oxygen Atmosphere", time: 7.5e16 },
+        
+        // --- COSMIC ---
+        { name: "Sun Orbit (Galactic Year)", time: 7.2e15 },
+        { name: "Age of Earth", time: 1.43e17 },
+        { name: "Sun's Main Sequence Life", time: 3.1e17 },
+        { name: "Age of Universe", time: 4.35e17 },
+        { name: "Stelliferous Era Ends", time: 3.1e21 }
+    ]
+};
+
+// ==========================================
+// 2. APP STATE
+// ==========================================
+
+const state = {
+    rotation: 0,        // In radians. 2PI = 1 order of magnitude (x10)
+    velocity: 0,        // Momentum
+    isDragging: false,
+    lastAngle: 0,
+    targetRotation: null, // For auto-pilot
+    currentDiameter: 1
+};
+
+// ==========================================
+// 3. UTILITIES & FORMATTERS
+// ==========================================
+
+function formatDistance(m) {
+    if (m < 1e-9) return (m * 1e12).toFixed(1) + " pm";
+    if (m < 1e-6) return (m * 1e9).toFixed(1) + " nm";
+    if (m < 1e-3) return (m * 1e6).toFixed(1) + " μm";
+    if (m < 1)    return (m * 1e3).toFixed(1) + " mm";
+    if (m < 1000) return m.toFixed(1) + " m";
+    if (m < 1e6)  return (m / 1000).toFixed(1) + " km";
+    if (m < 1.5e11) return (m / 1000).toLocaleString() + " km";
+    if (m < 9.46e15) return (m / 1.496e11).toFixed(2) + " AU";
+    return (m / 9.461e15).toFixed(2) + " ly";
+}
+
+function formatTime(s) {
+    if (s < 1e-18) return (s * 1e21).toFixed(1) + " zs";
+    if (s < 1e-15) return (s * 1e18).toFixed(1) + " as";
+    if (s < 1e-12) return (s * 1e15).toFixed(1) + " fs";
+    if (s < 1e-9)  return (s * 1e12).toFixed(1) + " ps";
+    if (s < 1e-6)  return (s * 1e9).toFixed(1) + " ns";
+    if (s < 1e-3)  return (s * 1e6).toFixed(1) + " μs";
+    if (s < 1)     return (s * 1e3).toFixed(1) + " ms";
+    if (s < 60)    return s.toFixed(2) + " s";
+    if (s < 3600)  return (s/60).toFixed(1) + " min";
+    if (s < 86400) return (s/3600).toFixed(1) + " hrs";
+    if (s < 3.15e7) return (s/86400).toFixed(1) + " days";
+    if (s < 1e9)   return (s/3.15e7).toFixed(1) + " yrs";
+    return (s/3.15e7).toExponential(1) + " yrs";
+}
+
+function getClosest(val, arr, key) {
+    let best = arr[0];
+    let minDiff = Math.abs(Math.log10(val) - Math.log10(best[key]));
+    arr.forEach(item => {
+        let diff = Math.abs(Math.log10(val) - Math.log10(item[key]));
+        if (diff < minDiff) { minDiff = diff; best = item; }
+    });
+    return best;
+}
+
+// ==========================================
+// 4. GRAPHICS ENGINE (GRID, PARTICLES, TIME SPIRAL)
+// ==========================================
+
+class FractalGrid {
+    constructor(canvasId) {
+        this.canvas = document.getElementById(canvasId);
+        this.ctx = this.canvas.getContext('2d');
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+    }
+
+    resize() {
+        // Match container size
+        const box = document.getElementById('viewport-container').getBoundingClientRect();
+        this.canvas.width = box.width;
+        this.canvas.height = box.height;
+        this.cx = box.width / 2;
+        this.cy = box.height / 2;
+    }
+
+    render(zoomLevel) {
+        // zoomLevel = log10(diameter).
+        // If zoomLevel increases, we are zooming OUT.
+        // Grid lines should move INWARDS (collapse).
+        
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--theme-color');
+        this.ctx.lineWidth = 1;
+
+        // Create concentric circles
+        // We need a looping offset based on the decimal part of zoomLevel
+        const offset = zoomLevel % 1; 
+        
+        // Draw 5 main rings
+        for (let i = 0; i < 6; i++) {
+            // As zoomLevel goes UP (zoom out), radius should shrink.
+            // So radius is related to (1 - offset).
+            let rFactor = (i + 1 - offset);
+            
+            // Logarithmic spacing feels more natural for zoom
+            // Map 0..5 range to pixels 0..width
+            let radius = Math.pow(rFactor, 2.5) * (this.cx / 20); 
+
+            if (radius > this.cx) continue;
+
+            let alpha = 1;
+            // Fade out near center
+            if (radius < 20) alpha = radius / 20;
+            // Fade out near edge
+            if (radius > this.cx * 0.8) alpha = 1 - ((radius - this.cx*0.8) / (this.cx*0.2));
+
+            this.ctx.globalAlpha = alpha * 0.5;
+            this.ctx.beginPath();
+            this.ctx.arc(this.cx, this.cy, radius, 0, Math.PI * 2);
+            this.ctx.stroke();
+        }
+
+        // Draw crosshairs
+        this.ctx.globalAlpha = 0.1;
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, this.cy); this.ctx.lineTo(this.canvas.width, this.cy);
+        this.ctx.moveTo(this.cx, 0); this.ctx.lineTo(this.cx, this.canvas.height);
+        this.ctx.stroke();
+    }
+}
+
+class ParticleSystem {
+    constructor(canvasId) {
+        this.canvas = document.getElementById(canvasId);
+        this.ctx = this.canvas.getContext('2d');
+        this.particles = [];
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+        
+        // Ensure particles are pushed to the array
+        for(let i=0; i<100; i++) {
+            this.particles.push(this.resetParticle({}, true));
+        }
+    }
+
+    resize() {
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        this.cx = this.canvas.width / 2;
+        this.cy = this.canvas.height / 2;
+    }
+
+    randomizeXY(p) {
+        // Use polar coordinates to create a circular tunnel instead of a square box
+        const spread = Math.max(this.canvas.width, this.canvas.height) * 2;
+        const angle = Math.random() * Math.PI * 2;
+        // Sqrt ensures uniform distribution across the circle's area
+        const radius = Math.sqrt(Math.random()) * (spread / 2);
+        p.x = Math.cos(angle) * radius;
+        p.y = Math.sin(angle) * radius;
+    }
+
+    resetParticle(p, initial = false) {
+        this.randomizeXY(p);
+        
+        // Depth (Z): 0.1 = Very close, 5.0 = Far away
+        if (initial) {
+            p.z = Math.random() * 5.0 + 0.1;
+        } else {
+            p.z = 5.0; 
+        }
+        
+        p.size = Math.random() * 2 + 1.5; 
+        return p;
+    }
+
+    render(velocity) {
+        // Optimization: Full clear is faster than fade effects (destination-out)
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        this.ctx.fillStyle = '#ffffff';
+
+        // Apply velocity scaling
+        let dz = velocity * 0.5;
+
+        this.particles.forEach(p => {
+            p.z += dz;
+
+            // Recycling:
+            // Add random jitter to Z when resetting to prevent "sheets" of particles
+            
+            // If moved too far back (Z > 5), reset to front
+            if (p.z > 5.0) {
+                p.z = 0.1 + Math.random() * 0.5;
+                this.randomizeXY(p);
+            }
+            // If moved past camera (Z < 0.1), reset to back
+            if (p.z < 0.1) {
+                p.z = 5.0 - Math.random() * 0.5;
+                this.randomizeXY(p);
+            }
+
+            // 3D Projection
+            const scale = 1 / p.z;
+            const screenX = this.cx + p.x * scale;
+            const screenY = this.cy + p.y * scale;
+            const currentSize = p.size * scale;
+
+            // Render if on screen
+            if (screenX > 0 && screenX < this.canvas.width && screenY > 0 && screenY < this.canvas.height) {
+                // Opacity based on depth
+                const alpha = Math.min(1, (5.0 - p.z) / 2.0);
+                this.ctx.globalAlpha = alpha;
+                
+                this.ctx.beginPath();
+                this.ctx.arc(screenX, screenY, currentSize, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+        });
+        
+        this.ctx.globalAlpha = 1.0;
+    }
+}
+
+class TimeSpiral {
+    constructor(canvasId) {
+        this.canvas = document.getElementById(canvasId);
+        this.ctx = this.canvas.getContext('2d');
+        
+        // Dynamic Logarithmic Bounds based on DB data
+        // Assumes DB.time is sorted ascending
+        const firstEvent = DB.time[0].time;
+        const lastEvent = DB.time[DB.time.length - 1].time;
+
+        this.minLog = Math.log10(firstEvent); 
+        this.maxLog = Math.log10(lastEvent);
+        
+        // Spiral Tightness: 
+        // Calculate number of orders of magnitude
+        const orders = this.maxLog - this.minLog; 
+        // 1 full rotation every ~20 orders of magnitude for readability
+        this.totalAngle = Math.PI * 2 * (orders / 20); 
+        
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+    }
+
+    resize() {
+        // Match container size (viewport-container)
+        const box = document.getElementById('viewport-container').getBoundingClientRect();
+        this.canvas.width = box.width;
+        this.canvas.height = box.height;
+        this.cx = box.width / 2;
+        this.cy = box.height / 2;
+        
+        // Spiral Radius Constraints (Fit inside the viewport circle)
+        const maxRadius = this.cx;
+        
+        // Start very close to center (Planck Time)
+        this.innerRadius = 10; 
+        // End near the edge (Last Event)
+        this.outerRadius = maxRadius * 0.9; 
+    }
+
+    /**
+     * Maps a time value (seconds) to x,y coordinates on the spiral.
+     */
+    getSpiralPos(seconds) {
+        let logVal = Math.log10(seconds);
+        
+        // Clamp values strictly to the timeline events
+        if(logVal < this.minLog) logVal = this.minLog;
+        if(logVal > this.maxLog) logVal = this.maxLog;
+
+        // Normalized position (0.0 to 1.0) along the track
+        const t = (logVal - this.minLog) / (this.maxLog - this.minLog);
+        
+        // Calculate Angle and Radius
+        // Start angle offset by -PI/2 so the spiral starts at the top
+        const theta = t * this.totalAngle - (Math.PI / 2); 
+        const r = this.innerRadius + t * (this.outerRadius - this.innerRadius);
+        
+        return {
+            x: this.cx + Math.cos(theta) * r,
+            y: this.cy + Math.sin(theta) * r,
+            t: t // Return normalized progress for gradient logic
+        };
+    }
+
+    render(currentDiameter) {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Convert current spatial diameter to light-travel time
+        const currentTime = currentDiameter / 299792458; 
+
+        // 1. Draw the Base Spiral Track
+        this.ctx.beginPath();
+        
+        // Draw enough steps to cover the spiral smoothly
+        const steps = 500;
+        
+        for (let i = 0; i <= steps; i++) {
+            const t = i / steps;
+            // Interpolate log value between min (Planck) and max (End)
+            const logVal = this.minLog + t * (this.maxLog - this.minLog);
+            const pos = this.getSpiralPos(Math.pow(10, logVal));
+            
+            if (i === 0) this.ctx.moveTo(pos.x, pos.y);
+            else this.ctx.lineTo(pos.x, pos.y);
+        }
+        
+        // Gradient Stroke (Cyan -> White -> Magenta)
+        const grad = this.ctx.createLinearGradient(
+            0, 0, this.canvas.width, this.canvas.height
+        );
+        grad.addColorStop(0, '#00f3ff'); 
+        grad.addColorStop(0.5, '#ffffff');
+        grad.addColorStop(1, '#ff00ff'); 
+        
+        this.ctx.strokeStyle = grad;
+        this.ctx.lineWidth = 1;
+        this.ctx.globalAlpha = 0.3; 
+        this.ctx.stroke();
+
+        // 2. Draw Event Nodes (DB.time)
+        this.ctx.globalAlpha = 1.0;
+        const headPos = this.getSpiralPos(currentTime);
+
+        DB.time.forEach(event => {
+            const pos = this.getSpiralPos(event.time);
+            
+            // Check proximity between Current Time Cursor and this Event Node
+            const dist = Math.hypot(pos.x - headPos.x, pos.y - headPos.y);
+            const isActive = dist < 15; // Tighter threshold for internal view
+
+            this.ctx.beginPath();
+            if (isActive) {
+                // Active Event Styling
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.shadowBlur = 10;
+                this.ctx.shadowColor = '#ffffff';
+                this.ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
+                this.ctx.fill();
+                this.ctx.shadowBlur = 0;
+
+                // Connector Line (Visual link to center)
+                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                this.ctx.lineWidth = 1;
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.cx, this.cy); 
+                this.ctx.lineTo(pos.x, pos.y);    
+                this.ctx.stroke();
+
+            } else {
+                // Inactive Node Styling (Subtler inside view)
+                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+                this.ctx.arc(pos.x, pos.y, 1.5, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+        });
+
+        // 3. Draw the "Time Head" Cursor
+        // Only draw cursor if within bounds of known history
+        const currentLog = Math.log10(currentTime);
+        if (currentLog >= this.minLog && currentLog <= this.maxLog) {
+            this.ctx.beginPath();
+            this.ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--theme-color');
+            this.ctx.shadowBlur = 10;
+            this.ctx.shadowColor = this.ctx.fillStyle;
+            this.ctx.arc(headPos.x, headPos.y, 4, 0, Math.PI * 2);
+            this.ctx.fill();
+            this.ctx.shadowBlur = 0;
+        }
+    }
+}
+
+// ==========================================
+// 5. DOM & INTERACTION LOGIC
+// ==========================================
+
+const els = {
+    ring: document.getElementById('control-ring'),
+    handle: document.getElementById('handle-knob'),
+    tunnel: document.getElementById('tunnel-view'),
+    gaugeFill: document.getElementById('gauge-fill'),
+    // Space HUD
+    spaceSci: document.getElementById('val-space-sci'),
+    spaceHuman: document.getElementById('val-space-human'),
+    spaceMatch: document.getElementById('match-space'),
+    // Time HUD
+    timeSci: document.getElementById('val-time-sci'),
+    timeHuman: document.getElementById('val-time-human'),
+    timeMatch: document.getElementById('match-time')
+};
+
+// Initialize Graphics
+const grid = new FractalGrid('grid-canvas');
+const particles = new ParticleSystem('particle-canvas');
+const timeSpiral = new TimeSpiral('time-canvas');
+
+// Populate DOM Tunnel
+DB.space.forEach(obj => {
+    const el = document.createElement('div');
+    el.className = 'tunnel-item';
+    el.innerHTML = `<div class="item-label">${obj.name}</div><div class="item-desc">${obj.desc}</div>`;
+    el.dataset.size = obj.size;
+    els.tunnel.appendChild(el);
+    obj.element = el;
+});
+
+// Navigation Functions (Auto-Pilot)
+function jumpTo(targetDiameter) {
+    if (!targetDiameter) return;
+    // log10(diameter) = turns * (2PI) / (2PI) = turns
+    // No, logic is: diameter = 10 ^ (radians / 2PI)
+    // So: radians = log10(diameter) * 2PI
+    const targetRad = Math.log10(targetDiameter) * (Math.PI * 2);
+    state.targetRotation = targetRad;
+}
+
+function findNextSpace(dir) {
+    // dir: 1 for next (larger), -1 for prev (smaller)
+    const current = state.currentDiameter;
+    // Find index of closest object
+    let idx = -1;
+    let minDiff = Infinity;
+    DB.space.forEach((obj, i) => {
+        let diff = Math.abs(Math.log10(obj.size) - Math.log10(current));
+        if (diff < minDiff) { minDiff = diff; idx = i; }
+    });
+
+    // If we are very close to idx, move to idx + dir
+    // If we are far, move to idx (snap) or idx + dir based on direction
+    const exactMatch = minDiff < 0.1;
+    let targetIdx = exactMatch ? idx + dir : (dir > 0 ? idx + 1 : idx - 1);
+    
+    // Bounds check
+    if (targetIdx < 0) targetIdx = 0;
+    if (targetIdx >= DB.space.length) targetIdx = DB.space.length - 1;
+    
+    jumpTo(DB.space[targetIdx].size);
+}
+
+function findNextTime(dir) {
+    const currentLightTime = state.currentDiameter / C;
+    let idx = -1;
+    let minDiff = Infinity;
+    DB.time.forEach((obj, i) => {
+        let diff = Math.abs(Math.log10(obj.time) - Math.log10(currentLightTime));
+        if (diff < minDiff) { minDiff = diff; idx = i; }
+    });
+    
+    const exactMatch = minDiff < 0.1;
+    let targetIdx = exactMatch ? idx + dir : (dir > 0 ? idx + 1 : idx - 1);
+
+    if (targetIdx < 0) targetIdx = 0;
+    if (targetIdx >= DB.time.length) targetIdx = DB.time.length - 1;
+    
+    // Convert time back to diameter -> d = t * c
+    jumpTo(DB.time[targetIdx].time * C);
+}
+
+// Bind Buttons
+document.getElementById('btn-prev-space').onclick = () => findNextSpace(-1);
+document.getElementById('btn-next-space').onclick = () => findNextSpace(1);
+document.getElementById('btn-prev-time').onclick = () => findNextTime(-1);
+document.getElementById('btn-next-time').onclick = () => findNextTime(1);
+
+document.getElementById('match-space').onclick = function() {
+    const size = parseFloat(this.dataset.targetSize);
+    if (!isNaN(size)) jumpTo(size);
+};
+
+document.getElementById('match-time').onclick = function() {
+    const time = parseFloat(this.dataset.targetTime);
+    if (!isNaN(time)) jumpTo(time * C); // Convert time to light-distance
+};
+
+
+// Input Handling
+function getAngle(x, y, center) {
+    return Math.atan2(y - center.y, x - center.x);
+}
+
+function handleStart(e) {
+    state.isDragging = true;
+    state.targetRotation = null; // Cancel auto-pilot
+    state.velocity = 0;
+    const rect = els.ring.getBoundingClientRect();
+    const center = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 };
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+    state.lastAngle = getAngle(cx, cy, center);
+}
+
+function handleMove(e) {
+    if (!state.isDragging) return;
+    e.preventDefault();
+    const rect = els.ring.getBoundingClientRect();
+    const center = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 };
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    const angle = getAngle(cx, cy, center);
+    let delta = angle - state.lastAngle;
+    
+    // Normalize wrap-around
+    if (delta > Math.PI) delta -= Math.PI * 2;
+    if (delta < -Math.PI) delta += Math.PI * 2;
+    
+    state.rotation += delta;
+    state.velocity = delta;
+    state.lastAngle = angle;
+}
+
+function handleEnd() {
+    state.isDragging = false;
+}
+
+els.ring.addEventListener('mousedown', handleStart);
+window.addEventListener('mousemove', handleMove);
+window.addEventListener('mouseup', handleEnd);
+els.ring.addEventListener('touchstart', handleStart, {passive: false});
+window.addEventListener('touchmove', handleMove, {passive: false});
+window.addEventListener('touchend', handleEnd);
+// Scroll Wheel Zoom
+window.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    // Normalize delta for smooth scaling
+    const delta = e.deltaY * 0.002;
+    state.velocity += delta;
+    state.targetRotation = null; // Cancel auto-pilot
+}, { passive: false });
+
+// ==========================================
+// 6. MAIN LOOP
+// ==========================================
+
+function loop() {
+    // 1. Physics & Auto-Pilot
+    if (state.targetRotation !== null) {
+        // Tweening to target
+        const diff = state.targetRotation - state.rotation;
+        state.rotation += diff * 0.1; // Ease factor
+        state.velocity = diff * 0.1; // Sync visual speed
+        if (Math.abs(diff) < 0.001) state.targetRotation = null;
+    } else if (!state.isDragging) {
+        // Momentum
+        state.rotation += state.velocity;
+        state.velocity *= 0.97; // Friction
+        if (Math.abs(state.velocity) < 0.0001) state.velocity = 0;
+    }
+
+    // CLAMPING: Constrain Zoom to Data Limits
+    // Min: Allow zoom down to Planck Length (~1.6e-35 m)
+    const minRot = Math.log10(1e-36) * (Math.PI * 2);
+    // Max: Allow zoom up to Deep Future / Largest structures (~1e30 m)
+    const maxRot = Math.log10(1e31) * (Math.PI * 2);
+
+    if (state.rotation < minRot) {
+        state.rotation = minRot;
+        state.velocity = 0;
+    } else if (state.rotation > maxRot) {
+        state.rotation = maxRot;
+        state.velocity = 0;
+    }
+
+    // 2. Math: 1 Rotation (2PI) = 1 Order of Magnitude (Base 10)
+    // Formula: Diameter = 10 ^ (Rotation / 2PI)
+    const turns = state.rotation / (Math.PI * 2);
+    state.currentDiameter = Math.pow(10, turns);
+    const lightTime = state.currentDiameter / C;
+
+    // 3. Update Visuals (Handle)
+    els.ring.style.transform = `rotate(${state.rotation}rad)`;
+
+    // 4. Update HUD Text
+    els.spaceSci.innerText = state.currentDiameter.toExponential(2) + " m";
+    els.spaceHuman.innerText = formatDistance(state.currentDiameter);
+    
+    const sMatch = getClosest(state.currentDiameter, DB.space, 'size');
+    // Show value and store for click event
+    els.spaceMatch.innerText = `Object: ${sMatch.name} (${formatDistance(sMatch.size)})`;
+    els.spaceMatch.dataset.targetSize = sMatch.size;
+
+    els.timeSci.innerText = lightTime.toExponential(2) + " s";
+    els.timeHuman.innerText = formatTime(lightTime);
+    
+    const tMatch = getClosest(lightTime, DB.time, 'time');
+    // Show value and store for click event
+    els.timeMatch.innerText = `Event: ${tMatch.name} (${formatTime(tMatch.time)})`;
+    els.timeMatch.dataset.targetTime = tMatch.time;
+
+    // 5. Theme & Gauge Logic
+    let theme = THEMES.human;
+    let pct = 0;
+
+    // Scale Logic: 
+    // -36 (Planck Scale) to +31 (Deep Cosmic). Total range ~67 orders.
+    // Map log10(dia) to 0-100%
+    const logVal = Math.log10(state.currentDiameter);
+    const minLog = -36; 
+    const maxLog = 31;
+    pct = ((logVal - minLog) / (maxLog - minLog)) * 100;
+    if (pct < 0) pct = 0; if (pct > 100) pct = 100;
+    
+    // Color Grading
+    if (state.currentDiameter < 1e-8) theme = THEMES.micro;
+    else if (state.currentDiameter > 1e6) theme = THEMES.macro;
+    else theme = THEMES.human;
+
+    // Apply Theme
+    document.documentElement.style.setProperty('--theme-color', theme);
+    els.gaugeFill.style.height = pct + "%";
+
+    // 6. Tunnel Rendering (Infinite Zoom)
+    DB.space.forEach(obj => {
+        const ratio = obj.size / state.currentDiameter;
+        
+        // Show if within visible range (0.05x to 20x)
+        if (ratio > 0.01 && ratio < 100) {
+            obj.element.style.display = 'flex';
+            
+            // Transform
+            obj.element.style.transform = `scale(${ratio})`;
+            
+            // Opacity: Fade in/out at edges
+            let op = 1;
+            if (ratio < 0.1) op = (ratio - 0.01) * 11;
+            else if (ratio > 10) op = (100 - ratio) / 90;
+            
+            if (op < 0) op = 0; if (op > 1) op = 1;
+            obj.element.style.opacity = op;
+
+            // Blur based on distance from perfect zoom (1.0)
+            const blur = Math.abs(1 - ratio) * 4;
+            obj.element.style.filter = `blur(${blur}px)`;
+            
+        } else {
+            obj.element.style.display = 'none';
+        }
+    });
+
+    // 7. Canvas Rendering
+    // Pass the log10 value to grid for fractal expansion
+    grid.render(logVal);
+    // Render the Time Spiral
+    timeSpiral.render(state.currentDiameter);
+    // Pass velocity to particles for warp effect
+    particles.render(state.velocity);
+
+    requestAnimationFrame(loop);
+}
+
+// Start
+// Init at 1 meter (Dog)
+state.rotation = Math.log10(1.0) * (Math.PI * 2); 
+loop();
+
+</script>
+</body>
+</html>
