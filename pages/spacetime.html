@@ -51,9 +51,12 @@
             width: 90%;
             max-width: var(--hud-width);
             text-align: center;
-            z-index: 10;
-            pointer-events: none; /* Let clicks pass to canvas/handle */
+            z-index: 100; /* Increased z-index */
+            pointer-events: none;
             transition: color 0.5s ease;
+            /* Chrome Fixes: */
+            transform: translateZ(0); 
+            contain: layout paint; /* optimization to separate it from canvas repaints */
         }
 
         #hud-space { top: 3vh; color: var(--theme-color); }
@@ -169,6 +172,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            /* Chrome Fix: Create strict stacking context */
+            isolation: isolate;
         }
 
         @media (min-width: 768px) {
@@ -211,19 +216,27 @@
             transition: background 0.5s;
         }
 
-        /* The Tunnel (Objects) */
+        /* 
+         * The Tunnel (Objects) 
+         */
         #tunnel-view {
             position: absolute;
             width: 100%;
             height: 100%;
             border-radius: 50%;
-            overflow: hidden; /* Objects clipped to circle */
+            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
+            
+            /* Masking Logic */
             mask-image: radial-gradient(circle, black 70%, transparent 100%);
             -webkit-mask-image: radial-gradient(circle, black 70%, transparent 100%);
-            z-index: 6; /* Ensure text renders above the grid and time spirals */
+            
+            z-index: 6; 
+            
+            /* Chrome Critical Fix: Enforce the mask on GPU layers */
+            transform: translateZ(0); 
         }
 
         .tunnel-item {
@@ -233,8 +246,11 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            will-change: transform, opacity, filter;
             pointer-events: none;
+            /* Chrome Fix: Removed 'will-change' to prevent memory overflow/lag */
+            /* Chrome Fix: Hardware acceleration hints */
+            transform: translateZ(0);
+            backface-visibility: hidden;
         }
 
         .item-label {
@@ -335,7 +351,6 @@ const DB = {
         { name: "Transistor Gate", size: 1.0e-9, desc: "Feature size" },
         { name: "DNA Helix Width", size: 2.0e-9, desc: "Diameter of DNA strand" },
         { name: "Coronavirus", size: 1.0e-7, desc: "Diameter of virus" },
-        { name: "Red Blood Cell", size: 7.0e-6, desc: "Cell diameter" },
         { name: "Human Hair", size: 1.0e-5, desc: "Thickness of strand" },
         { name: "Grain of Sand", size: 5.0e-4, desc: "Diameter of coarse sand" },
         
@@ -1064,26 +1079,29 @@ function loop() {
     DB.space.forEach(obj => {
         const ratio = obj.size / state.currentDiameter;
         
-        // Show if within visible range (0.05x to 20x)
-        if (ratio > 0.01 && ratio < 100) {
+        if (ratio > 0.05 && ratio < 50) {
             obj.element.style.display = 'flex';
             
             // Transform
-            obj.element.style.transform = `scale(${ratio})`;
+            // Using translate3d(0,0,0) ensures GPU layer promotion
+            obj.element.style.transform = `translate3d(0,0,0) scale(${ratio})`;
             
-            // Opacity: Fade in/out at edges
+            // Opacity Logic
             let op = 1;
-            if (ratio < 0.1) op = (ratio - 0.01) * 11;
-            else if (ratio > 10) op = (100 - ratio) / 90;
+            // Fade in from deep zoom (ratio < 0.2)
+            if (ratio < 0.3) op = (ratio - 0.05) * 3.6; 
+            // Fade out to camera (ratio > 5)
+            else if (ratio > 0.5) op = (5 - ratio) / 5;
             
-            if (op < 0) op = 0; if (op > 1) op = 1;
+            // Clamp Opacity
+            if (op < 0) op = 0; 
+            if (op > 1) op = 1;
+            
             obj.element.style.opacity = op;
-
-            // Blur based on distance from perfect zoom (1.0)
-            const blur = Math.abs(1 - ratio) * 4;
-            obj.element.style.filter = `blur(${blur}px)`;
+            obj.element.style.filter = 'none';
             
         } else {
+            // Aggressively hide elements outside the sweet spot
             obj.element.style.display = 'none';
         }
     });
