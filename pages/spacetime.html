@@ -345,7 +345,7 @@ const THEMES = {
 
 DB = {
     space: [
-        // --- QUANTUM & MICROSCOPIC (Size/Diameter) ---
+        // --- QUANTUM & MICROSCOPIC ---
         { name: "Planck Length", size: 1.6e-35, desc: "Smallest theoretical size" },
         { name: "Proton Charge Diameter", size: 8.41e-16, desc: "Measured size of proton" },
         { name: "Hydrogen Atom", size: 1.0e-10, desc: "Diameter of smallest atom" },
@@ -355,7 +355,7 @@ DB = {
         { name: "Human Hair", size: 1.0e-5, desc: "Thickness of strand" },
         { name: "Grain of Sand", size: 5.0e-4, desc: "Diameter of coarse sand" },
         
-        // --- HUMAN & GEOGRAPHIC (Size/Length) ---
+        // --- HUMAN & GEOGRAPHIC ---
         { name: "Coffee Bean", size: 0.01, desc: "Length of bean" },
         { name: "Smartphone", size: 0.15, desc: "Height of device" },
         { name: "Human Height", size: 1.7, desc: "Average adult" },
@@ -364,7 +364,7 @@ DB = {
         { name: "Mt. Everest", size: 8849, desc: "Height above sea level" },
         { name: "Earth Diameter", size: 1.27e7, desc: "Planet width" },
         
-        // --- ASTRONOMICAL (Distances vs Sizes) ---
+        // --- ASTRONOMICAL ---
         { name: "Dist. to Moon", size: 3.84e8, desc: "Distance from Earth to Moon" },
         { name: "Sun Diameter", size: 1.39e9, desc: "Width of the Star" },
         { name: "Dist. to Sun", size: 1.5e11, desc: "1 AU (Distance from Earth)" },
@@ -378,7 +378,7 @@ DB = {
         { name: "Observable Universe", size: 8.8e26, desc: "Visibility Limit" }
     ],
     time: [
-        // --- SUB-ATOMIC & ULTRAFAST (Duration) ---
+        // --- SUB-ATOMIC & ULTRAFAST ---
         { name: "Planck Time", time: 5.39e-44, desc: "Smallest theoretical duration" },
         { name: "Top Quark Lifetime", time: 5.0e-25, desc: "Shortest lived known particle" },
         { name: "Higgs Boson Life", time: 1.56e-22, desc: "Duration before decay" },
@@ -387,7 +387,7 @@ DB = {
         { name: "Transistor Switch", time: 1.0e-11, desc: "Time to flip state" },
         { name: "CPU Cycle (3GHz)", time: 3.33e-10, desc: "Duration of one tick" },
         
-        // --- HUMAN EXPERIENCE (Duration) ---
+        // --- HUMAN EXPERIENCE ---
         { name: "Camera Flash", time: 0.0001, desc: "Duration of strobe" },
         { name: "Human Blink", time: 0.1, desc: "Duration" },
         { name: "Reaction Time", time: 0.25, desc: "Visual stimulus response" },
@@ -397,7 +397,7 @@ DB = {
         { name: "One Year", time: 3.16e7, desc: "Earth orbit duration" },
         { name: "Human Lifespan", time: 2.5e9, desc: "Average duration" },
         
-        // --- HISTORY (Time Ago) ---
+        // --- HISTORY ---
         { name: "Since Gunpowder", time: 3.16e10, desc: "Invented ~1,000 years ago" },
         { name: "Since Bronze Swords", time: 1.14e11, desc: "Invented ~3,600 years ago" },
         { name: "Since Writing Began", time: 1.58e11, desc: "Invented ~5,000 years ago" },
@@ -406,9 +406,10 @@ DB = {
         { name: "Since Modern Humans Emerged", time: 9.47e12, desc: "Happened ~300k years ago" },
         { name: "Since Genus Homo Emerged", time: 7.89e13, desc: "Happened ~2.5m years ago" },
         
-        // --- EVOLUTION & GEOLOGY (Time Ago) ---
+        // --- EVOLUTION & GEOLOGY ---
         { name: "Since Dino Extinction", time: 2.08e15, desc: "Asteroid impact (~66m ya)" },
         { name: "Since First Mammals", time: 6.31e15, desc: "Triassic (~200m ya)" },
+        { name: "Sun Orbits Galaxy", time: 7.25e15, desc: "Galactic year (~230m yr)" },
         { name: "Since First Reptiles", time: 9.46e15, desc: "Carboniferous (~300m ya)" },
         { name: "Since First Insects", time: 1.26e16, desc: "Devonian (~400m ya)" },
         { name: "Since Land Plants", time: 1.50e16, desc: "Ordovician (~475m ya)" },
@@ -418,9 +419,11 @@ DB = {
         { name: "Since Photosynthesis", time: 1.07e17, desc: "Cyanobacteria (~3.4b ya)" },
         { name: "Since Life Began", time: 1.14e17, desc: "Simple cells (~3.6b ya)" },
         
-        // --- COSMIC SCALE (Time Ago) ---
+        // --- COSMIC SCALE ---
         { name: "Age of Earth", time: 1.43e17, desc: "Formed ~4.5b years ago" },
-        { name: "Age of Universe", time: 4.35e17, desc: "Big Bang ~13.8b years ago" }
+        { name: "Sun Swallows Earth", time: 1.58e17, desc: "Expands to Earth's orbit (~5b yr)" },
+        { name: "Age of Universe", time: 4.35e17, desc: "Big Bang ~13.8b years ago" },
+        { name: "External galaxies undetectable", time: 6.31e19, desc: "Only Local Group remains visible (~2t yr)" }
     ]
 };
 
@@ -1128,4 +1131,5 @@ loop();
 </body>
 
 </html>
+
 
