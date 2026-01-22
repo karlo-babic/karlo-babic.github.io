@@ -362,14 +362,18 @@ DB = {
         { name: "Blue Whale", size: 30, desc: "Length of largest animal" },
         { name: "Eiffel Tower", size: 330, desc: "Height of structure" },
         { name: "Mt. Everest", size: 8849, desc: "Height above sea level" },
+        { name: "Neutron Star", size: 2.0e4, desc: "Diameter (City-sized star)" },
+        { name: "Marathon Length", size: 4.22e4, desc: "Distance of race" },
         { name: "Earth Diameter", size: 1.27e7, desc: "Planet width" },
         
         // --- ASTRONOMICAL ---
         { name: "Dist. to Moon", size: 3.84e8, desc: "Distance from Earth to Moon" },
         { name: "Sun Diameter", size: 1.39e9, desc: "Width of the Star" },
         { name: "Dist. to Sun", size: 1.5e11, desc: "1 AU (Distance from Earth)" },
+        { name: "Solar System", size: 9.0e12, desc: "Diameter of Neptune's orbit" },
         { name: "Dist. to Voyager 1", get size() { return 2.5435e13 + (Date.now() - 1.769e12) * 17 }, desc: "Farthest human object" },
         { name: "One Light Year", size: 9.46e15, desc: "Distance light travels in 1 yr" },
+        { name: "Dist. to Oort Cloud Edge", size: 1.5e16, desc: "Limit of Sun's gravity" },
         { name: "Dist. to Proxima", size: 4.02e16, desc: "Nearest Star" },
         { name: "Dist. to Galactic Center", size: 2.46e20, desc: "To the Milky Way Core" },
         { name: "Milky Way Diameter", size: 1.00e21, desc: "Width of our Galaxy" },
@@ -422,8 +426,7 @@ DB = {
         // --- COSMIC SCALE ---
         { name: "Age of Earth", time: 1.43e17, desc: "Formed ~4.5b years ago" },
         { name: "Sun Swallows Earth", time: 1.58e17, desc: "Expands to Earth's orbit (~5b yr)" },
-        { name: "Age of Universe", time: 4.35e17, desc: "Big Bang ~13.8b years ago" },
-        { name: "External galaxies undetectable", time: 6.31e19, desc: "Only Local Group remains visible (~2t yr)" }
+        { name: "Age of Universe", time: 4.35e17, desc: "Big Bang ~13.8b years ago" }
     ]
 };
 
@@ -1131,5 +1134,6 @@ loop();
 </body>
 
 </html>
+
 
 
