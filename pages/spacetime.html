@@ -51,7 +51,7 @@
             width: 90%;
             max-width: var(--hud-width);
             text-align: center;
-            z-index: 100; /* Increased z-index */
+            z-index: 100;
             pointer-events: none;
             transition: color 0.5s ease;
             /* Chrome Fixes: */
@@ -235,7 +235,7 @@
             
             z-index: 6; 
             
-            /* Chrome Critical Fix: Enforce the mask on GPU layers */
+            /* Enforce the mask on GPU layers */
             transform: translateZ(0); 
         }
 
@@ -279,7 +279,7 @@
     <div id="scale-gauge">
         <div id="gauge-fill"></div>
         <div class="gauge-marker" style="top: 0%">Cosmic</div>
-        <div class="gauge-marker" style="top: 45%">Human</div>
+        <div class="gauge-marker" style="top: 50%">Human</div>
         <div class="gauge-marker" style="bottom: 0%">Quantum</div>
     </div>
 
@@ -372,7 +372,6 @@ DB = {
         { name: "Dist. to Sun", size: 1.5e11, desc: "1 AU (Distance from Earth)" },
         { name: "Solar System", size: 9.0e12, desc: "Diameter of Neptune's orbit" },
         { name: "Dist. to Voyager 1", get size() { return 2.5435e13 + (Date.now() - 1.769e12) * 17 }, desc: "Farthest human object" },
-        { name: "One Light Year", size: 9.46e15, desc: "Distance light travels in 1 yr" },
         { name: "Dist. to Oort Cloud Edge", size: 1.5e16, desc: "Limit of Sun's gravity" },
         { name: "Dist. to Proxima", size: 4.02e16, desc: "Nearest Star" },
         { name: "Dist. to Galactic Center", size: 2.46e20, desc: "To the Milky Way Core" },
@@ -474,6 +473,8 @@ function formatDistance(m) {
 }
 
 function formatTime(s) {
+    if (s < 1e-24) return (s / 5.39e-44).toFixed(1) + " tP";
+    if (s < 1e-21) return (s * 1e24).toFixed(1) + " ys";
     if (s < 1e-18) return (s * 1e21).toFixed(1) + " zs";
     if (s < 1e-15) return (s * 1e18).toFixed(1) + " as";
     if (s < 1e-12) return (s * 1e15).toFixed(1) + " fs";
@@ -740,9 +741,7 @@ class TimeSpiral {
         // 1. Draw the Base Spiral Track
         this.ctx.beginPath();
         
-        // Draw enough steps to cover the spiral smoothly
         const steps = 500;
-        
         for (let i = 0; i <= steps; i++) {
             const t = i / steps;
             // Interpolate log value between min (Planck) and max (End)
@@ -770,12 +769,27 @@ class TimeSpiral {
         this.ctx.globalAlpha = 1.0;
         const headPos = this.getSpiralPos(currentTime);
 
-        DB.time.forEach(event => {
+        // First Pass: Find the single closest event visually
+        let closestIndex = -1;
+        let closestDist = Infinity;
+
+        DB.time.forEach((event, index) => {
+            const pos = this.getSpiralPos(event.time);
+            const dist = Math.hypot(pos.x - headPos.x, pos.y - headPos.y);
+            if (dist < closestDist) {
+                closestDist = dist;
+                closestIndex = index;
+            }
+        });
+
+        const activationThreshold = 15; // Pixel distance to trigger label
+
+        // Second Pass: Render
+        DB.time.forEach((event, index) => {
             const pos = this.getSpiralPos(event.time);
             
-            // Check proximity between Current Time Cursor and this Event Node
-            const dist = Math.hypot(pos.x - headPos.x, pos.y - headPos.y);
-            const isActive = dist < 15; // Tighter threshold for internal view
+            // Only the single closest event can be active
+            const isActive = (index === closestIndex) && (closestDist < activationThreshold);
 
             this.ctx.beginPath();
             if (isActive) {
@@ -795,8 +809,22 @@ class TimeSpiral {
                 this.ctx.lineTo(pos.x, pos.y);    
                 this.ctx.stroke();
 
+                // Draw Text Label (Only for the closest)
+                this.ctx.font = 'bold 12px sans-serif';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillStyle = '#ffffff';
+                
+                // Determine direction to avoid clipping at canvas edges
+                if (pos.x > this.cx) {
+                    this.ctx.textAlign = 'right';
+                    this.ctx.fillText(event.name, pos.x - 12, pos.y);
+                } else {
+                    this.ctx.textAlign = 'left';
+                    this.ctx.fillText(event.name, pos.x + 12, pos.y);
+                }
+
             } else {
-                // Inactive Node Styling (Subtler inside view)
+                // Inactive Node Styling
                 this.ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
                 this.ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
                 this.ctx.fill();
@@ -820,9 +848,8 @@ class TimeSpiral {
             this.ctx.globalAlpha = 1.0;
 
             // B. PULSING ANIMATION LOGIC
-            // Use Date.now() for smooth independent animation
             const time = Date.now() * 0.005; 
-            const pulse = Math.sin(time) * 3; // Oscillates between -3 and 3
+            const pulse = Math.sin(time) * 3; 
 
             // C. OUTER GLOW RING (Target Reticle)
             this.ctx.beginPath();
@@ -833,13 +860,11 @@ class TimeSpiral {
 
             // D. SOLID CORE DOT
             this.ctx.beginPath();
-            this.ctx.fillStyle = '#ffffff'; // Pure white core for max contrast
-            this.ctx.shadowBlur = 20;       // Heavy glow
+            this.ctx.fillStyle = '#ffffff'; 
+            this.ctx.shadowBlur = 20;       
             this.ctx.shadowColor = getComputedStyle(document.body).getPropertyValue('--theme-color');
             this.ctx.arc(headPos.x, headPos.y, 5, 0, Math.PI * 2);
             this.ctx.fill();
-            
-            // Reset Shadow
             this.ctx.shadowBlur = 0;
         }
     }
@@ -1023,7 +1048,7 @@ function loop() {
 
     // CLAMPING: Constrain Zoom to Data Limits
     // Min: Allow zoom down to Planck Length (1.6e-35 m)
-    const minRot = Math.log10(1e-35) * (Math.PI * 2);
+    const minRot = Math.log10(1.6e-35) * (Math.PI * 2);
     // Max: Allow zoom up to Deep Future / Largest structures (8.8e26 m)
     const maxRot = Math.log10(8.8e26) * (Math.PI * 2);
 
@@ -1069,14 +1094,14 @@ function loop() {
     // -36 (Planck Scale) to +31 (Deep Cosmic). Total range ~67 orders.
     // Map log10(dia) to 0-100%
     const logVal = Math.log10(state.currentDiameter);
-    const minLog = -36; 
-    const maxLog = 31;
+    const minLog = -34;
+    const maxLog = 26;
     pct = ((logVal - minLog) / (maxLog - minLog)) * 100;
     if (pct < 0) pct = 0; if (pct > 100) pct = 100;
     
     // Color Grading
-    if (state.currentDiameter < 1e-6) theme = THEMES.micro;
-    else if (state.currentDiameter > 1e14) theme = THEMES.macro;
+    if (state.currentDiameter < 1e-10) theme = THEMES.micro;
+    else if (state.currentDiameter > 1e9) theme = THEMES.macro;
     else theme = THEMES.human;
 
     // Apply Theme
@@ -1134,6 +1159,8 @@ loop();
 </body>
 
 </html>
+
+
 
 
 
