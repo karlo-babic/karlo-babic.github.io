@@ -343,7 +343,7 @@ const THEMES = {
     macro: '#8800ff'   // Magenta
 };
 
-const DB = {
+DB = {
     space: [
         // --- QUANTUM & MICROSCOPIC (Size/Diameter) ---
         { name: "Planck Length", size: 1.6e-35, desc: "Smallest theoretical size" },
@@ -367,7 +367,7 @@ const DB = {
         { name: "Dist. to Moon", size: 3.84e8, desc: "Distance from Earth to Moon" },
         { name: "Sun Diameter", size: 1.39e9, desc: "Width of the Star" },
         { name: "Dist. to Sun", size: 1.5e11, desc: "1 AU (Distance from Earth)" },
-        { name: "Dist. to Voyager 1", size: 2.5e13, desc: "Farthest human object" },
+        { name: "Dist. to Voyager 1", get size() { return 2.5435e13 + (Date.now() - 1.769e12) * 17 }, desc: "Farthest human object" },
         { name: "One Light Year", size: 9.46e15, desc: "Distance light travels in 1 yr" },
         { name: "Dist. to Proxima", size: 4.02e16, desc: "Nearest Star" },
         { name: "Dist. to Galactic Center", size: 2.46e20, desc: "To the Milky Way Core" },
@@ -400,9 +400,9 @@ const DB = {
         { name: "Since Bronze Swords", time: 1.14e11, desc: "Invented ~3,600 years ago" },
         { name: "Since Writing Began", time: 1.58e11, desc: "Invented ~5,000 years ago" },
         { name: "Since Agriculture", time: 3.79e11, desc: "Started ~12,000 years ago" },
-        { name: "Migration from Africa", time: 1.89e12, desc: "Happened ~60,000 years ago" },
-        { name: "Modern Humans Emerged", time: 9.47e12, desc: "Happened ~300k years ago" },
-        { name: "Genus Homo Emerged", time: 7.89e13, desc: "Happened ~2.5m years ago" },
+        { name: "Since Migration from Africa", time: 1.89e12, desc: "Happened ~60,000 years ago" },
+        { name: "Since Modern Humans Emerged", time: 9.47e12, desc: "Happened ~300k years ago" },
+        { name: "Since Genus Homo Emerged", time: 7.89e13, desc: "Happened ~2.5m years ago" },
         
         // --- EVOLUTION & GEOLOGY (Time Ago) ---
         { name: "Since Dino Extinction", time: 2.08e15, desc: "Asteroid impact (~66m ya)" },
@@ -1124,4 +1124,5 @@ loop();
 
 </script>
 </body>
+
 </html>
