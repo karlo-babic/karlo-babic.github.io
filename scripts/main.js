@@ -6,6 +6,7 @@ import { threebodyInit, threebody } from './threebody.js';
 import { paperInit, paper } from './paper.js';
 import { showQuote } from './quotes.js';
 import { Console } from './console.js';
+import { Blackboard } from './blackboard.js';
 
 // This function runs once the entire HTML document has been loaded.
 document.addEventListener('DOMContentLoaded', () => {
@@ -52,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Initialize all modules ---
     startFuzzyEca();
+    Blackboard.init();
     Eye.start();
     
     // Initialize console, checking for a program specified in the URL,
@@ -99,6 +101,8 @@ function mainLoop(currentTime) {
         TextField.update();
         textFieldTimer = 0;
     }
+
+    Blackboard.update();
 
     if (threebody && threebody.running) {
         threebody.update(deltaTime);

@@ -32,6 +32,15 @@ const canvasArea = {
 	start: function () {
 		this.canvas.width = width;
 		this.canvas.height = height;
+
+        Object.assign(this.canvas.style, {
+            position: 'fixed',
+            top: '0',
+            left: '0',
+            zIndex: '-2',
+            display: 'block'
+        });
+
 		this.context = this.canvas.getContext("2d");
 		document.body.insertBefore(this.canvas, document.body.childNodes[0]);
         _initializeMatrix();
