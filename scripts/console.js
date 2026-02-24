@@ -1,8 +1,8 @@
 export const Console = {
     // --- Configuration ---
-    availablePrograms: ['help', 'gameoflife', 'evoltree', 'mandelbrot', 'boids', 'gravitysim', 'glideroflife', 'read', 'eliza'],
+    availablePrograms: ['help', 'gameoflife', 'evoltree', 'mandelbrot', 'boids', 'gravitysim', 'glideroflife', 'read', 'eliza', 'txt'],
     // A list of programs to hide from UI elements like the dropdown, suggest-complete, and "next program".
-    hiddenPrograms: ['read'],
+    hiddenPrograms: ['read', 'txt'],
 
     // --- State ---
     currentProgramIndex: 0,
@@ -84,7 +84,16 @@ export const Console = {
             viewOnlyBtn.addEventListener('click', () => this.openViewOnly());
         }
 
-        this.inputEl.addEventListener('input', () => this.updateSuggestion());
+        this.inputEl.addEventListener('input', () => {
+            this.inputEl.style.height = 'auto';
+            
+            // Only apply explicit height if content wraps to multiple lines
+            if (this.inputEl.scrollHeight > 24) {
+                this.inputEl.style.height = this.inputEl.scrollHeight + 'px';
+            }
+            
+            this.updateSuggestion();
+        });
 
         this.inputEl.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowUp') {
@@ -95,10 +104,11 @@ export const Console = {
                 e.preventDefault();
                 this.navigateHistory('down');
             }
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 this.runProgramFromInput();
                 this.inputEl.value = '';
+                this.inputEl.style.height = ''; // Reset to CSS default
                 this.updateSuggestion();
             }
             if (e.key === 'Tab') {
