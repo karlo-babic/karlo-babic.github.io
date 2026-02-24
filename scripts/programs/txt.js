@@ -14,7 +14,7 @@ const Txt = {
         const rawText = args.positional.slice(1).join(' ');
 
         if (!subcommand || !rawText) {
-            this.engine.render("Usage: txt &lt;lower|clean|sort|stats&gt; &lt;text&gt;<br>Output is copied to clipboard.");
+            this.engine.render("Usage: txt &lt;stats|lower|clean|sort|title|urls&gt; &lt;text&gt;<br>Output is copied to clipboard.");
             return;
         }
 
@@ -41,6 +41,17 @@ const Txt = {
             case 'stats':
                 htmlOutput = this._generateStats(rawText);
                 shouldCopy = false;
+                break;
+
+            case 'title':
+                result = this._toTitleCase(rawText);
+                htmlOutput = result;
+                break;
+
+            case 'urls':
+                const urlList = this._extractURLs(rawText);
+                result = urlList.join('\n');
+                htmlOutput = urlList.length > 0 ? urlList.join('<br>') : "No URLs found.";
                 break;
 
             default:
@@ -105,6 +116,17 @@ const Txt = {
         return html;
     },
 
+    _toTitleCase: function(text) {
+        return text.toLowerCase().split(' ').map(word => 
+            word.charAt(0).toUpperCase() + word.substring(1)
+        ).join(' ');
+    },
+
+    _extractURLs: function(text) {
+        const urlRegex = /(((https?:\/\/)|(www\.))[^\s]+)/g;
+        return text.match(urlRegex) || [];
+    },
+    
     _copyToClipboard: function(text) {
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(text).catch(err => {
