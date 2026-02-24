@@ -22,7 +22,7 @@ export const Console = {
 
     // --- A private helper function for parsing commands ---
     _parseCommand: function(input) {
-        const parts = input.trim().split(/\s+/);
+        const parts = input.trim().split(/[ \t]+/);
         const command = parts.shift() || '';
         const args = {
             positional: [],
