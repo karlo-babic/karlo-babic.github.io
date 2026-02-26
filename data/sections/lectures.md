@@ -1,5 +1,5 @@
 - **Programming Paradigms**
   - [Oz Version](/paradigms)
   - [Python Version](/paradigms-py)
-- [Implementing Interpreters](/interpreters)
+- [**Implementing Interpreters**](/interpreters)
 - [**Game Development**](/gamedev)
