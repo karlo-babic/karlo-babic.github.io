@@ -1,6 +1,6 @@
 export const Console = {
     // --- Configuration ---
-    availablePrograms: ['help', 'gameoflife', 'evoltree', 'mandelbrot', 'boids', 'gravitysim', 'glideroflife', 'read', 'eliza', 'txt'],
+    availablePrograms: ['help', 'gameoflife', 'evoltree', 'mandelbrot', 'boids', 'gravitysim', 'glideroflife', 'eliza', 'img', 'sun', 'read', 'txt'],
     // A list of programs to hide from UI elements like the dropdown, suggest-complete, and "next program".
     hiddenPrograms: ['read', 'txt'],
 

@@ -19,7 +19,8 @@ const Blackboard = {
     baseLineWidth: 2.2,
     // Slightly higher fade alpha prevents 8-bit color "ghosting" or grayish residue
     fadeAlpha: 0.02, 
-    accentColor: '0, 180, 255', 
+    accentColor: '0, 180, 255',
+    uiSelector: '#console-window',
 
     init: function() {
         this.canvas = document.createElement('canvas');
@@ -111,6 +112,12 @@ const Blackboard = {
         this.applyFade();
 
         if (Mouse.isClicked) {
+            const target = document.elementFromPoint(Mouse.x, Mouse.y);
+            if (target && target.closest(this.uiSelector)) {
+                this.isDrawing = false;
+                return;
+            }
+
             if (!this.isDrawing) {
                 this.isDrawing = true;
                 this.lastX = Mouse.x;

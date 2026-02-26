@@ -39,5 +39,15 @@
         "description": "A simulation of a Rogerian psychotherapist.",
         "usage": "eliza",
         "details": "A JavaScript port of Joseph Weizenbaum's classic 1966 ELIZA program. It engages in a text-based conversation by parodying a non-directional psychotherapist."
+    },
+    "img": {
+        "description": "Displays a random image based on a specified topic.",
+        "usage": "img [topic]",
+        "details": "Fetches a high-resolution random image from LoremFlickr. If no topic is provided, it defaults to 'nature'. Supports multi-word topics for specific searches (e.g., 'img deep space')."
+    },
+    "sun": {
+        "description": "Displays live high-resolution imagery of the Sun from NASA's SDO.",
+        "usage": "sun",
+        "details": "Provides real-time solar observations from the Solar Dynamics Observatory. Hovering over the image toggles between the Photosphere (visible light) and the Corona (Extreme Ultraviolet, 171Å)."
     }
 }
