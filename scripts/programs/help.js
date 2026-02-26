@@ -31,8 +31,9 @@ function getMainHelp(data) {
     let content = data._general || '';
     for (const cmd in data) {
         if (cmd.startsWith('_')) continue;
-        const description = data[cmd].description;  
-        content += `\n<b><a href="/console?run=${cmd}">${cmd}</a></b>\n  ${description}\n`;
+        const usage = data[cmd].usage;
+        const description = data[cmd].description;
+        content += `\n<b><a href="/console?run=${cmd}">${cmd}</a></b>\n  ${usage}\n  ${description}\n`;
     }
     return content;
 }
