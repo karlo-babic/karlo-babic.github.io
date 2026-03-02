@@ -59,5 +59,10 @@
         "description": "Displays information about an IP address.",
         "usage": "ip [address]",
         "details": "Retrieves network and geolocation data. If no address is provided, it returns data for your current public IP. Otherwise, it lookups the specified IPv4 or IPv6 address."
+    },
+    "stats": {
+        "description": "Displays comprehensive system, hardware, and session diagnostics.",
+        "usage": "stats",
+        "details": "Aggregates all available browser telemetry, including hardware specs (CPU cores, RAM estimate, GPU renderer), display metrics (resolution, refresh rate, HDR support), network performance, and persistent visit counts."
     }
 }
