@@ -303,3 +303,7 @@ export function paperInit() {
         }
     });
 }
+
+setTimeout(() => {
+    paperInit()
+}, 60000);
