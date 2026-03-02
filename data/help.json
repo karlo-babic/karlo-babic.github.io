@@ -49,5 +49,10 @@
         "description": "Displays live high-resolution imagery of the Sun from NASA's SDO.",
         "usage": "sun",
         "details": "Provides real-time solar observations from the Solar Dynamics Observatory. Hovering over the image toggles between the Photosphere (visible light) and the Corona (Extreme Ultraviolet, 171Å)."
+    },
+    "nasa": {
+        "description": "Displays NASA's Astronomy Picture of the Day.",
+        "usage": "nasa",
+        "details": "Fetches the daily featured image or video from NASA. The media fills the console view; scroll down to read the professional astronomer's explanation. Clicking the image opens the high-definition version in a new tab."
     }
 }
