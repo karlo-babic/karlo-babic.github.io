@@ -85,7 +85,7 @@ function mainLoop(currentTime) {
 
     // --- Call update functions for each module ---
     fuzzyEcaTimer += deltaTime;
-    if (fuzzyEcaTimer > 1 / 5) {
+    if (fuzzyEcaTimer > 1 / 10) {
         updateCanvasArea();
         fuzzyEcaTimer = 0;
     }
