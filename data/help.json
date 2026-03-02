@@ -56,8 +56,8 @@
         "details": "Fetches the daily featured image or video from NASA. The media fills the console view; scroll down to read the professional astronomer's explanation. Clicking the image opens the high-definition version in a new tab."
     },
     "ip": {
-        "description": "Displays information about your current IP address.",
-        "usage": "ip",
-        "details": "Retrieves network configuration and geolocation data, including your public IP address, ISP (ASN/Organization), and approximate location (City, Country, Coordinates)."
-}
+        "description": "Displays information about an IP address.",
+        "usage": "ip [address]",
+        "details": "Retrieves network and geolocation data. If no address is provided, it returns data for your current public IP. Otherwise, it lookups the specified IPv4 or IPv6 address."
+    }
 }

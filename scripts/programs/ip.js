@@ -7,17 +7,20 @@ import { BaseText } from './engines/base_text.js';
 const Ip = {
     engine: null,
 
-    init: async function(screenEl) {
+    init: async function(screenEl, args = { positional: [], named: {} }) {
         this.engine = new BaseText(screenEl);
         this.engine.render("Fetching IP data...");
 
+        // Check if an IP address was provided as a positional argument
+        const targetIp = args.positional[0];
+        const url = targetIp ? `https://ipapi.co/${targetIp}/json/` : 'https://ipapi.co/json/';
+
         try {
-            const response = await fetch('https://ipapi.co/json/');
+            const response = await fetch(url);
             const data = await response.json();
 
-            if (data.error) throw new Error(data.reason || "Rate limit exceeded or API error.");
+            if (data.error) throw new Error(data.reason || "Rate limit exceeded or invalid IP.");
 
-            // Formatting keys for a cleaner list view
             let output = '<div style="font-family: monospace; padding: 10px; line-height: 1.4; font-size: 0.85rem;">';
             for (const [key, value] of Object.entries(data)) {
                 const label = key.replace(/_/g, ' ').toUpperCase();
