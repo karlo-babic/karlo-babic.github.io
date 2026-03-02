@@ -121,15 +121,16 @@ const Stats = {
     },
 
     _render: function(sections) {
-        let html = '<div style="font-family: monospace; padding: 10px; line-height: 1.5; font-size: 0.8rem;">';
+        let html = '<div style="font-family: monospace; padding: 0px; line-height: 1.2; font-size: 0.8rem;">';
         for (const [section, items] of Object.entries(sections)) {
-            html += `<div style="color: #50c0f0; margin-top: 15px; margin-bottom: 5px; border-bottom: 1px solid #333;">[ ${section} ]</div>`;
+            html += `<div style="color: #50c0f0; margin-top: 2px; margin-bottom: 5px; border-bottom: 1px solid #333;">[ ${section} ]</div>`;
             for (const [key, value] of Object.entries(items)) {
                 html += `<div style="display: flex; margin-bottom: 2px;">`;
                 html += `<span style="color: #888; min-width: 140px; flex-shrink: 0;">${key}:</span>`;
                 html += `<span style="word-break: break-all;">${value}</span>`;
                 html += `</div>`;
             }
+            html += `<br>`;
         }
         html += '</div>';
         this.engine.render(html);
