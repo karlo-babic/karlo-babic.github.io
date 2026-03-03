@@ -77,7 +77,7 @@ class Rocket {
         let mouseRelativePos = { x: Mouse.x - this.position.x, y: Mouse.y - this.position.y };
         let homingVelocity = {
             x: this.velocity.x - mouseRelativePos.x * MOUSE_HOMING_STRENGTH,
-            y: this.velocity.y - (mouseRelativePos.y * MOUSE_HOMING_STRENGTH - GRAVITY_ACC * 10)
+            y: this.velocity.y - (mouseRelativePos.y * MOUSE_HOMING_STRENGTH - GRAVITY_ACC * 20)
         };
         let homingVelocityAngle = Math.atan2(homingVelocity.y, homingVelocity.x);
         let homingVelocityAngleRelative = normalizeRadians(homingVelocityAngle - this.rotation - Math.PI / 2 - Math.PI);
@@ -86,7 +86,7 @@ class Rocket {
         if (homingSpeed > 0.2) {
             if (Math.abs(homingVelocityAngleRelative) > MAX_VELOCITY_DIRECTION) this.propulse = true;
             if (Math.abs(this.angularSpeed - homingVelocityAngleRelative) > 0.2) {
-                this.angularSpeed -= (1.8 * deltaTime) * Math.sign(homingVelocityAngleRelative);
+                this.angularSpeed -= (1 * deltaTime) * Math.sign(homingVelocityAngleRelative);
             }
         }
         if (this.angularSpeed - homingVelocityAngleRelative >= 0) {
