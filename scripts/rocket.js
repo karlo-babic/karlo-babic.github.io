@@ -12,24 +12,24 @@ const PROPULSION_STRENGTH = 3;
 const MASS = 0.5;
 const MAX_ANGULAR_SPEED = 0.5;
 const GRAVITY_ACC = 6.81;
-const MAX_ITERS_WITHOUT_CONTROL = 100;
-const ANGULAR_SENSITIVITY = 0.015;
+const MAX_IDLE_TIME = 1.6;
+const ANGULAR_SENSITIVITY = 0.9;
 const SHIP_SIZE = 12;
 
 class Rocket {
-	active = false;
-	origPosition = { x: 0, y: 0 };
-	position = { x: 0, y: 0 };
-	docElement = null; // This will be the <img> tag
+    active = false;
+    origPosition = { x: 0, y: 0 };
+    position = { x: 0, y: 0 };
+    docElement = null;
 
-	velocity = { x: 0, y: 0 };
-	rotation = 0;
-	angularSpeed = (Math.random() - 0.5) * 0.1;
-	propulse = false;
-	gravityActive = true;
+    velocity = { x: 0, y: 0 };
+    rotation = 0;
+    angularSpeed = (Math.random() - 0.5) * 0.1;
+    propulse = false;
+    gravityActive = true;
 
-	iters = 0;
-	itersWithoutControl = 0;
+    activeTime = 0;
+    idleTime = 0;
 
 	constructor(docElement) {
 		this.docElement = docElement;
@@ -47,91 +47,96 @@ class Rocket {
 
 	update(deltaTime) {
         if (deltaTime > 0.1) deltaTime = 0.02;
-		this._playerControl();
-		this._automaticControl();
-		this._calcPhysics();
-		this._updatePosition(deltaTime);
+        this._playerControl(deltaTime);
+        this._automaticControl(deltaTime);
+        this._calcPhysics(deltaTime);
+        this._updatePosition(deltaTime);
         this._checkReturnToOrigin();
-		this.display();
+        this.display();
 	}
 
-	_playerControl() {
-		this.propulse = false;
-		if (Keyboard.keys && (Keyboard.keys["ArrowUp"] || Keyboard.keys["ArrowLeft"] || Keyboard.keys["ArrowRight"])) {
-			this.itersWithoutControl = 0;
-			if (Keyboard.keys["ArrowUp"]) this.propulse = true;
-			if (Keyboard.keys["ArrowLeft"]) this.angularSpeed -= ANGULAR_SENSITIVITY;
-			if (Keyboard.keys["ArrowRight"]) this.angularSpeed += ANGULAR_SENSITIVITY;
-		} else {
-			this.itersWithoutControl += 1;
-		}
-		if (Keyboard.keys && Keyboard.keys["KeyG"]) {
+    _playerControl(deltaTime) {
+        this.propulse = false;
+        if (Keyboard.keys && (Keyboard.keys["ArrowUp"] || Keyboard.keys["ArrowLeft"] || Keyboard.keys["ArrowRight"])) {
+            this.idleTime = 0;
+            if (Keyboard.keys["ArrowUp"]) this.propulse = true;
+            if (Keyboard.keys["ArrowLeft"]) this.angularSpeed -= ANGULAR_SENSITIVITY * deltaTime;
+            if (Keyboard.keys["ArrowRight"]) this.angularSpeed += ANGULAR_SENSITIVITY * deltaTime;
+        } else {
+            this.idleTime += deltaTime;
+        }
+        if (Keyboard.keys && Keyboard.keys["KeyG"]) {
             this.gravityActive = !this.gravityActive;
         }
-	}
+    }
 
-	_automaticControl() {
-		if (this.itersWithoutControl <= MAX_ITERS_WITHOUT_CONTROL) return;
-		let MAX_VELOCITY_DIRECTION = 2.6;
-		let MOUSE_HOMING_STRENGTH = 0.8;
-		let mouseRelativePos = { x: Mouse.x - this.position.x, y: Mouse.y - this.position.y };
-		let homingVelocity = {
-			x: this.velocity.x - mouseRelativePos.x * MOUSE_HOMING_STRENGTH,
-			y: this.velocity.y - (mouseRelativePos.y * MOUSE_HOMING_STRENGTH - GRAVITY_ACC * 10)
-		};
-		let homingVelocityAngle = Math.atan2(homingVelocity.y, homingVelocity.x);
-		let homingVelocityAngleRelative = normalizeRadians(homingVelocityAngle - this.rotation - Math.PI / 2 - Math.PI);
-		let homingSpeed = Math.sqrt(homingVelocity.x ** 2 + homingVelocity.y ** 2);
-		if (homingSpeed > 0.2) {
-			if (Math.abs(homingVelocityAngleRelative) > MAX_VELOCITY_DIRECTION) this.propulse = true;
-			if (Math.abs(this.angularSpeed - homingVelocityAngleRelative) > 0.2) {
-				this.angularSpeed -= 0.03 * Math.sign(homingVelocityAngleRelative);
-			}
-		}
-		if (this.angularSpeed - homingVelocityAngleRelative >= 0) {
-			this.angularSpeed = this.angularSpeed * 0.9;
-		}
-	}
+    _automaticControl(deltaTime) {
+        if (this.idleTime <= MAX_IDLE_TIME) return;
+        let MAX_VELOCITY_DIRECTION = 2.6;
+        let MOUSE_HOMING_STRENGTH = 0.8;
+        let mouseRelativePos = { x: Mouse.x - this.position.x, y: Mouse.y - this.position.y };
+        let homingVelocity = {
+            x: this.velocity.x - mouseRelativePos.x * MOUSE_HOMING_STRENGTH,
+            y: this.velocity.y - (mouseRelativePos.y * MOUSE_HOMING_STRENGTH - GRAVITY_ACC * 10)
+        };
+        let homingVelocityAngle = Math.atan2(homingVelocity.y, homingVelocity.x);
+        let homingVelocityAngleRelative = normalizeRadians(homingVelocityAngle - this.rotation - Math.PI / 2 - Math.PI);
+        let homingSpeed = Math.sqrt(homingVelocity.x ** 2 + homingVelocity.y ** 2);
+        
+        if (homingSpeed > 0.2) {
+            if (Math.abs(homingVelocityAngleRelative) > MAX_VELOCITY_DIRECTION) this.propulse = true;
+            if (Math.abs(this.angularSpeed - homingVelocityAngleRelative) > 0.2) {
+                this.angularSpeed -= (1.8 * deltaTime) * Math.sign(homingVelocityAngleRelative);
+            }
+        }
+        if (this.angularSpeed - homingVelocityAngleRelative >= 0) {
+            this.angularSpeed = this.angularSpeed * Math.pow(0.1, deltaTime);
+        }
+    }
 
-	_calcPhysics() {
-		this.angularSpeed = Math.max(-MAX_ANGULAR_SPEED, Math.min(MAX_ANGULAR_SPEED, this.angularSpeed));
-		if (this.propulse) {
-			let propulsionAcc = {
-				x: PROPULSION_STRENGTH * Math.cos(this.rotation - Math.PI / 2) / MASS,
-				y: PROPULSION_STRENGTH * Math.sin(this.rotation - Math.PI / 2) / MASS
-			};
-			this.velocity.x += propulsionAcc.x;
-			this.velocity.y += propulsionAcc.y;
-			Smoke.propulsionReaction = { x: -propulsionAcc.x, y: -propulsionAcc.y };
-		} else {
+    _calcPhysics(deltaTime) {
+        this.angularSpeed = Math.max(-MAX_ANGULAR_SPEED, Math.min(MAX_ANGULAR_SPEED, this.angularSpeed));
+        if (this.propulse) {
+            let propulsionAcc = {
+                x: PROPULSION_STRENGTH * Math.cos(this.rotation - Math.PI / 2) / MASS,
+                y: PROPULSION_STRENGTH * Math.sin(this.rotation - Math.PI / 2) / MASS
+            };
+            // Apply acceleration scaled by deltaTime
+            this.velocity.x += propulsionAcc.x * deltaTime * 60;
+            this.velocity.y += propulsionAcc.y * deltaTime * 60;
+            Smoke.propulsionReaction = { x: -propulsionAcc.x, y: -propulsionAcc.y };
+        } else {
             Smoke.propulsionReaction = false;
         }
-		if (this.gravityActive) {
-			this.velocity.y += GRAVITY_ACC * MASS;
-		}
-	}
+        if (this.gravityActive) {
+            this.velocity.y += (GRAVITY_ACC * MASS) * deltaTime * 60;
+        }
+    }
 
-	_updatePosition(deltaTime) {
+    _updatePosition(deltaTime) {
         const screenSize = getScreenSize();
         if (this.position.x < 10 && this.velocity.x < 0) this.velocity.x = Math.abs(this.velocity.x) * 0.2;
-		else if (this.position.x > screenSize.width - 20 && this.velocity.x > 0) this.velocity.x = -Math.abs(this.velocity.x) * 0.2;
-		if (this.position.y < 0 && this.velocity.y < 0) this.velocity.y = Math.abs(this.velocity.y) * 0.2;
-		else if (this.position.y > screenSize.height - 30 && this.velocity.y > 0) this.velocity.y = -Math.abs(this.velocity.y) * 0.2;
+        else if (this.position.x > screenSize.width - 20 && this.velocity.x > 0) this.velocity.x = -Math.abs(this.velocity.x) * 0.2;
+        if (this.position.y < 0 && this.velocity.y < 0) this.velocity.y = Math.abs(this.velocity.y) * 0.2;
+        else if (this.position.y > screenSize.height - 30 && this.velocity.y > 0) this.velocity.y = -Math.abs(this.velocity.y) * 0.2;
+        
         this.position.x += this.velocity.x * deltaTime;
-		this.position.y += this.velocity.y * deltaTime;
-		this.rotation = normalizeRadians(this.rotation + 2 * this.angularSpeed / (MASS * 0.3) * deltaTime);
-		Smoke.updateState(deltaTime);
-		this.iters += 1;
-	}
-
-_checkReturnToOrigin() {
-    const atOrigin = Math.abs(this.position.x - this.origPosition.x) < 5 &&
-                     Math.abs(this.position.y - this.origPosition.y) < 5;
-    if (atOrigin && Math.abs(this.rotation) < 0.4 && this.iters >= 50) {
-        AppEvents.emit('rocket:docked');
-        this.stop();
+        this.position.y += this.velocity.y * deltaTime;
+        this.rotation = normalizeRadians(this.rotation + 2 * this.angularSpeed / (MASS * 0.3) * deltaTime);
+        
+        Smoke.updateState(deltaTime);
+        this.activeTime += deltaTime;
     }
-}
+
+    _checkReturnToOrigin() {
+        const atOrigin = Math.abs(this.position.x - this.origPosition.x) < 5 &&
+                         Math.abs(this.position.y - this.origPosition.y) < 5;
+        // Require at least 0.8 seconds of flight before docking is possible
+        if (atOrigin && Math.abs(this.rotation) < 0.4 && this.activeTime >= 0.8) {
+            AppEvents.emit('rocket:docked');
+            this.stop();
+        }
+    }
 
 	display() {
         let onoff = this.propulse ? "on" : "off";
@@ -149,18 +154,18 @@ _checkReturnToOrigin() {
 		Smoke.display();
 	}
 
-	stop() {
-		if (this.active == false) return;
-		this.active = false;
+    stop() {
+        if (this.active == false) return;
+        this.active = false;
         this.docElement.classList.remove('active');
-		this.propulse = false;
-		this.iters = 0;
-		this.itersWithoutControl = 0;
+        this.propulse = false;
+        this.activeTime = 0;
+        this.idleTime = 0;
         this.velocity = { x: 0, y: 0 };
         this.rotation = 0;
         Object.assign(this.position, this.origPosition);
-		this.display();
-	}
+        this.display();
+    }
 }
 
 export const Smoke = {
@@ -192,11 +197,14 @@ export const Smoke = {
 				const screenSize = getScreenSize();
 				this.particles[i].position.x += this.particles[i].velocity.x * deltaTime * 100;
 				this.particles[i].position.y += this.particles[i].velocity.y * deltaTime * 100;
-				this.particles[i].lifetime -= 0.5;
-				if (this.particles[i].position.x < 5) this.particles[i].velocity.x = +Math.abs(this.particles[i].velocity.x*0.9);
-				else if (this.particles[i].position.x > screenSize.width-20) this.particles[i].velocity.x = -Math.abs(this.particles[i].velocity.x*0.9);
-				if (this.particles[i].position.y < 0) this.particles[i].velocity.y = +Math.abs(this.particles[i].velocity.y*0.9);
-				else if (this.particles[i].position.y > screenSize.height-50) this.particles[i].velocity.y = -Math.abs(this.particles[i].velocity.y*0.9);
+				
+				// Decrease lifetime based on time rather than frames (approx 30 units per second)
+				this.particles[i].lifetime -= 30 * deltaTime;
+				
+				if (this.particles[i].position.x < 5) this.particles[i].velocity.x = +Math.abs(this.particles[i].velocity.x * 0.9);
+				else if (this.particles[i].position.x > screenSize.width - 20) this.particles[i].velocity.x = -Math.abs(this.particles[i].velocity.x * 0.9);
+				if (this.particles[i].position.y < 0) this.particles[i].velocity.y = +Math.abs(this.particles[i].velocity.y * 0.9);
+				else if (this.particles[i].position.y > screenSize.height - 50) this.particles[i].velocity.y = -Math.abs(this.particles[i].velocity.y * 0.9);
 			}
 		}
 	},
