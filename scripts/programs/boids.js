@@ -71,12 +71,10 @@ class BoidsProgram extends BaseComputeShader {
         uniform vec2 u_mouse;
         uniform float u_deltaTime;
 
-        // Boids force parameters passed from JavaScript as uniforms
         uniform float u_separationForce;
         uniform float u_alignmentForce;
         uniform float u_cohesionForce;
 
-        // Boids simulation constants
         const float MAX_SPEED = 50.0;
         const float PERCEPTION_RADIUS = 15.0;
         const float AVOIDANCE_RADIUS = 5.0;
@@ -127,32 +125,30 @@ class BoidsProgram extends BaseComputeShader {
                 alignment /= float(perceptionCount);
                 separation /= float(perceptionCount);
 
-                // Apply the forces using the values from the uniforms
-                vel += separation * u_separationForce;
-                vel += alignment * u_alignmentForce;
-                vel += cohesion * u_cohesionForce;
+                // Apply forces scaled by deltaTime to ensure consistent acceleration across frame rates
+                vel += separation * u_separationForce * u_deltaTime * 60.0;
+                vel += alignment * u_alignmentForce * u_deltaTime * 60.0;
+                vel += cohesion * u_cohesionForce * u_deltaTime * 60.0;
             }
             
             vec2 mouse_dir = vec2(0.0);
             float mouse_dist = distance(pos, u_mouse);
             if (u_mouse.x > 0.0 && mouse_dist < PERCEPTION_RADIUS * 2.0) {
                 mouse_dir = normalize(pos - u_mouse) / mouse_dist * 100.0;
-                vel += mouse_dir * MOUSE_FORCE;
+                vel += mouse_dir * MOUSE_FORCE * u_deltaTime * 60.0;
             }
 
-            // Steer away from edges for a smoother look.
-            if (pos.x < BORDER_MARGIN) vel.x += BORDER_TURN_FORCE;
-            if (pos.x > u_screenResolution.x - BORDER_MARGIN) vel.x -= BORDER_TURN_FORCE;
-            if (pos.y < BORDER_MARGIN) vel.y += BORDER_TURN_FORCE;
-            if (pos.y > u_screenResolution.y - BORDER_MARGIN) vel.y -= BORDER_TURN_FORCE;
+            // Boundary steering scaled by deltaTime
+            if (pos.x < BORDER_MARGIN) vel.x += BORDER_TURN_FORCE * u_deltaTime * 60.0;
+            if (pos.x > u_screenResolution.x - BORDER_MARGIN) vel.x -= BORDER_TURN_FORCE * u_deltaTime * 60.0;
+            if (pos.y < BORDER_MARGIN) vel.y += BORDER_TURN_FORCE * u_deltaTime * 60.0;
+            if (pos.y > u_screenResolution.y - BORDER_MARGIN) vel.y -= BORDER_TURN_FORCE * u_deltaTime * 60.0;
 
             if (length(vel) > MAX_SPEED) {
                 vel = normalize(vel) * MAX_SPEED;
             }
 
             pos += vel * u_deltaTime;
-
-            // Clamp positions to screen as a fallback.
             pos = clamp(pos, vec2(0.0), u_screenResolution);
             
             gl_FragColor = vec4(pos, vel);
