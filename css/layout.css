@@ -11,9 +11,18 @@
 
 /* Style for interactive section titles*/
 .section-title {
-    cursor: pointer;
+    cursor: default;
     user-select: none; /* Prevents text selection on click */
     font-size: 1.4em;
+}
+
+.section-trigger {
+    cursor: pointer;
+    display: inline-block;
+}
+
+.section-trigger:hover {
+    text-shadow: 0 0 20px rgba(255, 255, 255, 5);
 }
 
 .content-block {
