@@ -14,10 +14,10 @@ const MAX_DRIFT = 2.0;
 const TARGET_ROW_MEAN = Math.random() * 0.1 + 0.2;
 const TARGET_ROW_MAX = Math.random() + 0.4;
 
-const width = window.innerWidth;
-const height = window.innerHeight;
-const lineWidth = Math.round(width / CELL_SIZE);
-const numLines = Math.round(height / CELL_SIZE);
+let width = window.innerWidth;
+let height = window.innerHeight;
+let lineWidth = Math.round(width / CELL_SIZE);
+let numLines = Math.round(height / CELL_SIZE);
 
 const BASE_BG_COLOR = 'rgb(20, 20, 25)'; // Deep space base
 
@@ -217,6 +217,34 @@ function _mutateRule() {
     if (limit > 0.85) limit = 0.2;
     if (limit < 0.05) limit = 0.1;
 }
+
+/**
+ * Handles window resizing to maintain cell density.
+ * Debounced to prevent excessive re-initialization during drag events.
+ */
+let resizeTimer;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+        // Update global geometry
+        const newWidth = window.innerWidth;
+        const newHeight = window.innerHeight;
+        
+        // Update simulation parameters
+        width = newWidth;
+        height = newHeight;
+        lineWidth = Math.round(width / CELL_SIZE);
+        numLines = Math.round(height / CELL_SIZE);
+        
+        // Reconfigure canvas
+        canvasArea.canvas.width = width;
+        canvasArea.canvas.height = height;
+        
+        // Reset simulation state
+        y = 0;
+        _initializeMatrix();
+    }, 250);
+});
 
 export function updateCanvasArea() {
     _renderLine(y);
