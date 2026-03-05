@@ -7,7 +7,7 @@ const MAX_FORCE = 10000;
 
 class Threebody {
     running = false;
-	origPosition = {x: 0, y: 0};
+    container = null;
     bodies = [
         {position: {x: 0, y: 0}, velocity: {x: 0, y: 0}, mass: 50},
         {position: {x: 0, y: 0}, velocity: {x: 0, y: 0}, mass: 1000},
@@ -21,19 +21,28 @@ class Threebody {
         {position: {x: 0, y: 0}, velocity: {x: 0, y: 0}, mass: 0}
     ];
     iters = 0;
-    isSlingshotting = false; // State to prevent event spam
+    isSlingshotting = false;
     SLINGSHOT_THRESHOLD = 171;
 
-    constructor(position) {
-		this.origPosition = position;
-		Object.assign(this.bodies[0].position, position);
-		Object.assign(this.bodies[1].position, position);
-		Object.assign(this.bodies[2].position, position);
-		Object.assign(this.bodies[3].position, position);
-        this.bodies[1].position.x -= 15
-        this.bodies[3].position.x += 15
+// We pass the container element itself, not its absolute position
+    constructor(containerElement) {
+        this.container = containerElement;
+        
+        // Configurable spawn offset (set to center-bottom of the container)
+        const offsetX = this.container.offsetWidth / 2;
+        const offsetY = this.container.offsetHeight / 2 - 5;
 
-        let velRangeFactor = 50;
+        // Apply base offset to all bodies
+        for (let i = 0; i < NUM_BODIES; i++) {
+            this.bodies[i].position.x = offsetX;
+            this.bodies[i].position.y = offsetY;
+        }
+        
+        // Spawn relative to the offset instead of absolute 0,0
+        this.bodies[1].position.x -= 15;
+        this.bodies[3].position.x += 15;
+
+        let velRangeFactor = 30;
         this.bodies[0].velocity = {x: Math.random()*velRangeFactor-0.5*velRangeFactor, y: Math.random()*velRangeFactor-0.5*velRangeFactor}
         this.bodies[0].position.x += Math.random()*10 - 5;
         this.bodies[0].position.y += Math.random()*10 - 5;
@@ -50,6 +59,10 @@ class Threebody {
 
     update(deltaTime) {
         if (deltaTime > 0.1) deltaTime = 0.02; // Prevent instability on lag
+        
+        // Cache the container's current position on screen for boundaries
+        this.currentRect = this.container.getBoundingClientRect();
+        
         this._calcPhysics(deltaTime);
         this._checkEvents();
         this._display();
@@ -104,10 +117,18 @@ class Threebody {
         body.position.x += body.velocity.x * deltaTime * SIM_SPEED;
         body.position.y += body.velocity.y * deltaTime * SIM_SPEED;
         
-        if      (body.position.x < 5)                    body.velocity.x = +Math.abs(body.velocity.x*0.9);
-        else if (body.position.x > screenSize.width-10)  body.velocity.x = -Math.abs(body.velocity.x*0.9);
-        if      (body.position.y < 0)                    body.velocity.y = +Math.abs(body.velocity.y*0.9);
-        if      (body.position.y > screenSize.height-30) body.velocity.y = -Math.abs(body.velocity.y*0.9);
+        // Transform the window's absolute boundaries into local relative boundaries
+        const minX = -this.currentRect.left + 5;
+        const maxX = screenSize.width - this.currentRect.left - 10;
+        const minY = -this.currentRect.top;
+        const maxY = screenSize.height - this.currentRect.top - 30;
+
+        // Collide with dynamic window borders
+        if      (body.position.x < minX) body.velocity.x = +Math.abs(body.velocity.x*0.9);
+        else if (body.position.x > maxX) body.velocity.x = -Math.abs(body.velocity.x*0.9);
+        
+        if      (body.position.y < minY) body.velocity.y = +Math.abs(body.velocity.y*0.9);
+        else if (body.position.y > maxY) body.velocity.y = -Math.abs(body.velocity.y*0.9);
     }
     
     _display() {
@@ -120,23 +141,17 @@ class Threebody {
 
 
 function transformToGoodreads() {
-    // Find the container for body 0.
     const body0 = document.getElementById("body0");
     if (!body0) return;
 
-    // The Goodreads profile URL.
     const goodreadsUrl = "https://www.goodreads.com/karlobabic";
 
-    // Create the new HTML content.
-    // The link wraps around the image.
     body0.innerHTML = `
         <a href="${goodreadsUrl}" target="_blank" title="My Goodreads Profile">
             <img src="imgs/goodreads.png" width="8">
         </a>
     `;
 
-    // Stop the click from bubbling up to the parent .section-title element.
-    // Without this, clicking the link would trigger the section expansion logic.
     const link = body0.querySelector('a');
     if (link) {
         link.addEventListener('click', (e) => {
@@ -147,12 +162,10 @@ function transformToGoodreads() {
 
 
 let threebodyElement = document.getElementById("threebody");
-let threebodyPos = {
-	x: threebodyElement.getBoundingClientRect().left + 20,
-	y: threebodyElement.getBoundingClientRect().top + window.scrollY + 3
-};
 let bodyElements;
-export let threebody = new Threebody(threebodyPos);
+
+// Simply pass the HTML element down so it acts as our anchor
+export let threebody = new Threebody(threebodyElement);
 
 export function threebodyInit() {
     if (threebody.running) return;
@@ -169,8 +182,6 @@ export function threebodyInit() {
         document.getElementById("body3")
     ];
 
-    // Subscribe to the 'rocket:docked' event.
-    // We use a flag to ensure it only transforms once.
     let hasTransformed = false;
     AppEvents.on('rocket:docked', () => {
         if (!hasTransformed) {

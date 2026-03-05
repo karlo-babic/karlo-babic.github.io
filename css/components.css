@@ -57,7 +57,9 @@
     z-index: 5;
 }
 
-#threebody {}
+#threebody {
+    position: relative; /* Add this */
+}
 
 #threebody-img {
     image-rendering: pixelated;
