@@ -7,12 +7,12 @@
  * signal persistence while maintaining low luminosity.
  */
 
-const CELL_SIZE = 4;
+const CELL_SIZE = 8;
 const MUTATION_RATE = 0.001; 
 const MAX_DRIFT = 2.0;
 
-const TARGET_ROW_MEAN = Math.random() * 0.1 + 0.01;
-const TARGET_ROW_MAX = Math.random() + 0.3;
+const TARGET_ROW_MEAN = Math.random() * 0.1 + 0.2;
+const TARGET_ROW_MAX = Math.random() + 0.4;
 
 const width = window.innerWidth;
 const height = window.innerHeight;
