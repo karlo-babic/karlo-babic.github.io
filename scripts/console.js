@@ -256,11 +256,23 @@ export const Console = {
     },
 
     runProgramFromInput: function() {
-        const inputString = this.inputEl.value;
-        const { command, args } = this._parseCommand(inputString);
+        const inputString = this.inputEl.value.trim();
+        
+        if (!inputString) return;
 
-        this.addToHistory(inputString.trim());
+        this.addToHistory(inputString);
         this.historyIndex = -1;
+
+        /**
+         * If the input begins with a forward slash, treat it as a local navigation command
+         * and redirect the browser to the specified path.
+         */
+        if (inputString.startsWith('/')) {
+            window.location.href = inputString;
+            return;
+        }
+
+        const { command, args } = this._parseCommand(inputString);
 
         // We check the full list of available programs here.
         const programIndex = this.availablePrograms.indexOf(command);
