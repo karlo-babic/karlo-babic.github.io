@@ -135,7 +135,7 @@ _applyPhysics(timeScale) {
         ctx.rotate(this.rotation);
         
         // Apply neon glow
-        ctx.shadowBlur = 20;
+        ctx.shadowBlur = 8;
         ctx.shadowColor = this.glowColor;
         
         ctx.drawImage(image, -this.width / 2, -this.height / 2, this.width, this.height);
@@ -222,19 +222,24 @@ class Ball {
 
         // Glider Collisions
         gliders.forEach((glider, index) => {
+            // Transform ball position to glider's local space
             const dx = this.position.x - glider.position.x;
             const dy = this.position.y - glider.position.y;
+            
             const cosR = Math.cos(glider.rotation);
             const sinR = Math.sin(glider.rotation);
             
             const localX = dx * cosR + dy * sinR;
             const localY = -dx * sinR + dy * cosR;
 
+            // Simple Box Check
             const halfW = glider.width / 2 + this.radius;
             const halfH = glider.height / 2 + this.radius;
 
             if (Math.abs(localX) < halfW && Math.abs(localY) < halfH) {
                 let normalX, normalY;
+
+                // Determine normal based on which side (top/bottom) is closer
                 if (localY < 0) {
                     normalX = Math.sin(glider.rotation);
                     normalY = -Math.cos(glider.rotation);
@@ -243,26 +248,49 @@ class Ball {
                     normalY = Math.cos(glider.rotation);
                 }
 
-                const dot = this.velocity.x * normalX + this.velocity.y * normalY;
+                // RELATIVE VELOCITY FIX:
+                // Calculate velocity relative to the moving glider
+                const relVx = this.velocity.x - glider.velocity.x;
+                const relVy = this.velocity.y - glider.velocity.y;
+
+                // Check dot product using relative velocity
+                const dot = relVx * normalX + relVy * normalY;
                 
+                // Only bounce if they are moving towards each other
                 if (dot < 0) {
-                    // Speed up on every glider hit
+                    // Speed up slightly on every hit
                     this.speed *= 1.05;
 
-                    // In 2P mode, switch ball ownership to the opposite color regardless of who hits it
+                    // 2P Mode: Switch owner
                     if (this.mode === 2) {
                         this.setOwner(this.owner === 'p1' ? 'p2' : 'p1');
                     }
 
-                    this.velocity.x -= 2 * dot * normalX;
-                    this.velocity.y -= 2 * dot * normalY;
+                    // Reflect the ball's velocity vector
+                    // We use the full reflection formula on the ball's actual velocity
+                    // But we boost it slightly to ensure it escapes the moving collider
+                    this.velocity.x -= (2 * dot * normalX);
+                    this.velocity.y -= (2 * dot * normalY);
 
+                    // Re-normalize to ensure consistent game speed
                     const currentSpeed = Math.hypot(this.velocity.x, this.velocity.y);
                     this.velocity.x = (this.velocity.x / currentSpeed) * this.speed;
                     this.velocity.y = (this.velocity.y / currentSpeed) * this.speed;
                     
-                    this.position.x += normalX * this.radius;
-                    this.position.y += normalY * this.radius;
+                    // Push the ball out of the glider to prevent sticking
+                    // We add a small buffer (0.5) to the push
+                    const overlap = (halfH - Math.abs(localY)) + 0.5;
+                    // Push in direction of normal (which points away from glider center)
+                    // If we hit top (localY < 0), normal points up. If bottom, down.
+                    // We want to push out in the direction we came from approx.
+                    const pushDir = localY < 0 ? -1 : 1;
+                    
+                    // Rotate the push vector back to world space
+                    const pushX = -sinR * pushDir * overlap;
+                    const pushY = cosR * pushDir * overlap;
+
+                    this.position.x += pushX;
+                    this.position.y += pushY;
                 }
             }
         });
@@ -319,7 +347,7 @@ class Brick {
     render(ctx) {
         if (!this.active) return;
         ctx.fillStyle = this.color;
-        ctx.shadowBlur = 8;
+        ctx.shadowBlur = 0;
         ctx.shadowColor = this.color;
         ctx.fillRect(this.x, this.y, this.width, this.height);
         ctx.shadowBlur = 0;
@@ -433,7 +461,7 @@ class GliderPongProgram {
             }, '#ffffff'));
 
             // Setup Bricks for 1 Player Mode
-            const rows = 6;
+            const rows = 3;
             const cols = 16;
             const pad = 15;
             const bWidth = (GAME_WIDTH - (cols + 1) * pad) / cols;
@@ -607,7 +635,7 @@ class GliderPongProgram {
                 if (this.numPlayers === 2) {
                     this.winner = (index === 0) ? "Player 2 (Red) Wins!" : "Player 1 (Blue) Wins!";
                 } else {
-                    this.winner = "Game Over";
+                    this.winner = "";
                 }
             }
         });
@@ -622,7 +650,7 @@ class GliderPongProgram {
                     this.winner = "Player 1 (Blue) Wins!";
                 }
             } else {
-                this.winner = "Game Over";
+                this.winner = "";
             }
         });
 
