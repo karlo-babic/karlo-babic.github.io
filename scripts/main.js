@@ -25,10 +25,13 @@ document.addEventListener('DOMContentLoaded', () => {
         threebodyInit();
     });
 
-    document.getElementById('paper-placeholder').addEventListener('click', (event) => {
-        event.preventDefault();
-        paperInit();
-    });
+    const paperEl = document.getElementById('paper-placeholder');
+    ['click', 'mouseenter'].forEach(evt => 
+        paperEl.addEventListener(evt, (event) => {
+            event.preventDefault();
+            paperInit();
+        })
+    );
 
     // Add event listeners for section titles to load content into the console
     const sectionTitles = document.querySelectorAll('[data-section-file]');
