@@ -14,7 +14,7 @@ const MAX_HEALTH = 100;
 const AIR_RESISTANCE = 0.02;
 const ROTATION_SMOOTHNESS = 0.01;
 const ROTATION_BOUNDRY = 0.3;
-const ROTATION_FACTOR = 0.05;
+const ROTATION_FACTOR = 0.1;
 
 // Environment Constants
 const WIND_START_Y = GAME_HEIGHT * (4 / 5);
