@@ -45,7 +45,7 @@ class Glider {
         this.isDead = false;
     }
 
-    update(deltaTime, keys) {
+    update(deltaTime, keys, windStartY = WIND_START_Y) {
         if (this.isDead) return;
 
         // Cap deltaTime to avoid physics explosions on lag spikes
@@ -53,7 +53,7 @@ class Glider {
         const timeScale = deltaTime * 60;
 
         this._applyInput(keys, timeScale);
-        this._applyPhysics(timeScale);
+        this._applyPhysics(timeScale, windStartY);
         
         this.position.x += this.velocity.x * deltaTime * 60; // Scale movement to framerate
         this.position.y += this.velocity.y * deltaTime * 60;
@@ -97,12 +97,12 @@ class Glider {
         this.rotation += (ROTATION_FACTOR * this.rotationForce * Math.min(10, Math.max(2, logVal))) * timeScale;
     }
 
-_applyPhysics(timeScale) {
+    _applyPhysics(timeScale, windStartY) {
         // Calculate environmental wind force (upward)
         let windSpeedY = 0;
-        if (this.position.y > WIND_START_Y) {
-            // Calculate a linear ratio (0 to 1)
-            const linearRatio = Math.min(1, (this.position.y - WIND_START_Y) / (GAME_HEIGHT - WIND_START_Y));
+        if (this.position.y > windStartY) {
+            // Calculate a linear ratio (0 to 1) based on dynamic wind height
+            const linearRatio = Math.min(1, (this.position.y - windStartY) / (GAME_HEIGHT - windStartY));
             // Square the ratio so the force increases exponentially as we approach the bottom
             const exponentialRatio = Math.pow(linearRatio, 2);
             windSpeedY = -MAX_WIND_SPEED * exponentialRatio;
@@ -215,9 +215,15 @@ class Ball {
         }
 
         if (this.position.y + this.radius > GAME_HEIGHT) {
-            this.active = false;
-            onGameOver(this.owner);
-            return;
+            if (this.mode === 3) {
+                // Practice Mode: Bounce off bottom wall instead of dying
+                this.position.y = GAME_HEIGHT - this.radius;
+                this.velocity.y *= -1;
+            } else {
+                this.active = false;
+                onGameOver(this.owner);
+                return;
+            }
         }
 
         // Glider Collisions
@@ -267,8 +273,6 @@ class Ball {
                     }
 
                     // Reflect the ball's velocity vector
-                    // We use the full reflection formula on the ball's actual velocity
-                    // But we boost it slightly to ensure it escapes the moving collider
                     this.velocity.x -= (2 * dot * normalX);
                     this.velocity.y -= (2 * dot * normalY);
 
@@ -278,11 +282,7 @@ class Ball {
                     this.velocity.y = (this.velocity.y / currentSpeed) * this.speed;
                     
                     // Push the ball out of the glider to prevent sticking
-                    // We add a small buffer (0.5) to the push
                     const overlap = (halfH - Math.abs(localY)) + 0.5;
-                    // Push in direction of normal (which points away from glider center)
-                    // If we hit top (localY < 0), normal points up. If bottom, down.
-                    // We want to push out in the direction we came from approx.
                     const pushDir = localY < 0 ? -1 : 1;
                     
                     // Rotate the push vector back to world space
@@ -376,9 +376,13 @@ class GliderPongProgram {
         this.keys = {};
         
         // Mode Management
-        this.numPlayers = 1; 
+        this.numPlayers = 1; // 1: Single, 2: Multi, 3: Practice
         this.nextStartPlayer = 'p1'; // Alternates in 2P mode
         this.winner = null;
+
+        // Environment State
+        this.windStartY = WIND_START_Y;
+        this.isDraggingWind = false;
 
         // Entities
         this.gliders = [];
@@ -409,6 +413,9 @@ class GliderPongProgram {
         this.handleKeyUp = this.handleKeyUp.bind(this);
         this.handleTouchStart = this.handleTouchStart.bind(this);
         this.handleTouchEnd = this.handleTouchEnd.bind(this);
+        this.handleMouseDown = this.handleMouseDown.bind(this);
+        this.handleMouseUp = this.handleMouseUp.bind(this);
+        this.handleMouseMove = this.handleMouseMove.bind(this);
         this.onResize = this.onResize.bind(this);
     }
 
@@ -432,10 +439,15 @@ class GliderPongProgram {
         window.addEventListener('keydown', this.handleKeyDown);
         window.addEventListener('keyup', this.handleKeyUp);
         
+        // Touch events for mobile gameplay (controls glider)
         this.canvas.addEventListener('touchstart', this.handleTouchStart, { passive: false });
         this.canvas.addEventListener('touchend', this.handleTouchEnd, { passive: false });
-        this.canvas.addEventListener('mousedown', this.handleTouchStart); // Map mouse to touch for testing
-        this.canvas.addEventListener('mouseup', this.handleTouchEnd);
+        
+        // Mouse events strictly for UI interactions (Practice Mode) and Start Game
+        // These are decoupled from touch logic to prevent clicking from rotating the glider on PC
+        this.canvas.addEventListener('mousedown', this.handleMouseDown);
+        this.canvas.addEventListener('mouseup', this.handleMouseUp);
+        this.canvas.addEventListener('mousemove', this.handleMouseMove);
     }
 
     removeEventListeners() {
@@ -445,35 +457,40 @@ class GliderPongProgram {
         
         this.canvas.removeEventListener('touchstart', this.handleTouchStart);
         this.canvas.removeEventListener('touchend', this.handleTouchEnd);
-        this.canvas.removeEventListener('mousedown', this.handleTouchStart);
-        this.canvas.removeEventListener('mouseup', this.handleTouchEnd);
+        this.canvas.removeEventListener('mousedown', this.handleMouseDown);
+        this.canvas.removeEventListener('mouseup', this.handleMouseUp);
+        this.canvas.removeEventListener('mousemove', this.handleMouseMove);
     }
 
     setupEntities() {
         this.gliders = [];
         this.bricks = [];
+        // Reset wind height to default on mode switch
+        this.windStartY = WIND_START_Y;
         
-        if (this.numPlayers === 1) {
-            // Single Player (Neon White)
+        if (this.numPlayers === 1 || this.numPlayers === 3) {
+            // Single Player (Mode 1) or Practice (Mode 3) (Neon White)
             this.gliders.push(new Glider(GAME_WIDTH / 2, GAME_HEIGHT * 0.8, {
                 left: 'ArrowLeft',
                 right: 'ArrowRight'
             }, '#ffffff'));
 
-            // Setup Bricks for 1 Player Mode
-            const rows = 3;
-            const cols = 16;
-            const pad = 15;
-            const bWidth = (GAME_WIDTH - (cols + 1) * pad) / cols;
-            const bHeight = 30;
-            const colors = ['#ff00ffaa', '#00ffffaa', '#ffff00aa', '#00ff00aa', '#ff0000aa'];
+            // Setup Bricks for 1 Player Mode ONLY
+            if (this.numPlayers === 1) {
+                const rows = 3;
+                const cols = 16;
+                const pad = 15;
+                const bWidth = (GAME_WIDTH - (cols + 1) * pad) / cols;
+                const bHeight = 30;
+                const colors = ['#ff00ffaa', '#00ffffaa', '#ffff00aa', '#00ff00aa', '#ff0000aa'];
 
-            for (let r = 0; r < rows; r++) {
-                for (let c = 0; c < cols; c++) {
-                    const x = pad + c * (bWidth + pad);
-                    const y = pad + r * (bHeight + pad) + 60; // Offset from top
-                    const color = colors[Math.floor(Math.random() * colors.length)];
-                    this.bricks.push(new Brick(x, y, bWidth, bHeight, color));
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        const x = pad + c * (bWidth + pad);
+                        const y = pad + r * (bHeight + pad) + 60; // Offset from top
+                        const color = colors[Math.floor(Math.random() * colors.length)];
+                        this.bricks.push(new Brick(x, y, bWidth, bHeight, color));
+                    }
                 }
             }
 
@@ -495,7 +512,7 @@ class GliderPongProgram {
     startGame() {
         if (this.gameState === 'playing') return;
         
-        // Regenerate bricks and gliders for a fresh start
+        // Regenerate entities for a fresh start
         this.setupEntities();
 
         this.gameState = 'playing';
@@ -540,6 +557,10 @@ class GliderPongProgram {
                 this.numPlayers = 2;
                 this.setupEntities();
             }
+            if (e.code === 'Digit3') {
+                this.numPlayers = 3;
+                this.setupEntities();
+            }
         }
     }
 
@@ -548,22 +569,21 @@ class GliderPongProgram {
     }
 
     handleTouchStart(e) {
-        e.preventDefault();
-        
         if (this.gameState !== 'playing') {
             this.startGame();
             return;
         }
 
-        // Handle mobile touch input (left/right screen division)
-        let clientX = e.clientX;
-        if (e.touches && e.touches.length > 0) {
-            clientX = e.touches[0].clientX;
-        }
+        // Only handle actual touch events
+        if (!e.touches || e.touches.length === 0) return;
+        
+        e.preventDefault();
 
         const rect = this.canvas.getBoundingClientRect();
+        const clientX = e.touches[0].clientX;
         const touchX = clientX - rect.left;
 
+        // Simple screen half division for touch controls
         if (touchX < rect.width / 2) {
             this.keys['TouchLeft'] = true;
             this.keys['TouchRight'] = false;
@@ -574,9 +594,66 @@ class GliderPongProgram {
     }
 
     handleTouchEnd(e) {
+        // Only handle actual touch events
+        if (e.type !== 'touchend') return;
+        
         e.preventDefault();
         this.keys['TouchLeft'] = false;
         this.keys['TouchRight'] = false;
+    }
+
+    handleMouseDown(e) {
+        // Allow mouse click to start game
+        if (this.gameState !== 'playing') {
+            this.startGame();
+            return;
+        }
+
+        // Only enable drag in Practice Mode (3)
+        if (this.numPlayers === 3) {
+            const rect = this.canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+
+            // Convert CSS mouse coordinates to High-DPI Canvas coordinates
+            const canvasX = (e.clientX - rect.left) * dpr;
+            const canvasY = (e.clientY - rect.top) * dpr;
+
+            // Convert Canvas coordinates to Game Logic coordinates (0-1800, 0-1000)
+            const mouseX = (canvasX - this.offsetX) / this.scaleRatio;
+            const mouseY = (canvasY - this.offsetY) / this.scaleRatio;
+
+            // Define Handle Area: Far right, centered on the wind line
+            const handleW = 60;
+            const handleH = 40; // Hitbox height
+            const handleX = GAME_WIDTH - handleW;
+            const handleY = this.windStartY - (handleH / 2);
+
+            // Check if click is within the handle
+            if (mouseX >= handleX && mouseX <= GAME_WIDTH &&
+                mouseY >= handleY && mouseY <= handleY + handleH) {
+                this.isDraggingWind = true;
+            }
+        }
+    }
+
+    handleMouseMove(e) {
+        if (this.isDraggingWind && this.numPlayers === 3) {
+            const rect = this.canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            
+            // Convert to High-DPI Canvas Y
+            const canvasY = (e.clientY - rect.top) * dpr;
+            
+            // Convert to Game Logic Y
+            const mouseY = (canvasY - this.offsetY) / this.scaleRatio;
+            
+            // Clamp wind height (Keep it within playable bounds)
+            this.windStartY = Math.max(100, Math.min(GAME_HEIGHT - 50, mouseY));
+        }
+    }
+
+    handleMouseUp(e) {
+        this.isDraggingWind = false;
     }
 
     onResize() {
@@ -612,13 +689,16 @@ class GliderPongProgram {
     update(deltaTime) {
         if (this.gameState !== 'playing') return;
 
-        // Update wind particles
+        // Update wind particles using dynamic windStartY
         this.particles.forEach(p => {
-            const windRatio = Math.min(1, (p.y - WIND_START_Y) / (GAME_HEIGHT - WIND_START_Y));
+            const windHeight = GAME_HEIGHT - this.windStartY;
+            const windRatio = Math.min(1, (p.y - this.windStartY) / windHeight);
             const speedMult = 1 + (windRatio * 5); 
+            
             p.y -= p.speed * speedMult * deltaTime * 60;
-            p.opacity = Math.max(0, (p.y - WIND_START_Y) / (GAME_HEIGHT - WIND_START_Y));
-            if (p.y < WIND_START_Y || p.opacity <= 0) {
+            p.opacity = Math.max(0, (p.y - this.windStartY) / windHeight);
+            
+            if (p.y < this.windStartY || p.opacity <= 0) {
                 p.y = GAME_HEIGHT;
                 p.x = Math.random() * GAME_WIDTH;
                 p.opacity = 0;
@@ -627,10 +707,16 @@ class GliderPongProgram {
 
         // Update gliders and check bounds
         this.gliders.forEach((glider, index) => {
-            glider.update(deltaTime, this.keys);
+            // Pass the current dynamic wind level to the glider
+            glider.update(deltaTime, this.keys, this.windStartY);
+            
             const pad = 20;
             if (glider.position.x < -pad || glider.position.x > GAME_WIDTH + pad ||
                 glider.position.y < -pad || glider.position.y > GAME_HEIGHT + pad) {
+                
+                // In Practice mode, falling out is still game over? 
+                // Requirement said "player does not lose once the ball touches the bottom wall".
+                // It implied gliders falling is still bad. Assuming standard behavior for glider death.
                 this.gameState = 'gameOver';
                 if (this.numPlayers === 2) {
                     this.winner = (index === 0) ? "Player 2 (Red) Wins!" : "Player 1 (Blue) Wins!";
@@ -654,7 +740,7 @@ class GliderPongProgram {
             }
         });
 
-        // Check Win Condition for 1 Player
+        // Check Win Condition for 1 Player (Not Practice)
         if (this.numPlayers === 1 && this.bricks.every(b => !b.active)) {
             this.gameState = 'gameOver';
             this.winner = "You Win! All Bricks Destroyed!";
@@ -691,13 +777,14 @@ class GliderPongProgram {
     }
 
     drawWindEffect() {
-        // Draw the background wind zone gradient
-        const gradient = this.ctx.createLinearGradient(0, GAME_HEIGHT, 0, WIND_START_Y);
+        // Draw the background wind zone gradient based on dynamic height
+        const height = GAME_HEIGHT - this.windStartY;
+        const gradient = this.ctx.createLinearGradient(0, GAME_HEIGHT, 0, this.windStartY);
         gradient.addColorStop(0, 'rgba(178, 129, 196, 0.15)');
         gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
         
         this.ctx.fillStyle = gradient;
-        this.ctx.fillRect(0, WIND_START_Y, GAME_WIDTH, GAME_HEIGHT - WIND_START_Y);
+        this.ctx.fillRect(0, this.windStartY, GAME_WIDTH, height);
 
         // Draw rising air particles
         this.ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
@@ -707,6 +794,20 @@ class GliderPongProgram {
             this.ctx.fillRect(p.x, p.y, 4, 20);
         });
         this.ctx.globalAlpha = 1.0;
+
+        // Draw Resize Handle in Practice Mode
+        if (this.numPlayers === 3) {
+            // Draw handle tab
+            this.ctx.fillStyle = this.isDraggingWind ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.4)';
+            this.ctx.fillRect(GAME_WIDTH - 60, this.windStartY - 15, 60, 30);
+            
+            // Draw Label
+            this.ctx.fillStyle = '#000';
+            this.ctx.font = 'bold 12px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText("WIND", GAME_WIDTH - 30, this.windStartY);
+        }
     }
 
     drawUI() {
@@ -720,24 +821,31 @@ class GliderPongProgram {
 
         if (this.gameState === 'startScreen') {
             this.ctx.font = `bold ${32 * px}px "Courier New", monospace`;
-            this.ctx.fillText("Glider Pong", cx, cy - 60 * px);
+            this.ctx.fillText("Glider Pong", cx, cy - 80 * px);
             
             // Mode Selection
             this.ctx.font = `${18 * px}px "Courier New", monospace`;
+            
             this.ctx.fillStyle = this.numPlayers === 1 ? '#44aaff' : '#888';
-            this.ctx.fillText("Press 1: Single Player", cx, cy - 20 * px);
+            this.ctx.fillText("Press 1: Single Player", cx, cy - 30 * px);
+            
             this.ctx.fillStyle = this.numPlayers === 2 ? '#ff4444' : '#888';
-            this.ctx.fillText("Press 2: Two Players", cx, cy + 10 * px);
+            this.ctx.fillText("Press 2: Versus Mode", cx, cy);
+            
+            this.ctx.fillStyle = this.numPlayers === 3 ? '#aaff44' : '#888';
+            this.ctx.fillText("Press 3: Practice Mode", cx, cy + 30 * px);
 
             this.ctx.fillStyle = 'white';
             this.ctx.font = `${16 * px}px "Courier New", monospace`;
-            this.ctx.fillText("Press Space or Touch to Start", cx, cy + 50 * px);
+            this.ctx.fillText("Press Space or Touch to Start", cx, cy + 80 * px);
             
             this.ctx.font = `${12 * px}px "Courier New", monospace`;
-            if (this.numPlayers === 1) {
-                this.ctx.fillText("Controls: Arrows or Tap Sides", cx, cy + 90 * px);
+            if (this.numPlayers === 2) {
+                this.ctx.fillText("P1 (Blue): Arrows | P2 (Red): A / D", cx, cy + 120 * px);
+            } else if (this.numPlayers === 3) {
+                this.ctx.fillText("Drag 'WIND' tab on right to adjust height", cx, cy + 120 * px);
             } else {
-                this.ctx.fillText("P1 (Blue): Arrows | P2 (Red): A / D", cx, cy + 90 * px);
+                this.ctx.fillText("Controls: Arrows or Tap Sides", cx, cy + 120 * px);
             }
         } else if (this.gameState === 'gameOver') {
             this.ctx.font = `bold ${32 * px}px "Courier New", monospace`;
