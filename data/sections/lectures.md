@@ -1,3 +1,3 @@
-- [**Programming Paradigms**](/paradigms-py)
-- [**Implementing Interpreters**](/interpreters)
-- [**Game Development**](/gamedev)
+[**Programming Paradigms**](/paradigms-py)
+[**Implementing Interpreters**](/interpreters)
+[**Game Development**](/gamedev)
