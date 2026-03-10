@@ -86,15 +86,15 @@ export class InteractiveText {
      * Echoes the input using the current prompt label text (e.g., <username>).
      */
     handleSubmit() {
-        const text = this.inputField.value;
-        if (!text.trim()) return;
+        const text = this.inputField.value.trim();
+        if (!text) return;
 
-        // Dynamically fetch the current prompt text to use as a prefix in the history
+        // Displays the trimmed text to the local user using the current prompt
         const prompt = this.inputWrapper.querySelector('span').innerText;
         this.println(`${prompt}${text}`, 'user-input');
-        
+    
         this.inputField.value = '';
-
+        
         if (this.onInputCallback) {
             this.onInputCallback(text);
         }
