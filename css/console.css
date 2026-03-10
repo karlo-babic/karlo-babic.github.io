@@ -61,6 +61,9 @@
 }
 
 .console-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background-color: #333;
     border: 1px solid #555;
     color: #ccc;
@@ -68,9 +71,18 @@
     font-size: 0.8rem;
     cursor: pointer;
     transition: background-color 0.2s, border-color 0.2s;
-    padding: 0.2rem 0.4rem;
+    /*padding: 0.2rem 0.4rem;*/
+    padding: 4px;
     line-height: normal;
     box-sizing: border-box;
+}
+
+.console-btn svg {
+    width: 1.2em;
+    height: 1.2em;
+    fill: currentColor;
+    vertical-align: middle;
+    pointer-events: none; /* Prevents the SVG itself from intercepting clicks */
 }
 
 .console-btn:hover {

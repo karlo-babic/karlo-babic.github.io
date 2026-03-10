@@ -323,7 +323,27 @@ export const Console = {
     },
     
     openInNewTab: function() {
-        window.open('console', '_blank');
+        const programName = this.availablePrograms[this.currentProgramIndex];
+        if (!programName) return;
+
+        const params = new URLSearchParams();
+        // Use 'start' instead of 'run' to indicate full interactive mode.
+        params.set('start', programName);
+
+        // Copy named arguments.
+        if (this.currentProgramArgs && this.currentProgramArgs.named) {
+            for (const [key, value] of Object.entries(this.currentProgramArgs.named)) {
+                params.set(key, String(value));
+            }
+        }
+
+        // Map positional arguments for specific programs.
+        if (programName === 'read' && this.currentProgramArgs && this.currentProgramArgs.positional.length > 0) {
+            params.set('file', this.currentProgramArgs.positional[0]);
+        }
+
+        const url = `/console?${params.toString()}`;
+        window.open(url, '_blank');
     },
 
     openViewOnly: function() {

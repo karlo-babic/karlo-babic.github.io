@@ -78,24 +78,37 @@
         <!-- Console Window -->
         <div id="console-window">
             <div id="console-screen"></div>
-            <div id="console-controls">
-                <!-- Restart Button -->
-                <button id="restart-program" class="console-btn" title="Restart Program">⟲</button>
-                
-                <div class="dropdown" id="program-dropdown">
-                    <button id="current-program-btn" class="console-btn dropdown-btn"></button>
-                    <div id="program-list" class="dropdown-content"></div>
+                <div id="console-controls">
+                    <!-- Restart Program -->
+                    <button id="restart-program" class="console-btn" title="Restart Program">
+                        <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                    </button>
+                    
+                    <div class="dropdown" id="program-dropdown">
+                        <button id="current-program-btn" class="console-btn dropdown-btn"></button>
+                        <div id="program-list" class="dropdown-content"></div>
+                    </div>
+
+                    <!-- Next Program -->
+                    <button id="next-program" class="console-btn" title="Next Program">
+                        <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                    </button>
+                        
+                    <div id="console-input-wrapper">
+                        <textarea id="program-input" class="console-input" rows="1" spellcheck="false"></textarea>
+                        <span id="console-suggestion"></span>
+                    </div>
+
+                    <!-- Fullscreen / External Link Icon -->
+                    <button id="fullscreen-btn" class="console-btn" title="Open in New Tab">
+                        <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                    </button>
+
+                    <!-- View-Only Icon (Shown only in console.html) -->
+                    <button id="view-only-btn" class="console-btn" title="Open View-Only Link" style="display:none;">
+                        <svg viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+                    </button>
                 </div>
-                <button id="next-program" class="console-btn" title="Next Program">⏭</button>
-                      
-                <!-- Wrapper for input and suggestion -->
-                <div id="console-input-wrapper">
-                    <textarea id="program-input" class="console-input" rows="1"></textarea>
-                    <span id="console-suggestion"></span>
-                </div>
-    
-                <button id="fullscreen-btn" class="console-btn" title="Open in New Tab">⤢</button>
-            </div>
         </div>
     </div>
 
