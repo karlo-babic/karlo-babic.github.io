@@ -53,7 +53,7 @@ export const Console = {
     },
 
       
-    init: function(initialProgramName = null) {
+    init: function(initialProgramName = null, initialArgs = null) {
         this.windowEl = document.getElementById('console-window');
         this.screenEl = document.getElementById('console-screen');
         this.inputEl = document.getElementById('program-input');
@@ -61,68 +61,43 @@ export const Console = {
         this.dropdownBtn = document.getElementById('current-program-btn');
         this.programListEl = document.getElementById('program-list');
 
-        // Find each button element.
         const restartBtn = document.getElementById('restart-program');
         const nextBtn = document.getElementById('next-program');
         const fullscreenBtn = document.getElementById('fullscreen-btn');
         const viewOnlyBtn = document.getElementById('view-only-btn');
 
-        // Only add listeners if the element was found.
-        if (restartBtn) {
-            restartBtn.addEventListener('click', () => this.restartCurrentProgram());
-        }
-        if (this.dropdownBtn) {
-            this.dropdownBtn.addEventListener('click', () => this.toggleDropdown());
-        }
-        if (nextBtn) {
-            nextBtn.addEventListener('click', () => this.browse(1));
-        }
-        if (fullscreenBtn) {
-            fullscreenBtn.addEventListener('click', () => this.openInNewTab());
-        }
-        if (viewOnlyBtn) {
-            viewOnlyBtn.addEventListener('click', () => this.openViewOnly());
-        }
+        if (restartBtn) restartBtn.addEventListener('click', () => this.restartCurrentProgram());
+        if (this.dropdownBtn) this.dropdownBtn.addEventListener('click', () => this.toggleDropdown());
+        if (nextBtn) nextBtn.addEventListener('click', () => this.browse(1));
+        if (fullscreenBtn) fullscreenBtn.addEventListener('click', () => this.openInNewTab());
+        if (viewOnlyBtn) viewOnlyBtn.addEventListener('click', () => this.openViewOnly());
 
         this.inputEl.addEventListener('input', () => {
             this.inputEl.style.height = 'auto';
-            
-            // Only apply explicit height if content wraps to multiple lines
             if (this.inputEl.scrollHeight > 24) {
                 this.inputEl.style.height = this.inputEl.scrollHeight + 'px';
             }
-            
             this.updateSuggestion();
         });
 
         this.inputEl.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                this.navigateHistory('up');
-            }
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                this.navigateHistory('down');
-            }
+            if (e.key === 'ArrowUp') { e.preventDefault(); this.navigateHistory('up'); }
+            if (e.key === 'ArrowDown') { e.preventDefault(); this.navigateHistory('down'); }
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 this.runProgramFromInput();
                 this.inputEl.value = '';
-                this.inputEl.style.height = ''; // Reset to CSS default
+                this.inputEl.style.height = '';
                 this.updateSuggestion();
             }
-            if (e.key === 'Tab') {
-                if (this.currentSuggestion) {
-                    e.preventDefault();
-                    this.inputEl.value = this.currentSuggestion;
-                    this.updateSuggestion();
-                }
+            if (e.key === 'Tab' && this.currentSuggestion) {
+                e.preventDefault();
+                this.inputEl.value = this.currentSuggestion;
+                this.updateSuggestion();
             }
         });
 
-        this.inputEl.addEventListener('blur', () => {
-            this.clearSuggestion();
-        });
+        this.inputEl.addEventListener('blur', () => this.clearSuggestion());
 
         window.addEventListener('click', (e) => {
             if (this.dropdownBtn && !e.target.matches('.dropdown-btn')) {
@@ -134,24 +109,23 @@ export const Console = {
 
         // --- LOGIC FOR INITIAL PROGRAM ---
         let programToLoad = this.availablePrograms[0]; // Default to the first program
-        
+        let argsToLoad = initialArgs || { positional: [], named: {} };
+
         if (initialProgramName) {
             const requestedIndex = this.availablePrograms.indexOf(initialProgramName);
-            // Check if the requested program exists in the list.
             if (requestedIndex !== -1) {
                 programToLoad = initialProgramName;
                 this.currentProgramIndex = requestedIndex;
             } else {
                 console.warn(`Initial program "${initialProgramName}" not found. Defaulting to first program.`);
+                argsToLoad = { positional: [], named: {} }; // Reset args if program is invalid
             }
         }
         
-        // Load the determined program.
-        this.loadProgram(programToLoad);
+        // Load the determined program with its arguments in a single step.
+        this.loadProgram(programToLoad, argsToLoad);
 
-        // Automatically focus the input only on larger (desktop) screens.
-        const isDesktop = window.innerWidth > 768;
-        if (isDesktop) {
+        if (window.innerWidth > 768) {
             this.inputEl.focus();
         }
     },
@@ -323,51 +297,38 @@ export const Console = {
     },
     
     openInNewTab: function() {
-        const programName = this.availablePrograms[this.currentProgramIndex];
-        if (!programName) return;
-
-        const params = new URLSearchParams();
-        // Use 'start' instead of 'run' to indicate full interactive mode.
-        params.set('start', programName);
-
-        // Copy named arguments.
-        if (this.currentProgramArgs && this.currentProgramArgs.named) {
-            for (const [key, value] of Object.entries(this.currentProgramArgs.named)) {
-                params.set(key, String(value));
-            }
-        }
-
-        // Map positional arguments for specific programs.
-        if (programName === 'read' && this.currentProgramArgs && this.currentProgramArgs.positional.length > 0) {
-            params.set('file', this.currentProgramArgs.positional[0]);
-        }
-
-        const url = `/console?${params.toString()}`;
-        window.open(url, '_blank');
+        const url = this._buildUrl('start');
+        if (url) window.open(url, '_blank');
     },
 
     openViewOnly: function() {
+        const url = this._buildUrl('run');
+        if (url) window.open(url, '_blank');
+    },
+
+    // --- Private helper for generating console URLs ---
+    _buildUrl: function(mode) {
         const programName = this.availablePrograms[this.currentProgramIndex];
-        if (!programName || !this.currentProgramArgs) return;
+        if (!programName) return '';
 
         const params = new URLSearchParams();
-        params.set('run', programName);
+        // mode is either 'run' (view-only) or 'start' (full console)
+        params.set(mode, programName);
 
-        // Copy named arguments directly from the current program's arguments.
-        for (const [key, value] of Object.entries(this.currentProgramArgs.named)) {
+        const args = this.currentProgramArgs || { positional: [], named: {} };
+
+        // Copy named arguments
+        for (const [key, value] of Object.entries(args.named)) {
             params.set(key, String(value));
         }
 
-        // Convert positional arguments to named parameters for URL sharing.
-        // This section contains program-specific logic.
-        if (programName === 'read' && this.currentProgramArgs.positional.length > 0) {
-            // For 'read', the first positional arg is the filename. Map it to 'file'.
-            params.set('file', this.currentProgramArgs.positional[0]);
+        // Map positional arguments for specific programs
+        if (programName === 'read' && args.positional.length > 0) {
+            params.set('file', args.positional[0]);
         }
-        // Add other `else if` blocks here for other programs with positional args.
+        // Add other program-specific mappings here
 
-        const url = `/console?${params.toString()}`;
-        window.open(url, '_blank');
+        return `/console?${params.toString()}`;
     },
 
     updateDisplays: function() {

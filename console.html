@@ -53,64 +53,63 @@
         This embedded script acts as the entry point for the console-only page.
         It imports the Console module and initializes it immediately.
     -->
-<script type="module">
-    import { Console } from './scripts/console.js';
-
-    document.addEventListener('DOMContentLoaded', () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        
-        const programToRun = urlParams.get('run');     // View-only mode
-        const programToStart = urlParams.get('start'); // Interactive mode
-
-        if (programToRun) {
-            // --- View-Only Logic ---
-            let title = programToRun.charAt(0).toUpperCase() + programToRun.slice(1);
-
-            if (programToRun === 'read') {
-                const filename = urlParams.get('file');
-                if (filename) title = filename;
-            }
-            document.title = title;
-
-            const controls = document.getElementById('console-controls');
-            if (controls) controls.style.display = 'none';
-
-            const args = { positional: [], named: {} };
-            for (const [key, value] of urlParams.entries()) {
-                if (key !== 'run') {
-                    const numValue = parseFloat(value);
-                    args.named[key] = isNaN(numValue) ? value : numValue;
-                }
-            }
-            if (programToRun === 'read' && urlParams.has('file')) {
-                args.positional = [urlParams.get('file')];
-            }
+    <script type="module">
+        import { Console } from './scripts/console.js';
+    
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
             
-            Console.windowEl = document.getElementById('console-window');
-            Console.screenEl = document.getElementById('console-screen');
-            Console.loadProgram(programToRun, args);
-
-        } else {
-            // --- Interactive Logic ---
-            // Initialize the UI and controls.
-            Console.init(programToStart || 'help');
-
-            // If a specific program was requested via 'start', re-load it with parsed arguments.
-            if (programToStart) {
+            const programToRun = urlParams.get('run');     // View-only mode
+            const programToStart = urlParams.get('start'); // Interactive mode
+    
+            if (programToRun) {
+                // --- View-Only Logic ---
+                let title = programToRun.charAt(0).toUpperCase() + programToRun.slice(1);
+                if (programToRun === 'read' && urlParams.get('file')) {
+                    title = urlParams.get('file');
+                }
+                document.title = title;
+    
+                const controls = document.getElementById('console-controls');
+                if (controls) controls.style.display = 'none';
+    
                 const args = { positional: [], named: {} };
                 for (const [key, value] of urlParams.entries()) {
-                    if (key !== 'start') {
+                    if (key !== 'run') {
                         const numValue = parseFloat(value);
                         args.named[key] = isNaN(numValue) ? value : numValue;
                     }
                 }
-                if (programToStart === 'read' && urlParams.has('file')) {
+                if (programToRun === 'read' && urlParams.has('file')) {
                     args.positional = [urlParams.get('file')];
                 }
-                Console.loadProgram(programToStart, args);
+                
+                Console.windowEl = document.getElementById('console-window');
+                Console.screenEl = document.getElementById('console-screen');
+                Console.loadProgram(programToRun, args);
+    
+            } else {
+                // --- Interactive Logic ---
+                const initialProgram = programToStart || 'help';
+                let initialArgs = null;
+    
+                if (programToStart) {
+                    initialArgs = { positional: [], named: {} };
+                    for (const [key, value] of urlParams.entries()) {
+                        if (key !== 'start') {
+                            const numValue = parseFloat(value);
+                            initialArgs.named[key] = isNaN(numValue) ? value : numValue;
+                        }
+                    }
+                    if (programToStart === 'read' && urlParams.has('file')) {
+                        initialArgs.positional = [urlParams.get('file')];
+                    }
+                }
+                
+                // Initialize the console once with the program and its arguments.
+                Console.init(initialProgram, initialArgs);
             }
-        }
-    });
-</script>
+        });
+    </script>
 </body>
 </html>
