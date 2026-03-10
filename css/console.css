@@ -125,6 +125,14 @@
     z-index: 1;
     bottom: 100%;
     border: 1px solid #444;
+    max-height: 192px;
+    overflow-y: auto;
+    scrollbar-width: none; 
+    -ms-overflow-style: none;
+}
+
+.dropdown-content::-webkit-scrollbar {
+    display: none;
 }
 
 .dropdown-content a {
