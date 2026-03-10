@@ -33,14 +33,14 @@ const ChatApp = {
 
         this.p2p.onPeerLeave = (peerId) => {
             const name = this.peerNames[peerId] || 'Unknown User';
-            this.ui.println(`[System] ${name} has left the chat.`, 'system-msg');
+            this.ui.println(`[System] ${name} disconnected.`, 'system-msg');
             delete this.peerNames[peerId];
         };
 
         this.p2p.onMessage = (data, peerId) => {
             if (data.type === 'HELO') {
                 this.peerNames[peerId] = data.username;
-                this.ui.println(`[System] ${data.username} joined the chat.`, 'system-msg');
+                this.ui.println(`[System] ${data.username} connected.`, 'system-msg');
             } 
             else if (data.type === 'MSG') {
                 const name = this.peerNames[peerId] || 'Unknown';
