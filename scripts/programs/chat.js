@@ -9,13 +9,13 @@ const ChatApp = {
     username: 'Guest',
     peerNames: {}, // Maps peerIds to usernames
 
-init: async function(screenEl) {
+    init: async function(screenEl) {
         /**
          * Initialize UI and P2P engine. 
          * Network connection is deferred until a username is provided.
          */
         this.ui = new InteractiveText(screenEl, (text) => this.handleInput(text));
-        this.p2p = new P2PEngine('my-awesome-web-console-v1');
+        this.p2p = new P2PEngine('karlo-web-console-chat');
 
         this.ui.println("=== P2P TERMINAL CHAT ===", "system-msg");
         this.ui.println("Please enter a username:", "prompt-msg");

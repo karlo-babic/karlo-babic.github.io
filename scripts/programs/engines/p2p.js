@@ -14,16 +14,32 @@ export class P2PEngine {
     }
 
     async init(roomId) {
-        // No need to inject script tags or wait for window.trystero
-        // joinRoom is already imported at the top
-        const config = { appId: this.appId };
+        /**
+         * Configuration for decentralized discovery and NAT traversal.
+         * trackerUrls: Public WebTorrent trackers used for signaling.
+         * rtcConfig: Standard WebRTC configuration including public STUN servers.
+         */
+        const config = {
+            appId: this.appId,
+            trackerUrls: [
+                'wss://tracker.openwebtorrent.com',
+                'wss://tracker.files.fm:7073/announce',
+                'wss://tracker.btorrent.xyz'
+            ],
+            rtcConfig: {
+                iceServers: [
+                    {urls: 'stun:stun.l.google.com:19302'},
+                    {urls: 'stun:stun1.l.google.com:19302'},
+                    {urls: 'stun:stun2.l.google.com:19302'}
+                ]
+            }
+        };
+
         this.room = joinRoom(config, roomId);
 
-        // Define the messaging action
         const [send, get] = this.room.makeAction('chatMsg');
         this.sendAction = send;
 
-        // Listeners
         this.room.onPeerJoin(peerId => {
             if (this.onPeerJoin) this.onPeerJoin(peerId);
         });
