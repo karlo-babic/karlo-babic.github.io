@@ -83,18 +83,18 @@ export class InteractiveText {
 
     /**
      * Handles the submit event.
+     * Echoes the input using the current prompt label text (e.g., <username>).
      */
     handleSubmit() {
         const text = this.inputField.value;
         if (!text.trim()) return;
 
-        // Echo user input to screen
-        this.println(`> ${text}`, 'user-input');
+        // Dynamically fetch the current prompt text to use as a prefix in the history
+        const prompt = this.inputWrapper.querySelector('span').innerText;
+        this.println(`${prompt}${text}`, 'user-input');
         
-        // Clear input
         this.inputField.value = '';
 
-        // Send to program logic
         if (this.onInputCallback) {
             this.onInputCallback(text);
         }
