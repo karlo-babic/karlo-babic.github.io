@@ -103,6 +103,9 @@
 .dropdown-btn {
     min-width: 120px;
     text-align: left;
+    justify-content: flex-start; /* Overrides center alignment from .console-btn */
+    padding-left: 6px;
+    padding-right: 20px;
 }
 
 .dropdown-btn::after {
