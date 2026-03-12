@@ -64,7 +64,7 @@ const StoreProgram = {
 
         inputEl.disabled = true;
         inputEl.type = 'text';
-        inputEl.value = 'Connecting to Drive...';
+        inputEl.value = 'Connecting...';
 
         await this.loadFileList();
     },
