@@ -125,10 +125,16 @@ const StoreProgram = {
         } else {
             htmlOutput += '<ul id="store-file-list" style="list-style-type:none;padding:0;margin:0;">';
             files.forEach((file) => {
-                const dateStr = new Date(file.date).toLocaleDateString();
+                const dateTimeStr = new Date(file.date).toLocaleString('en-GB', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
                 htmlOutput += `<li style="padding:4px 0;margin:0;border-top:1px solid #333;line-height:1.3;display:flex;justify-content:space-between;">
                     <span class="store-download-link" data-id="${file.id}" data-name="${escapeHtml(file.name)}" style="text-decoration:underline;cursor:pointer;">${escapeHtml(file.name)}</span>
-                    <span style="color:#666;font-size:0.85em;">${dateStr}</span>
+                    <span style="color:#666;font-size:0.85em;">${dateTimeStr}</span>
                 </li>`;
             });
             htmlOutput += '</ul>';
