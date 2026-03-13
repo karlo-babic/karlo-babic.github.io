@@ -6,9 +6,9 @@ import { BaseText } from './engines/base_text.js';
 const API_URL = 'https://script.google.com/macros/s/AKfycbxBw1SnWdROpwRE81cqled6rGu0bUBqhXZjVNoOzifc62istkZH0huB_IKQ_nEpQ9wm/exec';
 
 /**
- * Maximum file size allowed for upload (10MB).
+ * Maximum file size allowed for upload.
  */
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+const MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100 MB
 
 /**
  * Escapes HTML special characters for safe rendering.
@@ -116,7 +116,7 @@ const StoreProgram = {
     renderInterface: function(files) {
         let htmlOutput = '<div class="store-program-container" style="margin:0;padding:0;font-size:0.9em;line-height:1;">' +
             '<div id="store-upload-zone" style="width:100%;box-sizing:border-box;margin:0;padding:8px;border:1px dashed #444;text-align:center;cursor:pointer;line-height:1.2;">' +
-            '<span id="store-status-text">Click to upload (max 10MB)</span>' +
+            '<span id="store-status-text">Click to upload (max 100MB)</span>' +
             '<input type="file" id="store-file-input" style="display:none;">' +
             '</div>';
         
@@ -228,7 +228,7 @@ const StoreProgram = {
 
         const statusText = document.getElementById('store-status-text');
         if (file.size > MAX_FILE_SIZE_BYTES) {
-            statusText.innerHTML = '<span style="color:red;">Error: Max 10MB</span>';
+            statusText.innerHTML = '<span style="color:red;">Error: Max 100MB</span>';
             return;
         }
 
