@@ -14,7 +14,7 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         this.audioCtx = new AudioContext();
         this.isRunning = false;
 
-        this.EPOCH = 1704067200000;
+        this.EPOCH = 1773593949000;
         this.SONG_DURATION_STEPS = 1024; // 8 blocks of 128 steps (~2 minutes at 120bpm)
         this.BASE_BPM = 120;
 
@@ -772,7 +772,7 @@ const Radio = {
             let currentId = this.instance.station?.id;
             if (currentId === undefined) {
                 const msPerStep = (60000 / 120) / 4; 
-                currentId = Math.floor((Date.now() - 1704067200000) / (msPerStep * 1024));
+                currentId = Math.floor((Date.now() - 1773593949000) / (msPerStep * 1024));
             }
             const output = `Station ID: ${currentId}`;
             this._copyToClipboard(currentId.toString());
