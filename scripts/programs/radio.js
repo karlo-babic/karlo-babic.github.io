@@ -21,12 +21,18 @@ class ProceduralRadioProgram extends BaseGridSimulation {
 
         // Music Theory & Algorithmic Composition Constraints
         this.modes = {
+            // Diatonic Modes
             Ionian:     [0, 2, 4, 5, 7, 9, 11],
             Dorian:     [0, 2, 3, 5, 7, 9, 10],
             Phrygian:   [0, 1, 3, 5, 7, 8, 10],
             Lydian:     [0, 2, 4, 6, 7, 9, 11],
             Mixolydian: [0, 2, 4, 5, 7, 9, 10],
-            Aeolian:    [0, 2, 3, 5, 7, 8, 10]
+            Aeolian:    [0, 2, 3, 5, 7, 8, 10],
+            // Exotic Scales
+            Pentatonic: [0, 2, 4, 7, 9],
+            Hirajoshi:  [0, 2, 3, 7, 8],
+            Blues:      [0, 3, 5, 6, 7, 10],
+            WholeTone:  [0, 2, 4, 6, 8, 10]
         };
 
         this.grooveStyles = [
@@ -61,11 +67,6 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         };
     }
 
-    /**
-     * Initializes the program and sets up a mandatory user-interaction listener
-     * to resume the AudioContext, as modern browsers block auto-playing audio 
-     * when loaded via URL parameters without a preceding gesture.
-     */
     init() {
         super.init();
         this.isRunning = true;
@@ -74,7 +75,6 @@ class ProceduralRadioProgram extends BaseGridSimulation {
             if (this.audioCtx && this.audioCtx.state === 'suspended') {
                 this.audioCtx.resume().then(() => {
                     this.tuneToNewStation();
-                    // Catch current time to begin deterministic scheduling
                     this.currentNoteTime = this.audioCtx.currentTime + 0.05;
                     this.scheduleNotes();
                 });
@@ -86,24 +86,12 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         this._resumeHandler();
     }
 
-    /**
-     * Cleans up the audio context, timers, and the global interaction listeners.
-     */
     unload() {
         this.isRunning = false;
-        
-        // Remove listeners to prevent memory leaks or unintended resumptions
         window.removeEventListener('click', this._resumeHandler);
         window.removeEventListener('keydown', this._resumeHandler);
-
-        if (this.schedulerTimerID) {
-            clearTimeout(this.schedulerTimerID);
-        }
-        
-        if (this.audioCtx) {
-            this.audioCtx.close();
-        }
-        
+        if (this.schedulerTimerID) clearTimeout(this.schedulerTimerID);
+        if (this.audioCtx) this.audioCtx.close();
         super.unload();
     }
 
@@ -137,12 +125,12 @@ class ProceduralRadioProgram extends BaseGridSimulation {
             bpm: nextInt(60) + 100,
             groove: this.grooveStyles[nextInt(this.grooveStyles.length)],
             swing: songRng() < 0.3 ? (songRng() * 0.05) : 0,
+            chaos: songRng(),
             timbre: {
                 leadWave: songRng() > 0.5 ? 'square' : 'sawtooth',
                 leadEnv: songRng() > 0.5 ? 'pluck' : 'sustain',
                 bassWave: songRng() > 0.5 ? 'triangle' : 'square',
                 arpActive: songRng() > 0.1,
-                // Arpeggiator Variation Parameters
                 arpStyle: ['up', 'down', 'converge', 'random'][nextInt(4)],
                 arpInterval: [0.03, 0.04, 0.06, 0.08][nextInt(4)],
                 arpOctave: songRng() > 0.5 ? 12 : 24,
@@ -163,49 +151,93 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         this.step = totalStepsPassed % this.SONG_DURATION_STEPS;
     }
 
+    /**
+     * Creates a chord progression using functional harmony or circle of fifths logic.
+     * Incorporates "Chaos" rating to allow borrowed chords or chromaticism.
+     */
     generateProgression(rng) {
-        const chords = [];
+        const chords = [0]; // Always start on root
         let currentChord = 0;
-        const moves = [3, 4, 1, -1, 2];
-        for (let i = 0; i < 4; i++) {
+        
+        // Common harmonic movements (IV, V, vi, ii, iii)
+        const logicalMoves = [3, 4, 5, 1, 2];
+        const chaosFactor = this.station?.chaos || 0.2;
+
+        for (let i = 1; i < 4; i++) {
+            if (rng() < chaosFactor) {
+                // Chaotic/Borrowed chord
+                currentChord = Math.floor(rng() * 7);
+            } else {
+                // Logical harmonic step
+                currentChord = (currentChord + logicalMoves[Math.floor(rng() * logicalMoves.length)]) % 7;
+            }
             chords.push(currentChord);
-            currentChord = (currentChord + moves[Math.floor(rng() * moves.length)] + 7) % 7;
         }
         return chords;
     }
 
+    /**
+     * Generates a "Call and Response" pattern.
+     * Creates an 8-step "Call", then repeats it with variations for the "Response".
+     */
     generateMotif(density, maxJump, isLead, rng) {
         const pattern = new Array(16).fill(null);
         let currentDegree = isLead ? Math.floor(rng() * 4) : 0;
-        for (let i = 0; i < 16; i++) {
-            const isStrongBeat = i % 4 === 0;
-            const currentDensity = isStrongBeat ? density * 1.5 : density;
-            if (rng() < currentDensity) {
+
+        // Generate the "Call" (Steps 0-7)
+        for (let i = 0; i < 8; i++) {
+            if (rng() < (i % 4 === 0 ? density * 1.5 : density)) {
                 const jump = Math.floor(rng() * (maxJump * 2 + 1)) - maxJump;
                 currentDegree += jump;
-                if (currentDegree > 14) currentDegree -= 7;
-                if (currentDegree < -7) currentDegree += 7;
-                const length = (rng() > 0.7 && i < 15) ? 2 : 1;
+                // Keep within reasonable scale range
+                if (currentDegree > 12) currentDegree -= 5;
+                if (currentDegree < -5) currentDegree += 5;
+                
+                const length = (rng() > 0.8 && i < 7) ? 2 : 1;
                 pattern[i] = { degree: currentDegree, length: length };
                 if (length > 1) i++;
             }
         }
+
+        // Generate the "Response" (Steps 8-15) as a variation of the Call
+        for (let i = 0; i < 8; i++) {
+            const callNote = pattern[i];
+            const stepIndex = i + 8;
+
+            if (callNote) {
+                // 70% chance to keep the note, 30% to vary or remove
+                if (rng() < 0.7) {
+                    // Small pitch tweak
+                    const varJump = rng() < 0.2 ? (Math.floor(rng() * 3) - 1) : 0;
+                    pattern[stepIndex] = { 
+                        degree: callNote.degree + varJump, 
+                        length: callNote.length 
+                    };
+                }
+            } else if (rng() < density * 0.3) {
+                // Add a new note where there was silence
+                pattern[stepIndex] = { degree: currentDegree, length: 1 };
+            }
+        }
+
         return pattern;
     }
 
     /**
-     * Constructs a set of MIDI offsets relative to a root degree based on 
-     * specified chord types (Triads, 7ths, or Suspended 4ths).
+     * Constructs a set of MIDI offsets relative to a root degree.
+     * Scale-length agnostic to support Pentatonic/Exotic scales.
      */
     getChordNotes(degree, extension = 'triad') {
         const scale = this.station.scale;
-        const getDegree = (d) => scale[d % 7] + Math.floor(d / 7) * 12;
+        const len = scale.length;
+        const getDegree = (d) => scale[((d % len) + len) % len] + Math.floor(d / len) * 12;
 
         const notes = [getDegree(degree), getDegree(degree + 2), getDegree(degree + 4)];
         
         if (extension === '7th') {
             notes.push(getDegree(degree + 6));
         } else if (extension === 'sus4') {
+            // Mapping sus4 to the fourth index in scale if possible
             notes[1] = getDegree(degree + 3);
         }
         
@@ -216,16 +248,12 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         return 440 * Math.pow(2, (n - 69) / 12);
     }
 
-    // --- Audio Synthesizer Engines ---
-
     playTone(midiNote, time, duration, type, envShape, volume) {
         const osc = this.audioCtx.createOscillator();
         const gain = this.audioCtx.createGain();
-
         osc.type = type;
         osc.frequency.setValueAtTime(this.midiToFreq(midiNote), time);
 
-        // Envelope shaping
         if (envShape === 'pluck') {
             gain.gain.setValueAtTime(volume, time);
             gain.gain.exponentialRampToValueAtTime(0.001, time + duration * 0.8);
@@ -238,19 +266,13 @@ class ProceduralRadioProgram extends BaseGridSimulation {
 
         osc.connect(gain);
         gain.connect(this.audioCtx.destination);
-
         osc.start(time);
         osc.stop(time + duration + 0.1);
     }
 
-    /**
-     * Synthesizes a rapid cycling arpeggio. 
-     * Supports various movement patterns and deterministic randomization.
-     */
     playTrackerArp(chordMidiNotes, time, duration, volume, settings) {
         const osc = this.audioCtx.createOscillator();
         const gain = this.audioCtx.createGain();
-
         osc.type = 'square';
         
         const arpSpeed = settings.arpInterval || 0.04;
@@ -264,12 +286,10 @@ class ProceduralRadioProgram extends BaseGridSimulation {
                     noteIndex = (chordMidiNotes.length - 1) - (i % chordMidiNotes.length);
                     break;
                 case 'converge':
-                    // Pattern: Root, High, Mid
                     const seq = [0, chordMidiNotes.length - 1, 1];
                     noteIndex = seq[i % seq.length];
                     break;
                 case 'random':
-                    // Deterministic pseudo-random based on start time to keep clients in sync
                     noteIndex = Math.floor(Math.abs(Math.sin(time + i)) * chordMidiNotes.length);
                     break;
                 case 'up':
@@ -283,10 +303,8 @@ class ProceduralRadioProgram extends BaseGridSimulation {
 
         gain.gain.setValueAtTime(volume, time);
         gain.gain.setTargetAtTime(0.001, time + duration - 0.02, 0.02);
-
         osc.connect(gain);
         gain.connect(this.audioCtx.destination);
-
         osc.start(time);
         osc.stop(time + duration);
     }
@@ -295,20 +313,15 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         if (type === 'kick') {
             const osc = this.audioCtx.createOscillator();
             const gain = this.audioCtx.createGain();
-
             osc.frequency.setValueAtTime(150, time);
             osc.frequency.exponentialRampToValueAtTime(40, time + 0.1);
-
             gain.gain.setValueAtTime(0.5, time);
             gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
-
             osc.connect(gain);
             gain.connect(this.audioCtx.destination);
-
             osc.start(time);
             osc.stop(time + 0.15);
         } else if (type === 'snare') {
-            // Noise burst + triangle impact
             this.playTone(72, time, 0.1, 'triangle', 'pluck', 0.3);
             this.playNoise(time, 0.15, 0.25);
         } else if (type === 'hat') {
@@ -320,120 +333,72 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         const size = this.audioCtx.sampleRate * duration;
         const buffer = this.audioCtx.createBuffer(1, size, this.audioCtx.sampleRate);
         const data = buffer.getChannelData(0);
-
-        for (let i = 0; i < size; i++) {
-            data[i] = Math.random() * 2 - 1;
-        }
-
+        for (let i = 0; i < size; i++) data[i] = Math.random() * 2 - 1;
         const noise = this.audioCtx.createBufferSource();
         noise.buffer = buffer;
-
         const gain = this.audioCtx.createGain();
         gain.gain.setValueAtTime(volume, time);
         gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
-
         noise.connect(gain);
         gain.connect(this.audioCtx.destination);
-
         noise.start(time);
     }
-
-    // --- Visualizer Engines ---
 
     computeNextState(x, y) {
         const rows = this.grid.length;
         const cols = this.grid[0].length;
-        
-        // Define the drum zone (bottom 5%) and the melody injection line
         const drumRowsCount = Math.max(1, Math.ceil(rows * 0.05));
         const drumStartRow = rows - drumRowsCount;
         const melodyInjectionRow = drumStartRow - 1;
 
-        // The drum zone does not scroll. It flickers and clears itself to show pulses.
-        if (y >= drumStartRow) {
-            return Math.random() < 0.35 ? 0 : this.grid[y][x];
-        }
+        if (y >= drumStartRow) return Math.random() < 0.35 ? 0 : this.grid[y][x];
+        if (y === melodyInjectionRow) return Math.random() < 0.4 ? 0 : this.grid[y][x];
 
-        // The melody injection row clears itself to prepare for the next step's input.
-        // It does not pull from the drum zone, preventing drums from traveling up.
-        if (y === melodyInjectionRow) {
-            return Math.random() < 0.4 ? 0 : this.grid[y][x];
-        }
-
-        // Main traveling area: Pull pixels from the row below to create upward motion.
         let state = this.grid[y + 1][x];
-
-        // Apply a "digital flame" / signal decay effect.
         if (state === 1) {
-            // High probability of traveling up, with a slight chance of vanishing.
             if (Math.random() < 0.05) return 0;
         } else {
-            // Organic propagation: pixels can "bleed" sideways as they rise.
             const leftActive = x > 0 ? this.grid[y + 1][x - 1] : 0;
             const rightActive = x < cols - 1 ? this.grid[y + 1][x + 1] : 0;
-            
-            if ((leftActive === 1 || rightActive === 1) && Math.random() < 0.07) {
-                return 1;
-            }
+            if ((leftActive === 1 || rightActive === 1) && Math.random() < 0.07) return 1;
         }
-
         return state;
     }
 
     triggerVisual(type, metadata = 0) {
-        if (!this.isRunning || !this.grid || !this.grid.length || !this.grid[0].length) return;
-        
+        if (!this.isRunning || !this.grid || !this.grid.length) return;
         const rows = this.grid.length;
         const cols = this.grid[0].length;
-        
-        const drumRowsCount = Math.max(1, Math.ceil(rows * 0.05));
-        const drumStartRow = rows - drumRowsCount;
+        const drumStartRow = rows - Math.max(1, Math.ceil(rows * 0.05));
         const melodyY = drumStartRow - 1;
 
         if (type === 'kick') {
-            // Fill a substantial block in the drum zone
             const width = Math.floor(cols * 0.2);
             for (let r = drumStartRow; r < rows; r++) {
-                for (let c = 0; c < width; c++) {
-                    this.grid[r][c] = 1;
-                }
+                for (let c = 0; c < width; c++) this.grid[r][c] = 1;
             }
         } else if (type === 'snare') {
-            // Scatter noise across the entire drum zone
             for (let r = drumStartRow; r < rows; r++) {
-                for (let c = 0; c < cols; c++) {
-                    if (Math.random() < 0.3) this.grid[r][c] = 1;
-                }
+                for (let c = 0; c < cols; c++) if (Math.random() < 0.3) this.grid[r][c] = 1;
             }
         } else if (type === 'hat') {
-            // Sharp spark on the right side of the drum zone
             const startCol = Math.floor(cols * 0.8);
             for (let r = drumStartRow; r < rows; r++) {
-                for (let c = startCol; c < cols; c++) {
-                    if (Math.random() < 0.5) this.grid[r][c] = 1;
-                }
+                for (let c = startCol; c < cols; c++) if (Math.random() < 0.5) this.grid[r][c] = 1;
             }
         } else if (type === 'bass') {
-            // A persistent, thick vertical pillar on the left of the melody row
             const width = Math.min(4, Math.floor(cols * 0.1));
-            for (let i = 0; i < width; i++) {
-                this.grid[melodyY][i] = 1;
-            }
+            for (let i = 0; i < width; i++) this.grid[melodyY][i] = 1;
         } else if (type === 'arp') {
-            // Geometric dot sequence based on chord interval index
             const step = (metadata % 3) + 2;
             for (let i = Math.floor(cols * 0.2); i < cols * 0.8; i += step * 3) {
                 if (i < cols) this.grid[melodyY][i] = 1;
             }
         } else if (type === 'lead') {
-            // Direct pitch mapping across the width of the melody row (asymmetric)
             const normalizedPitch = Math.max(-7, Math.min(14, metadata)); 
-            const percent = (normalizedPitch + 7) / 21;
-            const xPos = Math.floor(percent * (cols - 1));
-            
+            const xPos = Math.floor(((normalizedPitch + 7) / 21) * (cols - 1));
             if (xPos >= 0 && xPos < cols) {
                 this.grid[melodyY][xPos] = 1;
-                // Add a small cluster for visibility
                 if (xPos + 1 < cols) this.grid[melodyY][xPos + 1] = 1;
                 if (xPos - 1 >= 0) this.grid[melodyY][xPos - 1] = 1;
             }
@@ -442,51 +407,34 @@ class ProceduralRadioProgram extends BaseGridSimulation {
     
     scheduleVisual(type, scheduledTime, metadata = 0) {
         const delay = Math.max(0, (scheduledTime - this.audioCtx.currentTime) * 1000);
-        setTimeout(() => {
-            if (this.isRunning) {
-                this.triggerVisual(type, metadata);
-            }
-        }, delay);
+        setTimeout(() => { if (this.isRunning) this.triggerVisual(type, metadata); }, delay);
     }
-
-    // --- Sequencer ---
 
     nextNote() {
         const secondsPerBeat = 60.0 / this.station.bpm;
-        // 16th note duration calculation
         let stepDuration = 0.25 * secondsPerBeat;
-        
-        // Apply swing to even 16th notes
-        if (this.step % 2 === 0) {
-            stepDuration += this.station.swing;
-        } else {
-            stepDuration -= this.station.swing;
-        }
-
+        if (this.step % 2 === 0) stepDuration += this.station.swing;
+        else stepDuration -= this.station.swing;
         this.currentNoteTime += stepDuration;
         this.step++;
     }
 
-    /**
-     * Executes the logic for a single sequencer step.
-     */
     playStep(currentStep, time) {
         const stepRng = this.seededRandom(this.station.id + currentStep);
-        
         const secondsPerBeat = 60.0 / this.station.bpm;
         const base16thTime = 0.25 * secondsPerBeat;
         const isSectionA = (currentStep % 128) < 64;
         const currentSection = isSectionA ? this.station.sectionA : this.station.sectionB;
-        const measureInSubSection = Math.floor((currentStep % 64) / 16);
-        const chordDegree = currentSection.progression[measureInSubSection];
+        const chordDegree = currentSection.progression[Math.floor((currentStep % 64) / 16)];
         const stepInBar = currentStep % 16;
+        const scale = this.station.scale;
+        const sLen = scale.length;
 
         const bassData = currentSection.bassMotif[stepInBar];
         if (bassData !== null) {
-            const scaleDegree = chordDegree + bassData.degree;
-            const noteInterval = this.station.scale[((scaleDegree % 7) + 7) % 7];
-            const octaveOffset = Math.floor(scaleDegree / 7) * 12;
-            const bassMidi = this.station.root + noteInterval + octaveOffset - 12;
+            const deg = chordDegree + bassData.degree;
+            const noteInterval = scale[((deg % sLen) + sLen) % sLen];
+            const bassMidi = this.station.root + noteInterval + (Math.floor(deg / sLen) * 12) - 12;
             this.playTone(bassMidi, time, base16thTime * bassData.length, this.station.timbre.bassWave, 'pluck', 0.2);
             this.scheduleVisual('bass', time);
         }
@@ -500,12 +448,11 @@ class ProceduralRadioProgram extends BaseGridSimulation {
 
         const leadData = currentSection.leadMotif[stepInBar];
         if (leadData !== null) {
-            const scaleDegree = leadData.degree;
-            const noteInterval = this.station.scale[((scaleDegree % 7) + 7) % 7];
-            const octaveOffset = Math.floor(scaleDegree / 7) * 12;
-            const leadMidi = this.station.root + noteInterval + octaveOffset + 12;
+            const deg = leadData.degree;
+            const noteInterval = scale[((deg % sLen) + sLen) % sLen];
+            const leadMidi = this.station.root + noteInterval + (Math.floor(deg / sLen) * 12) + 12;
             this.playTone(leadMidi, time, base16thTime * leadData.length, this.station.timbre.leadWave, this.station.timbre.leadEnv, 0.12);
-            this.scheduleVisual('lead', time, scaleDegree);
+            this.scheduleVisual('lead', time, deg);
         }
 
         if (this.station.groove.kick[stepInBar]) {
@@ -524,52 +471,31 @@ class ProceduralRadioProgram extends BaseGridSimulation {
 
     scheduleNotes() {
         if (!this.isRunning) return;
-
-        // Check for song transition every bar
         if (this.step > 0 && this.step % 16 === 0) {
-            const now = Date.now();
             const msPerStep = (60000 / this.BASE_BPM) / 4; 
-            const totalStepsPassed = Math.floor((now - this.EPOCH) / msPerStep);
-            const currentSongID = Math.floor(totalStepsPassed / this.SONG_DURATION_STEPS);
-            
-            if (this.station && currentSongID !== this.station.id) {
-                this.tuneToNewStation();
-            }
+            const currentSongID = Math.floor((Date.now() - this.EPOCH) / (msPerStep * this.SONG_DURATION_STEPS));
+            if (this.station && currentSongID !== this.station.id) this.tuneToNewStation();
         }
-
         while (this.currentNoteTime < this.audioCtx.currentTime + this.scheduleAheadTime) {
             this.playStep(this.step, this.currentNoteTime);
             this.nextNote();
         }
-        
         this.schedulerTimerID = setTimeout(this.scheduleNotes, this.lookahead);
     }
 }
 
 const Radio = {
     instance: null,
-
     init: function(screenEl) {
-        const config = {
-            cellSize: 6,
-            updateInterval: 50, 
-            aliveColor: '#00ffcc' // Overridden dynamically by station changes
-        };
+        const config = { cellSize: 6, updateInterval: 50, aliveColor: '#00ffcc' };
         this.instance = new ProceduralRadioProgram(screenEl, config);
         this.instance.init();
     },
-
     unload: function() {
-        if (this.instance) {
-            this.instance.unload();
-            this.instance = null;
-        }
+        if (this.instance) { this.instance.unload(); this.instance = null; }
     },
-
     onResize: function() {
-        if (this.instance) {
-            this.instance.onResize();
-        }
+        if (this.instance) this.instance.onResize();
     }
 };
 
