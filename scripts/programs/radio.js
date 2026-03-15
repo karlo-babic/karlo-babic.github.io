@@ -131,26 +131,36 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         this.crusherNode.oversample = 'none';
 
         this.masterBus.connect(this.masterFilter);
-        
         this.masterBus.connect(this.reverbNode);
         this.reverbNode.connect(this.reverbGain);
         this.reverbGain.connect(this.masterFilter);
-
         this.masterFilter.connect(this.crusherNode);
         this.crusherNode.connect(this.audioCtx.destination);
 
+        /**
+         * Chrome and Webkit browsers require an explicit resume() call 
+         * inside a user gesture event listener to unlock the AudioContext.
+         */
         this._resumeHandler = () => {
-            if (this.audioCtx && this.audioCtx.state === 'suspended') {
-                this.audioCtx.resume().then(() => {
+            const startEngine = () => {
+                if (!this.station) {
                     this.tuneToNewStation(this.forceId);
-                    this.currentNoteTime = this.audioCtx.currentTime + 0.05;
+                    this.currentNoteTime = this.audioCtx.currentTime + 0.1;
                     this.scheduleNotes();
-                });
+                }
+            };
+
+            if (this.audioCtx.state === 'suspended') {
+                this.audioCtx.resume().then(startEngine);
+            } else {
+                startEngine();
             }
         };
 
-        window.addEventListener('click', this._resumeHandler, { once: true });
-        window.addEventListener('keydown', this._resumeHandler, { once: true });
+        // Attach listeners for common user interactions
+        ['click', 'keydown', 'touchstart'].forEach(type => {
+            window.addEventListener(type, this._resumeHandler, { once: true });
+        });
         this._resumeHandler();
     }
 
