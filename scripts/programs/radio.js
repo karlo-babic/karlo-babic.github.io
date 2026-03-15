@@ -115,12 +115,10 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         const now = Date.now();
         const elapsed = now - this.EPOCH;
         
-        // Calculate steps based on a fixed 120BPM reference to ensure cross-client alignment
         const msPerStep = (60000 / this.BASE_BPM) / 4; 
         const totalStepsPassed = Math.floor(elapsed / msPerStep);
         const currentSongID = Math.floor(totalStepsPassed / this.SONG_DURATION_STEPS);
         
-        // Create a local RNG specifically for this song's structural generation
         const songRng = this.seededRandom(currentSongID);
         const nextInt = (max) => Math.floor(songRng() * max);
 
@@ -143,7 +141,12 @@ class ProceduralRadioProgram extends BaseGridSimulation {
                 leadWave: songRng() > 0.5 ? 'square' : 'sawtooth',
                 leadEnv: songRng() > 0.5 ? 'pluck' : 'sustain',
                 bassWave: songRng() > 0.5 ? 'triangle' : 'square',
-                arpActive: songRng() > 0.2
+                arpActive: songRng() > 0.1,
+                // Arpeggiator Variation Parameters
+                arpStyle: ['up', 'down', 'converge', 'random'][nextInt(4)],
+                arpInterval: [0.03, 0.04, 0.06, 0.08][nextInt(4)],
+                arpOctave: songRng() > 0.5 ? 12 : 24,
+                arpExtension: songRng() > 0.6 ? '7th' : (songRng() > 0.8 ? 'sus4' : 'triad')
             },
             sectionA: {
                 progression: this.generateProgression(songRng),
@@ -190,16 +193,23 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         return pattern;
     }
 
-    getChordNotes(degree) {
-        // Returns the root, third, and fifth of a triad in the current mode
+    /**
+     * Constructs a set of MIDI offsets relative to a root degree based on 
+     * specified chord types (Triads, 7ths, or Suspended 4ths).
+     */
+    getChordNotes(degree, extension = 'triad') {
         const scale = this.station.scale;
-        const root = scale[degree % 7] + Math.floor(degree / 7) * 12;
-        const thirdDegree = degree + 2;
-        const third = scale[thirdDegree % 7] + Math.floor(thirdDegree / 7) * 12;
-        const fifthDegree = degree + 4;
-        const fifth = scale[fifthDegree % 7] + Math.floor(fifthDegree / 7) * 12;
+        const getDegree = (d) => scale[d % 7] + Math.floor(d / 7) * 12;
+
+        const notes = [getDegree(degree), getDegree(degree + 2), getDegree(degree + 4)];
         
-        return [root, third, fifth];
+        if (extension === '7th') {
+            notes.push(getDegree(degree + 6));
+        } else if (extension === 'sus4') {
+            notes[1] = getDegree(degree + 3);
+        }
+        
+        return notes;
     }
 
     midiToFreq(n) {
@@ -233,19 +243,42 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         osc.stop(time + duration + 0.1);
     }
 
-    playTrackerArp(chordMidiNotes, time, duration, volume) {
+    /**
+     * Synthesizes a rapid cycling arpeggio. 
+     * Supports various movement patterns and deterministic randomization.
+     */
+    playTrackerArp(chordMidiNotes, time, duration, volume, settings) {
         const osc = this.audioCtx.createOscillator();
         const gain = this.audioCtx.createGain();
 
         osc.type = 'square';
         
-        // Rapidly cycle through the chord notes (Classic tracker arpeggio effect)
-        const arpSpeed = 0.04; // 40ms per note
+        const arpSpeed = settings.arpInterval || 0.04;
         const steps = Math.floor(duration / arpSpeed);
+        const style = settings.arpStyle || 'up';
         
         for (let i = 0; i < steps; i++) {
-            const note = chordMidiNotes[i % chordMidiNotes.length];
-            osc.frequency.setValueAtTime(this.midiToFreq(note + 12), time + (i * arpSpeed));
+            let noteIndex;
+            switch(style) {
+                case 'down':
+                    noteIndex = (chordMidiNotes.length - 1) - (i % chordMidiNotes.length);
+                    break;
+                case 'converge':
+                    // Pattern: Root, High, Mid
+                    const seq = [0, chordMidiNotes.length - 1, 1];
+                    noteIndex = seq[i % seq.length];
+                    break;
+                case 'random':
+                    // Deterministic pseudo-random based on start time to keep clients in sync
+                    noteIndex = Math.floor(Math.abs(Math.sin(time + i)) * chordMidiNotes.length);
+                    break;
+                case 'up':
+                default:
+                    noteIndex = i % chordMidiNotes.length;
+            }
+
+            const note = chordMidiNotes[noteIndex];
+            osc.frequency.setValueAtTime(this.midiToFreq(note + settings.arpOctave), time + (i * arpSpeed));
         }
 
         gain.gain.setValueAtTime(volume, time);
@@ -435,11 +468,9 @@ class ProceduralRadioProgram extends BaseGridSimulation {
     }
 
     /**
-     * Renders a single step using deterministic logic for hats and visuals
-     * based on a seed derived from the current global step.
+     * Executes the logic for a single sequencer step.
      */
     playStep(currentStep, time) {
-        // Create a stateless RNG for per-step probability (hats, visuals)
         const stepRng = this.seededRandom(this.station.id + currentStep);
         
         const secondsPerBeat = 60.0 / this.station.bpm;
@@ -448,10 +479,8 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         const currentSection = isSectionA ? this.station.sectionA : this.station.sectionB;
         const measureInSubSection = Math.floor((currentStep % 64) / 16);
         const chordDegree = currentSection.progression[measureInSubSection];
-        const chordIntervals = this.getChordNotes(chordDegree);
         const stepInBar = currentStep % 16;
 
-        // Bassline
         const bassData = currentSection.bassMotif[stepInBar];
         if (bassData !== null) {
             const scaleDegree = chordDegree + bassData.degree;
@@ -462,14 +491,13 @@ class ProceduralRadioProgram extends BaseGridSimulation {
             this.scheduleVisual('bass', time);
         }
 
-        // Tracker Arpeggio
         if (this.station.timbre.arpActive && stepInBar % 4 === 0) {
+            const chordIntervals = this.getChordNotes(chordDegree, this.station.timbre.arpExtension);
             const chordMidiNotes = chordIntervals.map(interval => this.station.root + interval);
-            this.playTrackerArp(chordMidiNotes, time, base16thTime * 4, 0.03);
+            this.playTrackerArp(chordMidiNotes, time, base16thTime * 4, 0.03, this.station.timbre);
             this.scheduleVisual('arp', time, currentStep);
         }
 
-        // Lead Melody
         const leadData = currentSection.leadMotif[stepInBar];
         if (leadData !== null) {
             const scaleDegree = leadData.degree;
@@ -480,7 +508,6 @@ class ProceduralRadioProgram extends BaseGridSimulation {
             this.scheduleVisual('lead', time, scaleDegree);
         }
 
-        // Synchronized Percussion
         if (this.station.groove.kick[stepInBar]) {
             this.playDrum('kick', time);
             this.scheduleVisual('kick', time);
