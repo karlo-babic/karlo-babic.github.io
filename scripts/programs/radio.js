@@ -15,8 +15,8 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         this.isRunning = false;
 
         this.EPOCH = 1773593949000;
-        this.SONG_DURATION_STEPS = 1024; // 8 blocks of 128 steps (~2 minutes at 120bpm)
-        this.BASE_BPM = 120;
+        this.SONG_DURATION_STEPS = 512; // 8 blocks of 64 steps (~1 minute at 120bpm global clock)
+        this.BASE_BPM = 120; // Global clock reference, actual tempo varies per station
 
         this.modes = {
             Ionian:     [0, 2, 4, 5, 7, 9, 11],
@@ -209,38 +209,50 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         }
         this.baseHue = h * 360;
 
-        const archetypes = ['Standard', 'Ambient', 'Heavy', 'Groove', 'Melodic'];
+        const archetypes = ['Standard', 'Ambient', 'Heavy', 'Groove', 'Melodic', 'Fast', 'Chaotic', 'Minimal', 'Doom'];
         const archetype = archetypes[nextInt(archetypes.length)];
 
-        // Core BPM scaling based on archetype to ensure wide variety
-        let baseBpm = nextInt(60) + 90; // 90 to 150
-        if (archetype === 'Ambient') baseBpm = nextInt(30) + 65;
-        if (archetype === 'Heavy') baseBpm = nextInt(40) + 110;
-        if (archetype === 'Groove') baseBpm = nextInt(30) + 95;
+        // Broad BPM scaling based on archetype ensures a wide variety of tempos across channels
+        let baseBpm = nextInt(50) + 90; // 90 to 140
+        if (archetype === 'Ambient') baseBpm = nextInt(30) + 60; // 60 to 90
+        if (archetype === 'Heavy') baseBpm = nextInt(40) + 110;  // 110 to 150
+        if (archetype === 'Groove') baseBpm = nextInt(30) + 90;  // 90 to 120
+        if (archetype === 'Fast') baseBpm = nextInt(40) + 150;   // 150 to 190
+        if (archetype === 'Doom') baseBpm = nextInt(20) + 55;    // 55 to 75
+        if (archetype === 'Minimal') baseBpm = nextInt(40) + 100;// 100 to 140
 
         let leadWave = ['square', 'sawtooth', 'pulse'][nextInt(3)];
         let bassWave = ['triangle', 'square', 'sawtooth'][nextInt(3)];
         if (archetype === 'Ambient') leadWave = 'sine';
+        if (archetype === 'Doom') { leadWave = 'sawtooth'; bassWave = 'sawtooth'; }
+        if (archetype === 'Chaotic') leadWave = ['sawtooth', 'pulse', 'square', 'sine'][nextInt(4)];
 
-        // Structured Arrangement: 8 blocks of 128 steps
-        // Structure: Intro, Verse1, Chorus1, Verse2, Break, Build, Chorus2, Outro
-        const arrangement = [
-            { pad: true,  bass: false, drums: false, arp: true,  lead: false }, // 0: Intro
-            { pad: false, bass: true,  drums: true,  arp: true,  lead: false }, // 1: Verse 1
-            { pad: true,  bass: true,  drums: true,  arp: false, lead: true  }, // 2: Chorus 1
-            { pad: false, bass: true,  drums: true,  arp: true,  lead: false }, // 3: Verse 2
-            { pad: true,  bass: true,  drums: false, arp: false, lead: false }, // 4: Break
-            { pad: true,  bass: true,  drums: true,  arp: true,  lead: false }, // 5: Build
-            { pad: true,  bass: true,  drums: true,  arp: false, lead: true  }, // 6: Chorus 2
-            { pad: true,  bass: false, drums: false, arp: false, lead: false }  // 7: Outro
-        ];
+        // Structured Arrangement dynamically generated per song to reduce repetitiveness.
+        // 8 blocks of 64 steps (~1 minute total duration per song)
+        const arrangement = [];
+        for (let i = 0; i < 8; i++) {
+            const isIntro = (i === 0);
+            const isBreak = (i === 3 || i === 4);
+            const isChorus = (i === 2 || i === 6);
+            const isOutro = (i === 7);
 
-        // Specific modifications based on archetype
+            arrangement.push({
+                // Sparsely use pad to prevent it from becoming a monotonous drone
+                pad: (!isIntro && (isBreak || isOutro || (isChorus && songRng() > 0.6)) && archetype !== 'Fast' && archetype !== 'Minimal'),
+                bass: (!isIntro && !isOutro && (!isBreak || songRng() > 0.5)) || archetype === 'Doom',
+                drums: (!isIntro && !isOutro && (!isBreak || songRng() > 0.6)),
+                arp: (songRng() > 0.4) && archetype !== 'Doom' && archetype !== 'Minimal',
+                lead: (isChorus || (songRng() > 0.7 && !isIntro && !isOutro))
+            });
+        }
+
+        // Specific overrides based on archetype
         if (archetype === 'Ambient') {
             arrangement.forEach(block => {
-                block.pad = true;
-                block.drums = songRng() > 0.6;
-                block.lead = songRng() > 0.5;
+                block.pad = songRng() > 0.2;
+                block.drums = songRng() > 0.7;
+                block.lead = songRng() > 0.6;
+                block.arp = songRng() > 0.5;
             });
         }
 
@@ -253,48 +265,55 @@ class ProceduralRadioProgram extends BaseGridSimulation {
             scale: this.modes[selectedMode],
             root: nextInt(12) + 36, // C2 to B2
             bpm: baseBpm,
-            swing: (archetype === 'Groove' || songRng() < 0.3) ? (songRng() * 0.08) : 0,
+            swing: (archetype === 'Groove' || archetype === 'Chaotic' || songRng() < 0.2) ? (songRng() * 0.1) : 0,
             arrangement: arrangement,
             groove: this.generateGroove(archetype, drumSteps, nextInt, songRng),
             timbre: {
                 leadWave: leadWave,
                 leadEnv: songRng() > 0.5 ? 'pluck' : 'sustain',
                 bassWave: bassWave,
+                padWave: ['sine', 'triangle', 'sawtooth'][nextInt(3)],
+                padCutoff: 400 + nextInt(1500),
                 vibratoDepth: songRng() > 0.6 ? nextInt(12) + 4 : 0,
                 vibratoSpeed: nextInt(4) + 4,
                 drift: songRng() > 0.8 ? (songRng() * 0.4) : 0,
                 bitDepth: nextInt(6) + 3,
                 pwmSpeed: songRng() * 3 + 0.5,
                 arpStyle: ['up', 'down', 'converge', 'random'][nextInt(4)],
-                arpInterval: [0.03, 0.04, 0.06, 0.08][nextInt(4)],
+                arpInterval: [0.03, 0.04, 0.06, 0.08, 0.12][nextInt(5)],
                 arpOctave: songRng() > 0.5 ? 12 : 24,
                 arpExtension: songRng() > 0.5 ? '7th' : (songRng() > 0.7 ? 'sus4' : 'triad'),
                 mix: { 
                     lead: 0.15, 
-                    bass: archetype === 'Heavy' ? 0.22 : 0.18, 
+                    bass: archetype === 'Heavy' || archetype === 'Doom' ? 0.24 : 0.18, 
                     arp: 0.07, 
-                    drums: 0.45,
-                    pad: archetype === 'Ambient' ? 0.25 : 0.12
+                    drums: archetype === 'Minimal' ? 0.3 : 0.45,
+                    pad: archetype === 'Ambient' || archetype === 'Doom' ? 0.2 : 0.15
                 }
             },
-            sectionA: { // Verse
+            sectionA: { // Verse / Breaks
                 progression: this.generateProgression(songRng),
                 leadMotif: this.generateMotif(0.3, 2, songRng), // Sparse lead
                 bassMotif: this.generateBassMotif(archetype, songRng)
             },
-            sectionB: { // Chorus
+            sectionB: { // Chorus / Builds
                 progression: this.generateProgression(songRng),
                 leadMotif: this.generateMotif(0.6, 3, songRng), // Active lead
                 bassMotif: this.generateBassMotif(archetype, songRng)
             }
         };
 
+        if (archetype === 'Ambient' || archetype === 'Doom') {
+            this.station.timbre.padWave = 'sawtooth';
+        }
+
         this.currentSpread = 0.01 + (0.08 - this.station.timbre.arpInterval) * 4;
         
         if (this.reverbGain) {
             let revAmt = 0.15;
             if (archetype === 'Ambient') revAmt = 0.5;
-            else if (archetype === 'Heavy') revAmt = 0.05;
+            else if (archetype === 'Heavy' || archetype === 'Fast') revAmt = 0.05;
+            else if (archetype === 'Doom') revAmt = 0.4;
             this.reverbGain.gain.value = revAmt;
         }
 
@@ -313,42 +332,58 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         const snare = new Array(steps).fill(0);
         
         if (archetype === 'Standard' || archetype === 'Heavy' || archetype === 'Melodic') {
-            // Four on the floor or basic rock beat
             kick[0] = 1; kick[4] = rng() > 0.8 ? 1 : 0; 
             kick[8] = 1; kick[12] = rng() > 0.8 ? 1 : 0;
             snare[4] = 1; snare[12] = 1;
         } else if (archetype === 'Groove') {
-            // Breakbeat/Syncopated
             kick[0] = 1; 
             if (rng() > 0.5) kick[3] = 1; 
             kick[8] = rng() > 0.3 ? 1 : 0; 
             kick[10] = 1;
             snare[4] = 1; snare[12] = 1;
-            if (rng() > 0.7) snare[15] = 1; // ghost note
+            if (rng() > 0.7) snare[15] = 1;
         } else if (archetype === 'Ambient') {
-            // Sparse, floating rhythm
             kick[0] = 1;
             kick[nextInt(steps - 1) + 1] = 1;
             snare[8] = rng() > 0.5 ? 1 : 0;
+        } else if (archetype === 'Fast') {
+            kick[0] = 1; kick[4] = 1; kick[8] = 1; kick[12] = 1;
+            snare[4] = 1; snare[12] = 1;
+            if (rng() > 0.5) snare[15] = 1;
+        } else if (archetype === 'Chaotic') {
+            kick[0] = 1; 
+            kick[nextInt(4) * 2 + 1] = 1; 
+            kick[8] = rng() > 0.5 ? 1 : 0;
+            snare[nextInt(4) + 4] = 1; 
+            snare[nextInt(4) + 10] = 1;
+        } else if (archetype === 'Minimal') {
+            kick[0] = 1; 
+            kick[nextInt(8) + 4] = rng() > 0.5 ? 1 : 0;
+            snare[8] = rng() > 0.3 ? 1 : 0;
+        } else if (archetype === 'Doom') {
+            kick[0] = 1;
+            snare[8] = 1;
         }
 
         return {
             steps: steps,
             kick: kick,
             snare: snare,
-            hatDense: nextInt(5) / 10 + 0.3
+            hatDense: archetype === 'Fast' ? rng() * 0.4 + 0.6 : (nextInt(5) / 10 + 0.2)
         };
     }
 
     generateProgression(rng) {
-        // Generates a 4-chord loop that makes musical sense
+        // Generates a 4-chord loop that provides narrative context
         const progressions = [
             [0, 4, 5, 3], // I - V - vi - IV
             [0, 5, 3, 4], // I - vi - IV - V
             [5, 3, 0, 4], // vi - IV - I - V
             [1, 4, 0, 5], // ii - V - I - vi
             [0, 3, 0, 4], // I - IV - I - V
-            [0, 0, 3, 4]  // I - I - IV - V
+            [0, 0, 3, 4], // I - I - IV - V
+            [5, 4, 3, 3], // vi - V - IV - IV (Epic/Doom)
+            [0, 2, 3, 4]  // I - iii - IV - V (Melodic)
         ];
         return progressions[Math.floor(rng() * progressions.length)];
     }
@@ -358,22 +393,19 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         let currentDegree = 0;
         let hasNotes = false;
         
-        // Generate a 16-step phrase. To keep it musical, we restrict the rhythmic mask.
         for (let i = 0; i < 16; i++) {
-            // Emphasize downbeats
             const prob = (i % 4 === 0) ? density * 1.5 : density;
             
             if (rng() < prob) {
                 const jump = Math.floor(rng() * (maxJump * 2 + 1)) - maxJump;
                 currentDegree += jump;
-                // Keep melody contained within a sensible octave-ish range
                 if (currentDegree > 7) currentDegree -= 4;
                 if (currentDegree < -4) currentDegree += 4;
                 
                 const length = (rng() > 0.7 && i < 15) ? 2 : 1;
                 pattern[i] = { degree: currentDegree, length: length };
                 hasNotes = true;
-                if (length > 1) i++; // Skip next step if sustained
+                if (length > 1) i++;
             }
         }
         
@@ -385,22 +417,23 @@ class ProceduralRadioProgram extends BaseGridSimulation {
     generateBassMotif(archetype, rng) {
         const pattern = new Array(16).fill(null);
         
-        if (archetype === 'Heavy' || archetype === 'Groove') {
-            // Busy, rhythmic bass
+        if (archetype === 'Heavy' || archetype === 'Groove' || archetype === 'Fast') {
             for (let i = 0; i < 16; i++) {
                 if (i % 2 === 0 || rng() > 0.6) {
                     pattern[i] = { degree: 0, length: 1 };
                 }
             }
-        } else if (archetype === 'Ambient') {
-            // Long sustained root notes
+        } else if (archetype === 'Ambient' || archetype === 'Doom') {
             pattern[0] = { degree: 0, length: 16 };
+        } else if (archetype === 'Minimal') {
+            pattern[0] = { degree: 0, length: 1 };
+            pattern[3] = { degree: 0, length: 1 };
+            if (rng() > 0.5) pattern[8] = { degree: 4, length: 1 };
         } else {
-            // Standard: Root on downbeats, maybe an octave or 5th jump
             pattern[0] = { degree: 0, length: 2 };
             pattern[4] = { degree: 0, length: 2 };
             pattern[8] = { degree: 0, length: 2 };
-            if (rng() > 0.5) pattern[12] = { degree: 4, length: 2 }; // Jump to 5th
+            if (rng() > 0.5) pattern[12] = { degree: 4, length: 2 };
             else pattern[12] = { degree: 0, length: 2 };
         }
         
@@ -491,23 +524,31 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         nodes.forEach(n => { n.start(time); n.stop(time + duration + 0.1); });
     }
 
-    playPadChord(midiNotes, time, duration, volume) {
+    playPadChord(midiNotes, time, duration, volume, waveType = 'sine', cutoff = 2000) {
         const gain = this.audioCtx.createGain();
         gain.gain.setValueAtTime(0.001, time);
         gain.gain.linearRampToValueAtTime(volume, time + Math.min(0.5, duration * 0.3));
         gain.gain.setTargetAtTime(0.001, time + duration * 0.8, duration * 0.2);
         
-        gain.connect(this.masterBus);
+        // Dynamic filter movement creates motion inside the pad, avoiding a static drone
+        const filter = this.audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(cutoff, time);
+        filter.frequency.exponentialRampToValueAtTime(Math.min(cutoff * 3, 12000), time + duration / 2);
+        filter.frequency.exponentialRampToValueAtTime(cutoff, time + duration);
+
+        gain.connect(filter);
+        filter.connect(this.masterBus);
         
         midiNotes.forEach((note, index) => {
             const osc = this.audioCtx.createOscillator();
             const osc2 = this.audioCtx.createOscillator();
             const freq = this.midiToFreq(note + (index === 0 ? -12 : 0)); 
             
-            osc.type = 'sine';
+            osc.type = waveType;
             osc.frequency.value = freq;
             
-            osc2.type = 'sine';
+            osc2.type = waveType;
             osc2.frequency.value = freq;
             osc2.detune.value = 8; 
             
@@ -664,17 +705,16 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         const stepRng = this.seededRandom(this.station.id + currentStep);
         const base16thTime = (60.0 / this.station.bpm) * 0.25;
         
-        // 128 steps per block, 8 blocks total
-        const blockIndex = Math.floor(currentStep / 128) % 8;
+        const stepsPerBlock = 64; 
+        const blockIndex = Math.floor(currentStep / stepsPerBlock) % 8;
         const activeInstruments = this.station.arrangement[blockIndex];
         
-        // Determine section logically based on arrangement template
-        // Intro/Verse/Break/Outro generally use Section A. Chorus/Build uses Section B.
+        // Logical section routing based on block context
         const isSectionA = (blockIndex === 0 || blockIndex === 1 || blockIndex === 3 || blockIndex === 4 || blockIndex === 7);
         const currentSection = isSectionA ? this.station.sectionA : this.station.sectionB;
         
-        // Chords change every 32 steps (2 bars)
-        const chordIndex = Math.floor((currentStep % 128) / 32) % 4;
+        // Chords change every 16 steps (1 bar) for stronger narrative movement
+        const chordIndex = Math.floor((currentStep % stepsPerBlock) / 16) % 4;
         const chordDegree = currentSection.progression[chordIndex];
         
         const drumStep = currentStep % this.station.groove.steps;
@@ -682,20 +722,27 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         const sLen = scale.length;
         const mix = this.station.timbre.mix;
 
-        // Visual Synesthesia
+        // Visual Synesthesia Colors
         const hueShift = [0, 40, 80, 120, 160, 200, 240][chordDegree % 7] || 0;
         this.config.aliveColor = `hsl(${(this.baseHue + hueShift) % 360}, 100%, 60%)`;
 
         // Filter automation for builds and drops
         let targetFilterFreq = isSectionA ? 2500 : 6000;
-        if (blockIndex === 5) targetFilterFreq = 1000 + ((currentStep % 128) / 128) * 8000; // Build block
-        if (blockIndex === 7) targetFilterFreq = 4000 - ((currentStep % 128) / 128) * 3000; // Outro block
+        if (blockIndex === 5) targetFilterFreq = 1000 + ((currentStep % stepsPerBlock) / stepsPerBlock) * 8000; // Build
+        if (blockIndex === 7) targetFilterFreq = 4000 - ((currentStep % stepsPerBlock) / stepsPerBlock) * 3000; // Outro
         this.masterFilter.frequency.setTargetAtTime(Math.max(200, targetFilterFreq), time, 0.1);
 
-        // PAD
+        // PAD (Subtly layered on 32-step intervals to prevent monotonous droning)
         if (activeInstruments.pad && (currentStep % 32) === 0) {
             const chordIntervals = this.getChordNotes(chordDegree, this.station.timbre.arpExtension);
-            this.playPadChord(chordIntervals.map(i => this.station.root + i), time, base16thTime * 32, mix.pad);
+            this.playPadChord(
+                chordIntervals.map(i => this.station.root + i), 
+                time, 
+                base16thTime * 32, 
+                mix.pad,
+                this.station.timbre.padWave,
+                this.station.timbre.padCutoff
+            );
             this.scheduleVisual('pad', time);
         }
 
@@ -703,7 +750,6 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         if (activeInstruments.bass) {
             const bassData = currentSection.bassMotif[currentStep % 16];
             if (bassData !== null) {
-                // Bass note is relative to the current chord root
                 const deg = chordDegree + bassData.degree;
                 const noteInterval = scale[((deg % sLen) + sLen) % sLen];
                 const bassMidi = this.station.root + noteInterval + (Math.floor(deg / sLen) * 12) - 12;
@@ -723,7 +769,6 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         if (activeInstruments.lead) {
             const leadData = currentSection.leadMotif[currentStep % 16];
             if (leadData !== null) {
-                // Transpose motif to current chord safely
                 const deg = chordDegree + leadData.degree;
                 const noteInterval = scale[((deg % sLen) + sLen) % sLen];
                 const leadMidi = this.station.root + noteInterval + (Math.floor(deg / sLen) * 12) + 12;
@@ -737,14 +782,13 @@ class ProceduralRadioProgram extends BaseGridSimulation {
             if (this.station.groove.kick[drumStep]) { this.playDrum('kick', time, mix.drums); this.scheduleVisual('kick', time); }
             if (this.station.groove.snare[drumStep]) { this.playDrum('snare', time, mix.drums); this.scheduleVisual('snare', time); }
             
-            // Randomly dense hats based on groove setting
             if (stepRng() < this.station.groove.hatDense) { 
                 this.playDrum('hat', time, mix.drums * 0.8); 
                 this.scheduleVisual('hat', time); 
             }
             
-            // Occasional crash on the downbeat of a new 32-step phrase
-            if (currentStep % 32 === 0 && stepRng() > 0.4 && blockIndex !== 0) {
+            // Occasional impact crash strictly hitting the downbeat of a new block phrase
+            if (currentStep % stepsPerBlock === 0 && stepRng() > 0.4 && blockIndex !== 0) {
                 this.playNoise(time, 0.8, 0.4 * mix.drums);
             }
         }
@@ -782,7 +826,7 @@ const Radio = {
             let currentId = this.instance.station?.id;
             if (currentId === undefined) {
                 const msPerStep = (60000 / 120) / 4; 
-                currentId = Math.floor((Date.now() - 1773593949000) / (msPerStep * 1024));
+                currentId = Math.floor((Date.now() - 1773593949000) / (msPerStep * 512));
             }
             const output = `Station ID: ${currentId}`;
             this._copyToClipboard(currentId.toString());
