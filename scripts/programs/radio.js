@@ -15,7 +15,7 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         this.isRunning = false;
 
         this.EPOCH = 1704067200000;
-        this.SONG_DURATION_STEPS = 512; // 4 blocks of 128 steps (~1 minute at 120bpm)
+        this.SONG_DURATION_STEPS = 1024; // 8 blocks of 128 steps (~2 minutes at 120bpm)
         this.BASE_BPM = 120;
 
         this.modes = {
