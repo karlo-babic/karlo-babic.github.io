@@ -3,8 +3,8 @@ import { BaseGridSimulation } from './engines/base_grid_simulation.js';
 /**
  * Procedural Chiptune Engine and Visualizer
  * A generative music engine that writes infinite, varied 8-bit soundtracks.
- * Features Euclidean rhythms, station archetypes, and visual-audio synesthesia.
- * Supports command-line interaction for station ID retrieval and forced tuning.
+ * Features structural song generation, varied musical archetypes, and
+ * visual-audio synesthesia via cellular automata.
  */
 class ProceduralRadioProgram extends BaseGridSimulation {
     constructor(screenEl, config) {
@@ -15,7 +15,7 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         this.isRunning = false;
 
         this.EPOCH = 1704067200000;
-        this.SONG_DURATION_STEPS = 256;
+        this.SONG_DURATION_STEPS = 512; // 4 blocks of 128 steps (~1 minute at 120bpm)
         this.BASE_BPM = 120;
 
         this.modes = {
@@ -28,10 +28,10 @@ class ProceduralRadioProgram extends BaseGridSimulation {
             Pentatonic: [0, 2, 4, 7, 9],
             Hirajoshi:  [0, 2, 3, 7, 8],
             Blues:      [0, 3, 5, 6, 7, 10],
-            WholeTone:  [0, 2, 4, 6, 8, 10]
+            Harmonic:   [0, 2, 3, 5, 7, 8, 11]
         };
 
-        this.palettes = ['#00ffcc', '#ff007f', '#ffff00', '#ff5500', '#aa00ff', '#00ff00', '#00aaff'];
+        this.palettes = ['#00ffcc', '#ff007f', '#ffff00', '#ff5500', '#aa00ff', '#00ff00', '#00aaff', '#ffcccc'];
 
         this.station = null;
         this.lookahead = 25.0;
@@ -48,6 +48,9 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         this.masterBus = null;
         this.masterFilter = null;
         this.crusherNode = null;
+        this.reverbNode = null;
+        this.reverbGain = null;
+        this.noiseBuffer = null;
 
         this.scheduleNotes = this.scheduleNotes.bind(this);
     }
@@ -86,21 +89,53 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         return curve;
     }
 
+    createReverb() {
+        const length = this.audioCtx.sampleRate * 2.5; 
+        const buffer = this.audioCtx.createBuffer(2, length, this.audioCtx.sampleRate);
+        for (let c = 0; c < 2; c++) {
+            const data = buffer.getChannelData(c);
+            for (let i = 0; i < length; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 4);
+            }
+        }
+        const convolver = this.audioCtx.createConvolver();
+        convolver.buffer = buffer;
+        return convolver;
+    }
+
+    createNoiseBuffer() {
+        const size = this.audioCtx.sampleRate * 2;
+        this.noiseBuffer = this.audioCtx.createBuffer(1, size, this.audioCtx.sampleRate);
+        const data = this.noiseBuffer.getChannelData(0);
+        for (let i = 0; i < size; i++) data[i] = Math.random() * 2 - 1;
+    }
+
     init() {
         super.init();
         this.isRunning = true;
 
+        this.createNoiseBuffer();
+
         this.masterBus = this.audioCtx.createGain();
         this.masterBus.gain.value = 0.8;
 
+        this.reverbNode = this.createReverb();
+        this.reverbGain = this.audioCtx.createGain();
+        this.reverbGain.gain.value = 0.15;
+
         this.masterFilter = this.audioCtx.createBiquadFilter();
         this.masterFilter.type = 'lowpass';
-        this.masterFilter.Q.value = 3.0;
+        this.masterFilter.Q.value = 1.5;
 
         this.crusherNode = this.audioCtx.createWaveShaper();
         this.crusherNode.oversample = 'none';
 
         this.masterBus.connect(this.masterFilter);
+        
+        this.masterBus.connect(this.reverbNode);
+        this.reverbNode.connect(this.reverbGain);
+        this.reverbGain.connect(this.masterFilter);
+
         this.masterFilter.connect(this.crusherNode);
         this.crusherNode.connect(this.audioCtx.destination);
 
@@ -145,7 +180,6 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         const color = this.palettes[nextInt(this.palettes.length)];
 
         this.config.aliveColor = color;
-        // Extract base hue for synesthetic color shifting
         const tempCtx = document.createElement('canvas').getContext('2d');
         tempCtx.fillStyle = color;
         const hex = tempCtx.fillStyle;
@@ -165,78 +199,97 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         }
         this.baseHue = h * 360;
 
-        const archetypes = ['Standard', 'Ambient', 'Heavy', 'Melodic'];
+        const archetypes = ['Standard', 'Ambient', 'Heavy', 'Groove', 'Melodic'];
         const archetype = archetypes[nextInt(archetypes.length)];
 
-        let baseBpm = nextInt(40) + 100;
-        let arpActive = songRng() > 0.2;
-        let leadWave = songRng() > 0.3 ? 'pulse' : (songRng() > 0.5 ? 'square' : 'sawtooth');
-        let bassWave = songRng() > 0.5 ? 'triangle' : 'square';
+        // Core BPM scaling based on archetype to ensure wide variety
+        let baseBpm = nextInt(60) + 90; // 90 to 150
+        if (archetype === 'Ambient') baseBpm = nextInt(30) + 65;
+        if (archetype === 'Heavy') baseBpm = nextInt(40) + 110;
+        if (archetype === 'Groove') baseBpm = nextInt(30) + 95;
 
+        let leadWave = ['square', 'sawtooth', 'pulse'][nextInt(3)];
+        let bassWave = ['triangle', 'square', 'sawtooth'][nextInt(3)];
+        if (archetype === 'Ambient') leadWave = 'sine';
+
+        // Structured Arrangement: 8 blocks of 128 steps
+        // Structure: Intro, Verse1, Chorus1, Verse2, Break, Build, Chorus2, Outro
+        const arrangement = [
+            { pad: true,  bass: false, drums: false, arp: true,  lead: false }, // 0: Intro
+            { pad: false, bass: true,  drums: true,  arp: true,  lead: false }, // 1: Verse 1
+            { pad: true,  bass: true,  drums: true,  arp: false, lead: true  }, // 2: Chorus 1
+            { pad: false, bass: true,  drums: true,  arp: true,  lead: false }, // 3: Verse 2
+            { pad: true,  bass: true,  drums: false, arp: false, lead: false }, // 4: Break
+            { pad: true,  bass: true,  drums: true,  arp: true,  lead: false }, // 5: Build
+            { pad: true,  bass: true,  drums: true,  arp: false, lead: true  }, // 6: Chorus 2
+            { pad: true,  bass: false, drums: false, arp: false, lead: false }  // 7: Outro
+        ];
+
+        // Specific modifications based on archetype
         if (archetype === 'Ambient') {
-            baseBpm = nextInt(20) + 70;
-            leadWave = 'sine';
-            arpActive = false;
-        }
-
-        const drumSteps = [12, 14, 16][nextInt(3)];
-        const arrangement = [];
-        for (let i = 0; i < 8; i++) {
-            arrangement.push({
-                lead: archetype === 'Heavy' ? false : (i !== 0 && i !== 4), 
-                bass: i !== 0,
-                arp: arpActive && (i !== 3 || archetype === 'Melodic'),
-                drums: archetype === 'Ambient' ? false : (i !== 0 && i !== 3) 
+            arrangement.forEach(block => {
+                block.pad = true;
+                block.drums = songRng() > 0.6;
+                block.lead = songRng() > 0.5;
             });
         }
 
+        const drumSteps = 16; 
+        
         this.station = {
             id: currentSongID,
             archetype: archetype,
             mode: selectedMode,
             scale: this.modes[selectedMode],
-            root: nextInt(12) + 36,
+            root: nextInt(12) + 36, // C2 to B2
             bpm: baseBpm,
-            swing: songRng() < 0.3 ? (songRng() * 0.05) : 0,
-            chaos: songRng(),
+            swing: (archetype === 'Groove' || songRng() < 0.3) ? (songRng() * 0.08) : 0,
             arrangement: arrangement,
-            groove: {
-                steps: drumSteps,
-                kick: this.generateEuclidean(drumSteps, nextInt(4) + 2),
-                snare: this.generateEuclidean(drumSteps, nextInt(3) + 1),
-                hatDense: nextInt(8) / 10 + 0.2
-            },
+            groove: this.generateGroove(archetype, drumSteps, nextInt, songRng),
             timbre: {
                 leadWave: leadWave,
                 leadEnv: songRng() > 0.5 ? 'pluck' : 'sustain',
                 bassWave: bassWave,
-                vibratoDepth: songRng() > 0.7 ? nextInt(15) + 5 : 0,
+                vibratoDepth: songRng() > 0.6 ? nextInt(12) + 4 : 0,
                 vibratoSpeed: nextInt(4) + 4,
-                drift: songRng() > 0.8 ? (songRng() * 0.5) : 0,
-                bitDepth: nextInt(5) + 3,
-                pwmSpeed: songRng() * 2 + 0.5,
+                drift: songRng() > 0.8 ? (songRng() * 0.4) : 0,
+                bitDepth: nextInt(6) + 3,
+                pwmSpeed: songRng() * 3 + 0.5,
                 arpStyle: ['up', 'down', 'converge', 'random'][nextInt(4)],
                 arpInterval: [0.03, 0.04, 0.06, 0.08][nextInt(4)],
                 arpOctave: songRng() > 0.5 ? 12 : 24,
-                arpExtension: songRng() > 0.6 ? '7th' : (songRng() > 0.8 ? 'sus4' : 'triad'),
-                mix: { lead: 0.12, bass: archetype === 'Ambient' ? 0.1 : 0.2, arp: 0.03, drums: 0.5 }
+                arpExtension: songRng() > 0.5 ? '7th' : (songRng() > 0.7 ? 'sus4' : 'triad'),
+                mix: { 
+                    lead: 0.15, 
+                    bass: archetype === 'Heavy' ? 0.22 : 0.18, 
+                    arp: 0.07, 
+                    drums: 0.45,
+                    pad: archetype === 'Ambient' ? 0.25 : 0.12
+                }
             },
-            sectionA: {
+            sectionA: { // Verse
                 progression: this.generateProgression(songRng),
-                leadMotif: this.generateMotif(0.4, 3, true, songRng),
-                bassMotif: this.generateMotif(0.6, 1, false, songRng)
+                leadMotif: this.generateMotif(0.3, 2, songRng), // Sparse lead
+                bassMotif: this.generateBassMotif(archetype, songRng)
             },
-            sectionB: {
+            sectionB: { // Chorus
                 progression: this.generateProgression(songRng),
-                leadMotif: this.generateMotif(0.7, 4, true, songRng),
-                bassMotif: this.generateMotif(0.8, 2, false, songRng)
+                leadMotif: this.generateMotif(0.6, 3, songRng), // Active lead
+                bassMotif: this.generateBassMotif(archetype, songRng)
             }
         };
 
-        // Arp-Spread Synesthesia: Faster arps create more chaotic sideways pixel bleeding
         this.currentSpread = 0.01 + (0.08 - this.station.timbre.arpInterval) * 4;
+        
+        if (this.reverbGain) {
+            let revAmt = 0.15;
+            if (archetype === 'Ambient') revAmt = 0.5;
+            else if (archetype === 'Heavy') revAmt = 0.05;
+            this.reverbGain.gain.value = revAmt;
+        }
 
         if (this.crusherNode) this.crusherNode.curve = this.getCrushCurve(this.station.timbre.bitDepth);
+        
         if (targetId === null) {
             const msPerStep = (60000 / this.BASE_BPM) / 4; 
             this.step = Math.floor((Date.now() - this.EPOCH) / msPerStep) % this.SONG_DURATION_STEPS;
@@ -245,45 +298,102 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         }
     }
 
-    generateProgression(rng) {
-        const chords = [0];
-        let currentChord = 0;
-        const logicalMoves = [3, 4, 5, 1, 2];
-        const chaosFactor = this.station?.chaos || 0.2;
-        for (let i = 1; i < 4; i++) {
-            if (rng() < chaosFactor) currentChord = Math.floor(rng() * 7);
-            else currentChord = (currentChord + logicalMoves[Math.floor(rng() * logicalMoves.length)]) % 7;
-            chords.push(currentChord);
+    generateGroove(archetype, steps, nextInt, rng) {
+        const kick = new Array(steps).fill(0);
+        const snare = new Array(steps).fill(0);
+        
+        if (archetype === 'Standard' || archetype === 'Heavy' || archetype === 'Melodic') {
+            // Four on the floor or basic rock beat
+            kick[0] = 1; kick[4] = rng() > 0.8 ? 1 : 0; 
+            kick[8] = 1; kick[12] = rng() > 0.8 ? 1 : 0;
+            snare[4] = 1; snare[12] = 1;
+        } else if (archetype === 'Groove') {
+            // Breakbeat/Syncopated
+            kick[0] = 1; 
+            if (rng() > 0.5) kick[3] = 1; 
+            kick[8] = rng() > 0.3 ? 1 : 0; 
+            kick[10] = 1;
+            snare[4] = 1; snare[12] = 1;
+            if (rng() > 0.7) snare[15] = 1; // ghost note
+        } else if (archetype === 'Ambient') {
+            // Sparse, floating rhythm
+            kick[0] = 1;
+            kick[nextInt(steps - 1) + 1] = 1;
+            snare[8] = rng() > 0.5 ? 1 : 0;
         }
-        return chords;
+
+        return {
+            steps: steps,
+            kick: kick,
+            snare: snare,
+            hatDense: nextInt(5) / 10 + 0.3
+        };
     }
 
-    generateMotif(density, maxJump, isLead, rng) {
+    generateProgression(rng) {
+        // Generates a 4-chord loop that makes musical sense
+        const progressions = [
+            [0, 4, 5, 3], // I - V - vi - IV
+            [0, 5, 3, 4], // I - vi - IV - V
+            [5, 3, 0, 4], // vi - IV - I - V
+            [1, 4, 0, 5], // ii - V - I - vi
+            [0, 3, 0, 4], // I - IV - I - V
+            [0, 0, 3, 4]  // I - I - IV - V
+        ];
+        return progressions[Math.floor(rng() * progressions.length)];
+    }
+
+    generateMotif(density, maxJump, rng) {
         const pattern = new Array(16).fill(null);
-        let currentDegree = isLead ? Math.floor(rng() * 4) : 0;
-        for (let i = 0; i < 8; i++) {
-            if (rng() < (i % 4 === 0 ? density * 1.5 : density)) {
+        let currentDegree = 0;
+        let hasNotes = false;
+        
+        // Generate a 16-step phrase. To keep it musical, we restrict the rhythmic mask.
+        for (let i = 0; i < 16; i++) {
+            // Emphasize downbeats
+            const prob = (i % 4 === 0) ? density * 1.5 : density;
+            
+            if (rng() < prob) {
                 const jump = Math.floor(rng() * (maxJump * 2 + 1)) - maxJump;
                 currentDegree += jump;
-                if (currentDegree > 12) currentDegree -= 5;
-                if (currentDegree < -5) currentDegree += 5;
-                const length = (rng() > 0.8 && i < 7) ? 2 : 1;
+                // Keep melody contained within a sensible octave-ish range
+                if (currentDegree > 7) currentDegree -= 4;
+                if (currentDegree < -4) currentDegree += 4;
+                
+                const length = (rng() > 0.7 && i < 15) ? 2 : 1;
                 pattern[i] = { degree: currentDegree, length: length };
-                if (length > 1) i++;
+                hasNotes = true;
+                if (length > 1) i++; // Skip next step if sustained
             }
         }
-        for (let i = 0; i < 8; i++) {
-            const callNote = pattern[i];
-            const stepIndex = i + 8;
-            if (callNote) {
-                if (rng() < 0.7) {
-                    const varJump = rng() < 0.2 ? (Math.floor(rng() * 3) - 1) : 0;
-                    pattern[stepIndex] = { degree: callNote.degree + varJump, length: callNote.length };
+        
+        if (!hasNotes) pattern[0] = { degree: 0, length: 2 };
+
+        return pattern;
+    }
+
+    generateBassMotif(archetype, rng) {
+        const pattern = new Array(16).fill(null);
+        
+        if (archetype === 'Heavy' || archetype === 'Groove') {
+            // Busy, rhythmic bass
+            for (let i = 0; i < 16; i++) {
+                if (i % 2 === 0 || rng() > 0.6) {
+                    pattern[i] = { degree: 0, length: 1 };
                 }
-            } else if (rng() < density * 0.3) {
-                pattern[stepIndex] = { degree: currentDegree, length: 1 };
             }
+        } else if (archetype === 'Ambient') {
+            // Long sustained root notes
+            pattern[0] = { degree: 0, length: 16 };
+        } else {
+            // Standard: Root on downbeats, maybe an octave or 5th jump
+            pattern[0] = { degree: 0, length: 2 };
+            pattern[4] = { degree: 0, length: 2 };
+            pattern[8] = { degree: 0, length: 2 };
+            if (rng() > 0.5) pattern[12] = { degree: 4, length: 2 }; // Jump to 5th
+            else pattern[12] = { degree: 0, length: 2 };
         }
+        
         return pattern;
     }
 
@@ -311,13 +421,32 @@ class ProceduralRadioProgram extends BaseGridSimulation {
             const osc1 = this.audioCtx.createOscillator();
             const osc2 = this.audioCtx.createOscillator();
             const inverter = this.audioCtx.createGain();
+            const delay = this.audioCtx.createDelay(0.1);
             const pwmOsc = this.audioCtx.createOscillator();
             const pwmGain = this.audioCtx.createGain();
-            osc1.type = 'sawtooth'; osc2.type = 'sawtooth'; inverter.gain.value = -1;
-            osc1.frequency.setValueAtTime(freq, time); osc2.frequency.setValueAtTime(freq, time);
-            pwmOsc.type = 'sine'; pwmOsc.frequency.value = t.pwmSpeed; pwmGain.gain.value = 0.002; 
-            pwmOsc.connect(pwmGain); pwmGain.connect(osc2.phase ? osc2.phase : gain.gain); 
-            osc1.connect(gain); osc2.connect(inverter); inverter.connect(gain);
+            
+            osc1.type = 'sawtooth'; 
+            osc2.type = 'sawtooth'; 
+            inverter.gain.value = -1;
+            
+            osc1.frequency.setValueAtTime(freq, time); 
+            osc2.frequency.setValueAtTime(freq, time);
+            
+            pwmOsc.type = 'sine'; 
+            pwmOsc.frequency.value = t.pwmSpeed; 
+            
+            delay.delayTime.value = 0.002;
+            pwmGain.gain.value = 0.001;
+            
+            pwmOsc.connect(pwmGain); 
+            pwmGain.connect(delay.delayTime); 
+            
+            osc2.connect(delay); 
+            delay.connect(inverter);
+            
+            osc1.connect(gain); 
+            inverter.connect(gain);
+            
             nodes.push(osc1, osc2, pwmOsc);
         } else {
             const osc = this.audioCtx.createOscillator();
@@ -340,11 +469,11 @@ class ProceduralRadioProgram extends BaseGridSimulation {
 
         if (envShape === 'pluck') {
             gain.gain.setValueAtTime(volume, time);
-            gain.gain.exponentialRampToValueAtTime(0.001, time + duration * 0.8);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + Math.max(0.1, duration * 0.8));
         } else {
             gain.gain.setValueAtTime(0.001, time);
             gain.gain.linearRampToValueAtTime(volume, time + 0.02);
-            gain.gain.setValueAtTime(volume, time + duration - 0.05);
+            gain.gain.setValueAtTime(volume, time + Math.max(0.02, duration - 0.05));
             gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
         }
 
@@ -352,13 +481,44 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         nodes.forEach(n => { n.start(time); n.stop(time + duration + 0.1); });
     }
 
+    playPadChord(midiNotes, time, duration, volume) {
+        const gain = this.audioCtx.createGain();
+        gain.gain.setValueAtTime(0.001, time);
+        gain.gain.linearRampToValueAtTime(volume, time + Math.min(0.5, duration * 0.3));
+        gain.gain.setTargetAtTime(0.001, time + duration * 0.8, duration * 0.2);
+        
+        gain.connect(this.masterBus);
+        
+        midiNotes.forEach((note, index) => {
+            const osc = this.audioCtx.createOscillator();
+            const osc2 = this.audioCtx.createOscillator();
+            const freq = this.midiToFreq(note + (index === 0 ? -12 : 0)); 
+            
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            
+            osc2.type = 'sine';
+            osc2.frequency.value = freq;
+            osc2.detune.value = 8; 
+            
+            osc.connect(gain);
+            osc2.connect(gain);
+            osc.start(time);
+            osc2.start(time);
+            osc.stop(time + duration + 0.5);
+            osc2.stop(time + duration + 0.5);
+        });
+    }
+
     playTrackerArp(chordMidiNotes, time, duration, volume, settings) {
         const osc = this.audioCtx.createOscillator();
         const gain = this.audioCtx.createGain();
         osc.type = settings.leadWave === 'pulse' ? 'square' : settings.leadWave;
+        
         const arpSpeed = settings.arpInterval || 0.04;
         const steps = Math.floor(duration / arpSpeed);
         const style = settings.arpStyle || 'up';
+        
         for (let i = 0; i < steps; i++) {
             let noteIndex;
             switch(style) {
@@ -369,42 +529,54 @@ class ProceduralRadioProgram extends BaseGridSimulation {
             }
             osc.frequency.setValueAtTime(this.midiToFreq(chordMidiNotes[noteIndex] + settings.arpOctave), time + (i * arpSpeed));
         }
+        
         gain.gain.setValueAtTime(volume, time);
-        gain.gain.setTargetAtTime(0.001, time + duration - 0.02, 0.02);
-        osc.connect(gain); gain.connect(this.masterBus);
-        osc.start(time); osc.stop(time + duration);
+        gain.gain.setTargetAtTime(0.001, time + Math.max(0, duration - 0.05), 0.02);
+        
+        osc.connect(gain); 
+        gain.connect(this.masterBus);
+        osc.start(time); 
+        osc.stop(time + duration + 0.1);
     }
 
     playDrum(type, time, volumeMultiplier = 1.0) {
         if (type === 'kick') {
             const osc = this.audioCtx.createOscillator();
             const gain = this.audioCtx.createGain();
-            osc.frequency.setValueAtTime(150, time);
-            osc.frequency.exponentialRampToValueAtTime(40, time + 0.1);
-            gain.gain.setValueAtTime(0.5 * volumeMultiplier, time);
+            osc.frequency.setValueAtTime(200, time);
+            osc.frequency.exponentialRampToValueAtTime(40, time + 0.04);
+            
+            gain.gain.setValueAtTime(0.7 * volumeMultiplier, time);
             gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
-            osc.connect(gain); gain.connect(this.masterBus);
-            osc.start(time); osc.stop(time + 0.15);
+            
+            osc.connect(gain); 
+            gain.connect(this.masterBus);
+            osc.start(time); 
+            osc.stop(time + 0.15);
+            
         } else if (type === 'snare') {
-            this.playTone(72, time, 0.1, 'triangle', 'pluck', 0.3 * volumeMultiplier);
-            this.playNoise(time, 0.15, 0.25 * volumeMultiplier);
+            this.playTone(60, time, 0.1, 'triangle', 'pluck', 0.4 * volumeMultiplier);
+            this.playNoise(time, 0.15, 0.3 * volumeMultiplier);
+            
         } else if (type === 'hat') {
-            this.playNoise(time, 0.05, 0.05 * volumeMultiplier);
+            this.playNoise(time, 0.04, 0.06 * volumeMultiplier);
         }
     }
 
     playNoise(time, duration, volume) {
-        const size = this.audioCtx.sampleRate * duration;
-        const buffer = this.audioCtx.createBuffer(1, size, this.audioCtx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < size; i++) data[i] = Math.random() * 2 - 1;
+        if (!this.noiseBuffer) return;
         const noise = this.audioCtx.createBufferSource();
-        noise.buffer = buffer;
+        noise.buffer = this.noiseBuffer;
+        
         const gain = this.audioCtx.createGain();
         gain.gain.setValueAtTime(volume, time);
         gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
-        noise.connect(gain); gain.connect(this.masterBus);
-        noise.start(time);
+        
+        noise.connect(gain); 
+        gain.connect(this.masterBus);
+        
+        noise.start(time, Math.random() * Math.max(0, 2 - duration));
+        noise.stop(time + duration);
     }
 
     computeNextState(x, y) {
@@ -416,13 +588,13 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         if (y >= drumStartRow) return Math.random() < 0.35 ? 0 : this.grid[y][x];
         if (y === melodyInjectionRow) return Math.random() < 0.4 ? 0 : this.grid[y][x];
 
-        let state = this.grid[y + 1][x];
+        let state = (y < rows - 1) ? this.grid[y + 1][x] : 0;
+        
         if (state === 1) {
             if (Math.random()*(y/rows)*3 < 0.05) return 0;
         } else {
-            const leftActive = x > 0 ? this.grid[y + 1][x - 1] : 0;
-            const rightActive = x < cols - 1 ? this.grid[y + 1][x + 1] : 0;
-            // Spread-Synesthesia: Side-bleed probability linked to current Arp interval
+            const leftActive = (x > 0 && y < rows - 1) ? this.grid[y + 1][x - 1] : 0;
+            const rightActive = (x < cols - 1 && y < rows - 1) ? this.grid[y + 1][x + 1] : 0;
             if ((leftActive === 1 || rightActive === 1) && Math.random()*(y/rows)*3 < this.currentSpread) return 1;
         }
         return state;
@@ -437,14 +609,15 @@ class ProceduralRadioProgram extends BaseGridSimulation {
 
         if (type === 'kick') {
             const width = Math.floor(cols * 0.2);
-            for (let r = drumStartRow; r < rows; r++) for (let c = 0; c < width; c++) this.grid[r][c] = 1;
+            const startCol = Math.floor((cols - width) / 2);
+            for (let r = drumStartRow; r < rows; r++) for (let c = startCol; c < startCol + width; c++) this.grid[r][c] = 1;
         } else if (type === 'snare') {
-            for (let r = drumStartRow; r < rows; r++) for (let c = 0; c < cols; c++) if (Math.random() < 0.3) this.grid[r][c] = 1;
+            for (let r = drumStartRow; r < rows; r++) for (let c = 0; c < cols; c++) if (Math.random() < 0.8) this.grid[r][c] = 1;
         } else if (type === 'hat') {
             const startCol = Math.floor(cols * 0.8);
-            for (let r = drumStartRow; r < rows; r++) for (let c = startCol; c < cols; c++) if (Math.random() < 0.5) this.grid[r][c] = 1;
+            for (let r = drumStartRow; r < rows; r++) for (let c = startCol; c < cols; c++) if (Math.random() < 0.9) this.grid[r][c] = 1;
         } else if (type === 'bass') {
-            const width = Math.min(4, Math.floor(cols * 0.1));
+            const width = Math.min(6, Math.floor(cols * 0.15));
             for (let i = 0; i < width; i++) this.grid[melodyY][i] = 1;
         } else if (type === 'arp') {
             const step = (metadata % 3) + 2;
@@ -456,6 +629,10 @@ class ProceduralRadioProgram extends BaseGridSimulation {
                 if (xPos + 1 < cols) this.grid[melodyY][xPos + 1] = 1;
                 if (xPos - 1 >= 0) this.grid[melodyY][xPos - 1] = 1;
             }
+        } else if (type === 'pad') {
+            const width = Math.floor(cols * 0.6);
+            const startCol = Math.floor((cols - width) / 2);
+            for (let c = startCol; c < startCol + width; c++) if (Math.random() < 0.6) this.grid[melodyY][c] = 1;
         }
     }
     
@@ -476,28 +653,47 @@ class ProceduralRadioProgram extends BaseGridSimulation {
     playStep(currentStep, time) {
         const stepRng = this.seededRandom(this.station.id + currentStep);
         const base16thTime = (60.0 / this.station.bpm) * 0.25;
-        const arrangementBlock = Math.floor(currentStep / 32) % 8;
-        const activeInstruments = this.station.arrangement[arrangementBlock];
-        const isSectionA = (currentStep % 128) < 64;
+        
+        // 128 steps per block, 8 blocks total
+        const blockIndex = Math.floor(currentStep / 128) % 8;
+        const activeInstruments = this.station.arrangement[blockIndex];
+        
+        // Determine section logically based on arrangement template
+        // Intro/Verse/Break/Outro generally use Section A. Chorus/Build uses Section B.
+        const isSectionA = (blockIndex === 0 || blockIndex === 1 || blockIndex === 3 || blockIndex === 4 || blockIndex === 7);
         const currentSection = isSectionA ? this.station.sectionA : this.station.sectionB;
-        const chordDegree = currentSection.progression[Math.floor((currentStep % 64) / 16)];
+        
+        // Chords change every 32 steps (2 bars)
+        const chordIndex = Math.floor((currentStep % 128) / 32) % 4;
+        const chordDegree = currentSection.progression[chordIndex];
+        
         const drumStep = currentStep % this.station.groove.steps;
         const scale = this.station.scale;
         const sLen = scale.length;
         const mix = this.station.timbre.mix;
 
-        // Brightness-Hue Synesthesia: Shift color based on chord function
-        const hueShift = [0, 40, 80, 120, 160, 200, 240][chordDegree];
+        // Visual Synesthesia
+        const hueShift = [0, 40, 80, 120, 160, 200, 240][chordDegree % 7] || 0;
         this.config.aliveColor = `hsl(${(this.baseHue + hueShift) % 360}, 100%, 60%)`;
 
-        let targetFilterFreq = isSectionA ? 2500 : 5000;
-        if (arrangementBlock === 7) targetFilterFreq = 10000; 
-        targetFilterFreq += Math.sin(((currentStep % 32) / 32) * Math.PI) * 1500;
+        // Filter automation for builds and drops
+        let targetFilterFreq = isSectionA ? 2500 : 6000;
+        if (blockIndex === 5) targetFilterFreq = 1000 + ((currentStep % 128) / 128) * 8000; // Build block
+        if (blockIndex === 7) targetFilterFreq = 4000 - ((currentStep % 128) / 128) * 3000; // Outro block
         this.masterFilter.frequency.setTargetAtTime(Math.max(200, targetFilterFreq), time, 0.1);
 
+        // PAD
+        if (activeInstruments.pad && (currentStep % 32) === 0) {
+            const chordIntervals = this.getChordNotes(chordDegree, this.station.timbre.arpExtension);
+            this.playPadChord(chordIntervals.map(i => this.station.root + i), time, base16thTime * 32, mix.pad);
+            this.scheduleVisual('pad', time);
+        }
+
+        // BASS
         if (activeInstruments.bass) {
             const bassData = currentSection.bassMotif[currentStep % 16];
             if (bassData !== null) {
+                // Bass note is relative to the current chord root
                 const deg = chordDegree + bassData.degree;
                 const noteInterval = scale[((deg % sLen) + sLen) % sLen];
                 const bassMidi = this.station.root + noteInterval + (Math.floor(deg / sLen) * 12) - 12;
@@ -506,16 +702,19 @@ class ProceduralRadioProgram extends BaseGridSimulation {
             }
         }
 
+        // ARP
         if (activeInstruments.arp && (currentStep % 16) % 4 === 0) {
             const chordIntervals = this.getChordNotes(chordDegree, this.station.timbre.arpExtension);
             this.playTrackerArp(chordIntervals.map(i => this.station.root + i), time, base16thTime * 4, mix.arp, this.station.timbre);
             this.scheduleVisual('arp', time, currentStep);
         }
 
+        // LEAD
         if (activeInstruments.lead) {
             const leadData = currentSection.leadMotif[currentStep % 16];
             if (leadData !== null) {
-                const deg = leadData.degree;
+                // Transpose motif to current chord safely
+                const deg = chordDegree + leadData.degree;
                 const noteInterval = scale[((deg % sLen) + sLen) % sLen];
                 const leadMidi = this.station.root + noteInterval + (Math.floor(deg / sLen) * 12) + 12;
                 this.playTone(leadMidi, time, base16thTime * leadData.length, this.station.timbre.leadWave, this.station.timbre.leadEnv, mix.lead);
@@ -523,24 +722,39 @@ class ProceduralRadioProgram extends BaseGridSimulation {
             }
         }
 
+        // DRUMS
         if (activeInstruments.drums) {
             if (this.station.groove.kick[drumStep]) { this.playDrum('kick', time, mix.drums); this.scheduleVisual('kick', time); }
             if (this.station.groove.snare[drumStep]) { this.playDrum('snare', time, mix.drums); this.scheduleVisual('snare', time); }
-            if (stepRng() < this.station.groove.hatDense) { this.playDrum('hat', time, mix.drums); this.scheduleVisual('hat', time); }
+            
+            // Randomly dense hats based on groove setting
+            if (stepRng() < this.station.groove.hatDense) { 
+                this.playDrum('hat', time, mix.drums * 0.8); 
+                this.scheduleVisual('hat', time); 
+            }
+            
+            // Occasional crash on the downbeat of a new 32-step phrase
+            if (currentStep % 32 === 0 && stepRng() > 0.4 && blockIndex !== 0) {
+                this.playNoise(time, 0.8, 0.4 * mix.drums);
+            }
         }
     }
 
     scheduleNotes() {
         if (!this.isRunning) return;
+        
+        // Loop back and switch stations when track completes
         if (this.forceId === null && this.step > 0 && this.step % 16 === 0) {
             const msPerStep = (60000 / this.BASE_BPM) / 4; 
             const currentSongID = Math.floor((Date.now() - this.EPOCH) / (msPerStep * this.SONG_DURATION_STEPS));
             if (this.station && currentSongID !== this.station.id) this.tuneToNewStation();
         }
+        
         while (this.currentNoteTime < this.audioCtx.currentTime + this.scheduleAheadTime) {
             this.playStep(this.step, this.currentNoteTime);
             this.nextNote();
         }
+        
         this.schedulerTimerID = setTimeout(this.scheduleNotes, this.lookahead);
     }
 }
@@ -549,25 +763,22 @@ const Radio = {
     instance: null,
 
     init: function(screenEl, args = { positional: [], named: {} }) {
-        const config = { cellSize: 6, updateInterval: 50, aliveColor: '#00ffcc' };
+        const config = { cellSize: 4, updateInterval: 40, aliveColor: '#00ffcc' };
         this.instance = new ProceduralRadioProgram(screenEl, config);
         
         const subcommand = args.positional[0]?.toLowerCase();
         
         if (subcommand === 'id') {
-            // Calculate current ID if engine not running yet, otherwise get instance ID
             let currentId = this.instance.station?.id;
             if (currentId === undefined) {
                 const msPerStep = (60000 / 120) / 4; 
-                currentId = Math.floor((Date.now() - 1704067200000) / (msPerStep * 256));
+                currentId = Math.floor((Date.now() - 1704067200000) / (msPerStep * 1024));
             }
             const output = `Station ID: ${currentId}`;
             this._copyToClipboard(currentId.toString());
-            // Since this is usually a visual engine, we use console/render as a fallback
             if (this.instance.ctx) {
                 console.log(output);
             }
-            return;
         }
 
         if (!isNaN(parseInt(subcommand))) {
