@@ -465,7 +465,7 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         // Tracker Arpeggio
         if (this.station.timbre.arpActive && stepInBar % 4 === 0) {
             const chordMidiNotes = chordIntervals.map(interval => this.station.root + interval);
-            this.playTrackerArp(chordMidiNotes, time, base16thTime * 4, 0.05);
+            this.playTrackerArp(chordMidiNotes, time, base16thTime * 4, 0.03);
             this.scheduleVisual('arp', time, currentStep);
         }
 
