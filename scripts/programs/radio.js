@@ -234,7 +234,7 @@ class ProceduralRadioProgram extends BaseGridSimulation {
         };
 
         // Arp-Spread Synesthesia: Faster arps create more chaotic sideways pixel bleeding
-        this.currentSpread = 0.04 + (0.08 - this.station.timbre.arpInterval) * 1.5;
+        this.currentSpread = 0.01 + (0.08 - this.station.timbre.arpInterval) * 4;
 
         if (this.crusherNode) this.crusherNode.curve = this.getCrushCurve(this.station.timbre.bitDepth);
         if (targetId === null) {
@@ -418,12 +418,12 @@ class ProceduralRadioProgram extends BaseGridSimulation {
 
         let state = this.grid[y + 1][x];
         if (state === 1) {
-            if (Math.random() < 0.05) return 0;
+            if (Math.random()*(y/rows)*3 < 0.05) return 0;
         } else {
             const leftActive = x > 0 ? this.grid[y + 1][x - 1] : 0;
             const rightActive = x < cols - 1 ? this.grid[y + 1][x + 1] : 0;
             // Spread-Synesthesia: Side-bleed probability linked to current Arp interval
-            if ((leftActive === 1 || rightActive === 1) && Math.random() < this.currentSpread) return 1;
+            if ((leftActive === 1 || rightActive === 1) && Math.random()*(y/rows)*3 < this.currentSpread) return 1;
         }
         return state;
     }
