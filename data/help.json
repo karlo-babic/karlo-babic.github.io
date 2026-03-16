@@ -40,6 +40,11 @@
         "usage": "eliza",
         "details": "A JavaScript port of Joseph Weizenbaum's classic 1966 ELIZA program. It engages in a text-based conversation by parodying a non-directional psychotherapist."
     },
+    "radio": {
+        "description": "An infinite procedural chiptune radio station and visualizer. The generated music is synchronized across all clients in real-time.",
+        "usage": "radio [id]",
+        "details": "Generates real-time 8-bit music using algorithmic composition and chiptune synthesis.\n\nSubcommands/Arguments:\n  id            Displays the current station ID and copies it to the clipboard.\n  [number]      Tunes to a specific station ID and remains on that song."
+    },
     "img": {
         "description": "Displays a random image based on a specified topic.",
         "usage": "img [topic]",
