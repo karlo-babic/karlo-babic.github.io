@@ -13,6 +13,16 @@ SCRIPTS = {
     "sysinfo": {
         "description": "Show basic system information",
         "url": BASE_URL + "cli/sysinfo"
+    },
+    "doc2txt": {
+        "description": "Convert an EPUB file to TXT (uses mutool, pandoc, or Python fallback)",
+        "url": BASE_URL + "cli/doc2txt",
+        "args": [
+            {
+                "name": "epub_file",
+                "description": "Path to the EPUB file to convert"
+            }
+        ]
     }
 }
 
