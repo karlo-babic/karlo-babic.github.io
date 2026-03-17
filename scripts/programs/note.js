@@ -16,7 +16,7 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-const Edit = {
+const Note = {
     engine: null,
     password: null,
     boundSubmitHandler: null,
@@ -34,18 +34,18 @@ const Edit = {
      */
     renderPasswordPrompt: function() {
         const htmlOutput = '<div style="margin:0;padding:0;">' +
-            '<form id="file-auth-form" style="margin:0;padding:0;display:block;">' +
-            '<input type="password" id="file-password-input" placeholder="Enter password" style="width:100%;box-sizing:border-box;margin:0;padding:2px 4px;background:transparent;color:inherit;border:1px solid #444;font-family:inherit;font-size:inherit;display:block;line-height:1;" autocomplete="off" autofocus>' +
+            '<form id="note-auth-form" style="margin:0;padding:0;display:block;">' +
+            '<input type="password" id="note-password-input" placeholder="Enter password" style="width:100%;box-sizing:border-box;margin:0;padding:2px 4px;background:transparent;color:inherit;border:1px solid #444;font-family:inherit;font-size:inherit;display:block;line-height:1;" autocomplete="off" autofocus>' +
             '</form>' +
             '</div>';
 
         this.engine.render(htmlOutput);
 
-        const form = document.getElementById('file-auth-form');
+        const form = document.getElementById('note-auth-form');
         if (form) {
             this.boundPasswordHandler = this.handlePasswordSubmit.bind(this);
             form.addEventListener('submit', this.boundPasswordHandler);
-            document.getElementById('file-password-input').focus();
+            document.getElementById('note-password-input').focus();
         }
     },
 
@@ -55,7 +55,7 @@ const Edit = {
      */
     handlePasswordSubmit: async function(e) {
         e.preventDefault();
-        const inputEl = document.getElementById('file-password-input');
+        const inputEl = document.getElementById('note-password-input');
         
         this.password = inputEl.value;
         if (!this.password) return;
@@ -100,7 +100,7 @@ const Edit = {
             }
         } catch (error) {
             console.error('Fetch error:', error);
-            const authInput = document.getElementById('file-password-input');
+            const authInput = document.getElementById('note-password-input');
             if (authInput) {
                 authInput.disabled = false;
                 authInput.type = 'text';
@@ -117,13 +117,13 @@ const Edit = {
      * The status message container is removed as messages now appear in the input.
      */
     renderInterface: function(rows) {
-        let htmlOutput = '<div class="file-program-container" style="margin:0;padding:0;font-size:0.9em;line-height:1;">' +
-            '<form id="file-append-form" style="margin:0;padding:0;display:block;">' +
-            '<textarea id="file-new-row-input" placeholder="Enter new record" style="width:100%;box-sizing:border-box;margin:0;padding:2px 4px;display:block;background:transparent;color:inherit;border:1px solid #444;resize:vertical;font-family:inherit;font-size:inherit;line-height:1.2;" rows="3" autocomplete="off" autofocus></textarea>' +
+        let htmlOutput = '<div class="note-program-container" style="margin:0;padding:0;font-size:0.9em;line-height:1;">' +
+            '<form id="note-append-form" style="margin:0;padding:0;display:block;">' +
+            '<textarea id="note-new-row-input" placeholder="Enter new record" style="width:100%;box-sizing:border-box;margin:0;padding:2px 4px;display:block;background:transparent;color:inherit;border:1px solid #444;resize:vertical;font-family:inherit;font-size:inherit;line-height:1.2;" rows="3" autocomplete="off" autofocus></textarea>' +
             '</form>';
         
         if (rows.length === 0) {
-            htmlOutput += '<p style="margin:0;padding:4px 0;line-height:1.2;">The file is currently empty.</p>';
+            htmlOutput += '<p style="margin:0;padding:4px 0;line-height:1.2;">The note is currently empty.</p>';
         } else {
             htmlOutput += '<ul style="list-style-type:none;padding:0;margin:0;">';
             const reversedRows = [...rows].reverse();
@@ -141,8 +141,8 @@ const Edit = {
     },
 
     attachEventListeners: function() {
-        const form = document.getElementById('file-append-form');
-        const inputEl = document.getElementById('file-new-row-input');
+        const form = document.getElementById('note-append-form');
+        const inputEl = document.getElementById('note-new-row-input');
 
         if (form && inputEl) {
             this.boundSubmitHandler = this.handleFormSubmit.bind(this);
@@ -168,14 +168,14 @@ const Edit = {
      */
     handleFormSubmit: async function(e) {
         e.preventDefault();
-        const inputEl = document.getElementById('file-new-row-input');
+        const inputEl = document.getElementById('note-new-row-input');
         
         const newRecord = inputEl.value.trim();
         if (!newRecord) return;
 
         const originalText = inputEl.value;
         inputEl.disabled = true;
-        inputEl.value = 'Writing to file...';
+        inputEl.value = 'Writing to note...';
 
         try {
             const result = await this.apiCall({
@@ -200,9 +200,9 @@ const Edit = {
     },
 
     unload: function() {
-        const authForm = document.getElementById('file-auth-form');
-        const appendForm = document.getElementById('file-append-form');
-        const inputEl = document.getElementById('file-new-row-input');
+        const authForm = document.getElementById('note-auth-form');
+        const appendForm = document.getElementById('note-append-form');
+        const inputEl = document.getElementById('note-new-row-input');
 
         if (authForm && this.boundPasswordHandler) {
             authForm.removeEventListener('submit', this.boundPasswordHandler);
@@ -227,4 +227,4 @@ const Edit = {
     }
 };
 
-export default Edit;
+export default Note;
