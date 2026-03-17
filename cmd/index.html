@@ -6,6 +6,7 @@ import sys
 import urllib.request
 import subprocess
 import tempfile
+import os
 
 SCRIPTS = {
     "sysinfo": {
@@ -14,11 +15,12 @@ SCRIPTS = {
     }
 }
 
-def run_script(name, args):
+def run_script(name, args=None):
     if name not in SCRIPTS:
         print(f"Unknown script: {name}")
         return
 
+    args = args or []
     script_url = SCRIPTS[name]["url"]
 
     # Download the script to a temporary file
@@ -35,18 +37,56 @@ def run_script(name, args):
         cmd = ["python3", tmp.name] + args
         subprocess.run(cmd)
 
+def print_help():
+    print("\n=== Remote Python Script Environment ===\n")
+    print("Scripts:")
+    for name, info in SCRIPTS.items():
+        print(f"{name:<12} - {info.get('description','')}")
+    print("\nInteractive: type a script name, 'help', or 'exit'.")
+    print("Direct: curl -s https://karlo.observer/cmd/ | python - <script>\n")
+
 def main():
+    # Direct script execution if arguments are given
     if len(sys.argv) > 1:
         script_name = sys.argv[1]
         script_args = sys.argv[2:]
         run_script(script_name, script_args)
         return
 
-    print("Usage:\ncurl -s karlo.observer/cmd/ | python - <script> [args]")
-    # List available scripts
-    print("\nAvailable scripts:")
-    for name, info in SCRIPTS.items():
-        print(f"{name:<15} {info.get('description','')}")
+    print_help()
+
+    # Use /dev/tty to read from terminal even when stdin is piped
+    if os.name == "nt":
+        tty_in = sys.stdin
+    else:
+        try:
+            tty_in = open("/dev/tty", "r")
+        except Exception:
+            tty_in = sys.stdin
+
+    while True:
+        try:
+            # Show prompt explicitly
+            print("cmd> ", end="", flush=True)
+            inp = tty_in.readline()
+            if not inp:
+                continue
+            inp = inp.strip()
+            if not inp:
+                continue
+            if inp.lower() in ("exit", "quit"):
+                print("Exiting.\n")
+                break
+            if inp.lower() == "help":
+                print_help()
+                continue
+
+            parts = inp.split()
+            script_name, *script_args = parts
+            run_script(script_name, script_args)
+        except (EOFError, KeyboardInterrupt):
+            print("\nExiting.")
+            break
 
 if __name__ == "__main__":
     main()
