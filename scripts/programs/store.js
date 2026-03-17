@@ -132,9 +132,9 @@ const StoreProgram = {
                     hour: '2-digit',
                     minute: '2-digit'
                 });
-                htmlOutput += `<li style="padding:4px 0;margin:0;border-top:1px solid #333;line-height:1.3;display:flex;justify-content:space-between;">
-                    <span class="store-download-link" data-id="${file.id}" data-name="${escapeHtml(file.name)}" style="text-decoration:underline;cursor:pointer;">${escapeHtml(file.name)}</span>
-                    <span style="color:#666;font-size:0.85em;">${dateTimeStr}</span>
+                htmlOutput += `<li style="padding:4px 0;margin:0;border-top:1px solid #333;line-height:1.3;display:flex;justify-content:space-between;align-items:center;overflow:hidden;">
+                    <span class="store-download-link" data-id="${file.id}" data-name="${escapeHtml(file.name)}" style="text-decoration:underline;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;margin-right:12px;">${escapeHtml(file.name)}</span>
+                    <span style="color:#666;font-size:0.85em;flex-shrink:0;white-space:nowrap;">${dateTimeStr}</span>
                 </li>`;
             });
             htmlOutput += '</ul>';
