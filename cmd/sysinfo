@@ -126,5 +126,8 @@ def main():
     print()
 
 
+def run(args=None):
+    main()
+
 if __name__ == "__main__":
     main()
