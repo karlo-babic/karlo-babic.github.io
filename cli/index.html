@@ -1,4 +1,4 @@
-### Usage ### <body style="background-color:#111;color:#eee;"><p><code style="user-select: all;">curl -s karlo.observer/cli/ | python</code></p></body> <!--
+### Usage ### <p><code style="user-select: all;">curl -s karlo.observer/cli/ | python</code></p> <!--
 
 #!/usr/bin/env python3
 
@@ -57,14 +57,15 @@ def run_script(name, args=None):
         subprocess.run(cmd)
 
 def print_help():
-    print("\n=== Remote Python Script Environment ===\n")
-    print("Scripts:")
+    print("\nScripts:")
     for name, info in SCRIPTS.items():
         print(f"{name:<12} - {info.get('description','')}")
     print("\nInteractive: type a script name, 'help', or 'exit'.")
     print("Direct: curl -s karlo.observer/cli/ | python - <script>\n")
 
 def main():
+    print("\n=== Remote Python Script Environment ===")
+
     # Direct script execution if arguments are given
     if len(sys.argv) > 1:
         script_name = sys.argv[1]
@@ -96,8 +97,25 @@ def main():
             if inp.lower() in ("exit", "quit"):
                 print("Exiting.\n")
                 break
-            if inp.lower() == "help":
-                print_help()
+            if inp.lower().startswith("help"):
+                parts = shlex.split(inp)
+                if len(parts) == 1:
+                    # just 'help': show general help
+                    print_help()
+                else:
+                    # 'help <script>'
+                    script_name = parts[1]
+                    info = SCRIPTS.get(script_name)
+                    if not info:
+                        print(f"No help available for unknown script '{script_name}'")
+                    else:
+                        print(f"\n{script_name} - {info.get('description','')}")
+                        args = info.get("args", [])
+                        if args:
+                            print("Arguments:")
+                            for arg in args:
+                                print(f"  {arg.get('name','')} : {arg.get('description','')}")
+                        print()
                 continue
 
             parts = shlex.split(inp)
