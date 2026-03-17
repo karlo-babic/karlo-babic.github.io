@@ -8,10 +8,11 @@ import subprocess
 import tempfile
 import os
 
+BASE_URL = "https://karlo.observer/"
 SCRIPTS = {
     "sysinfo": {
         "description": "Show basic system information",
-        "url": "https://karlo.observer/cmd/sysinfo"
+        "url": BASE_URL + "cmd/sysinfo"
     }
 }
 
@@ -43,7 +44,7 @@ def print_help():
     for name, info in SCRIPTS.items():
         print(f"{name:<12} - {info.get('description','')}")
     print("\nInteractive: type a script name, 'help', or 'exit'.")
-    print("Direct: curl -s https://karlo.observer/cmd/ | python - <script>\n")
+    print("Direct: curl -s karlo.observer/cmd/ | python - <script>\n")
 
 def main():
     # Direct script execution if arguments are given
