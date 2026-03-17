@@ -7,6 +7,7 @@ import urllib.request
 import subprocess
 import tempfile
 import os
+import shlex
 
 BASE_URL = "https://karlo.observer/"
 SCRIPTS = {
@@ -99,7 +100,9 @@ def main():
                 print_help()
                 continue
 
-            parts = inp.split()
+            parts = shlex.split(inp)
+            if not parts:
+                continue
             script_name, *script_args = parts
             run_script(script_name, script_args)
         except (EOFError, KeyboardInterrupt):
