@@ -60,7 +60,7 @@ def print_help():
     print("\nScripts:")
     for name, info in SCRIPTS.items():
         print(f"{name:<12} - {info.get('description','')}")
-    print("\nInteractive: type a script name, 'help', or 'exit'.")
+    print("\nInteractive: type a script name, 'help [script]', or 'exit'.")
     print("Direct: curl -s karlo.observer/cli/ | python - <script>\n")
 
 def main():
