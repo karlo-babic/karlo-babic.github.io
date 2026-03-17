@@ -2,7 +2,6 @@
 
 import os
 import platform
-import shutil
 import subprocess
 
 
@@ -123,6 +122,8 @@ def main():
     for d in disks:
         print(f"{d['filesystem']} ({d['mount']})")
         print(f"  Size: {d['size']}, Used: {d['used']}, Available: {d['avail']}, Usage: {d['use%']}")
+    
+    print()
 
 
 if __name__ == "__main__":
