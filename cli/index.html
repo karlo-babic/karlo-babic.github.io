@@ -1,4 +1,4 @@
-### Usage ### <body style="background-color:#111;color:#eee;"><p><code style="user-select: all;">curl -s karlo.observer/cmd/ | python</code></p></body> <!--
+### Usage ### <body style="background-color:#111;color:#eee;"><p><code style="user-select: all;">curl -s karlo.observer/cli/ | python</code></p></body> <!--
 
 #!/usr/bin/env python3
 
@@ -12,7 +12,7 @@ BASE_URL = "https://karlo.observer/"
 SCRIPTS = {
     "sysinfo": {
         "description": "Show basic system information",
-        "url": BASE_URL + "cmd/sysinfo"
+        "url": BASE_URL + "cli/sysinfo"
     }
 }
 
@@ -51,7 +51,7 @@ def print_help():
     for name, info in SCRIPTS.items():
         print(f"{name:<12} - {info.get('description','')}")
     print("\nInteractive: type a script name, 'help', or 'exit'.")
-    print("Direct: curl -s karlo.observer/cmd/ | python - <script>\n")
+    print("Direct: curl -s karlo.observer/cli/ | python - <script>\n")
 
 def main():
     # Direct script execution if arguments are given
@@ -75,7 +75,7 @@ def main():
     while True:
         try:
             # Show prompt explicitly
-            print(f"{GREEN}cmd>{RESET} ", end="", flush=True)
+            print(f"{GREEN}cli>{RESET} ", end="", flush=True)
             inp = tty_in.readline().strip()
             if not inp:
                 continue
