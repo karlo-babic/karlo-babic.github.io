@@ -65,8 +65,8 @@ def print_help():
         print(f"{name:<12} - {info.get('description','')}")
     print("\nInteractive: type a script name, 'help [script]', or 'exit'.")
     print("Direct:")
-    print("  Linux/macOS: curl -s https://karlo.observer/cli/ | python3")
-    print("  Windows:     curl.exe -s https://karlo.observer/cli/ | python3\n")
+    print("  Linux/macOS: curl -s https://karlo.observer/cli/ | python3 - <script>")
+    print("  Windows:     curl.exe -s https://karlo.observer/cli/ | python3 - <script>\n")
 
 def main():
     print("\n=== Remote Python Script Environment ===")
@@ -80,23 +80,27 @@ def main():
 
     print_help()
 
-    try:
-        if os.name == "nt":
-            tty_in = open("CON", "r")
-        else:
-            tty_in = open("/dev/tty", "r")
-    except Exception:
-        tty_in = sys.stdin
+    use_input = sys.stdin.isatty()
+
+    if not use_input:
+        try:
+            if os.name == "nt":
+                tty_in = open("CON", "r")
+            else:
+                tty_in = open("/dev/tty", "r")
+        except Exception:
+            tty_in = sys.stdin
 
     while True:
         try:
-            print(f"{GREEN}cli>{RESET} ", end="", flush=True)
-            inp = tty_in.readline()
-
-            if not inp:
-                continue
-
-            inp = inp.strip()
+            if use_input:
+                inp = input(f"{GREEN}cli>{RESET} ").strip()
+            else:
+                print(f"{GREEN}cli>{RESET} ", end="", flush=True)
+                inp = tty_in.readline()
+                if not inp:
+                    continue
+                inp = inp.strip()
 
             if inp.lower() in ("exit", "quit"):
                 print("Exiting.\n")
