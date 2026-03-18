@@ -138,7 +138,7 @@ def main():
         print(f"Error: The directory '{root_dir}' does not exist.")
         sys.exit(1)
 
-    print(f"Scanning: {root_dir}")
+    print(f"\nScanning: {root_dir}")
     if allowed_extensions:
         print(f"Filtering for extensions: {', '.join(allowed_extensions)}")
     else:
@@ -147,7 +147,7 @@ def main():
     files = collect_files(root_dir, allowed_extensions)
     write_output(root_dir, files, output_file)
     
-    print(f"Done. Exported {len(files)} files to {output_file}")
+    print(f"Done. Exported {len(files)} files to {output_file}\n")
 
 
 if __name__ == "__main__":

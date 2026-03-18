@@ -88,14 +88,14 @@ def print_help():
     print("  Windows:     curl.exe -s https://karlo.observer/cli/ | python3 - <script>\n")
 
 def main():
-    print("\n=== Remote Python Script Environment ===")
-
     # Direct script execution if arguments are given
     if len(sys.argv) > 1:
         script_name = sys.argv[1]
         script_args = sys.argv[2:]
         run_script(script_name, script_args)
         return
+
+    print("\n=== Remote Python Script Environment ===")
 
     print_help()
 
