@@ -1,4 +1,4 @@
-### Usage ### <p><code style="user-select: all;">curl -s karlo.observer/cli/ | python</code></p> <!--
+### Usage ### <p>Linux/macOS: <code style="user-select: all;">curl -s https://karlo.observer/cli/ | python3</code></p><p>Windows: <code style="user-select: all;">curl.exe -s https://karlo.observer/cli/ | python3</code></p> <!--
 
 #!/usr/bin/env python3
 
@@ -27,12 +27,15 @@ SCRIPTS = {
     }
 }
 
-# ANSI escape codes
-RED = "\033[31m"
-GREEN = "\033[32m"
-YELLOW = "\033[33m"
-BLUE = "\033[34m"
-RESET = "\033[0m"
+# ANSI colors are disabled on Windows cmd for compatibility
+if os.name == "nt":
+    RED = GREEN = YELLOW = BLUE = RESET = ""
+else:
+    RED = "\033[31m"
+    GREEN = "\033[32m"
+    YELLOW = "\033[33m"
+    BLUE = "\033[34m"
+    RESET = "\033[0m"
 
 def run_script(name, args=None):
     if name not in SCRIPTS:
@@ -61,7 +64,9 @@ def print_help():
     for name, info in SCRIPTS.items():
         print(f"{name:<12} - {info.get('description','')}")
     print("\nInteractive: type a script name, 'help [script]', or 'exit'.")
-    print("Direct: curl -s karlo.observer/cli/ | python - <script>\n")
+    print("Direct:")
+    print("  Linux/macOS: curl -s https://karlo.observer/cli/ | python3")
+    print("  Windows:     curl.exe -s https://karlo.observer/cli/ | python3\n")
 
 def main():
     print("\n=== Remote Python Script Environment ===")
@@ -75,35 +80,33 @@ def main():
 
     print_help()
 
-    # Use /dev/tty to read from terminal even when stdin is piped
-    if os.name == "nt":
-        tty_in = sys.stdin
-    else:
-        try:
+    try:
+        if os.name == "nt":
+            tty_in = open("CON", "r")
+        else:
             tty_in = open("/dev/tty", "r")
-        except Exception:
-            tty_in = sys.stdin
+    except Exception:
+        tty_in = sys.stdin
 
     while True:
         try:
-            # Show prompt explicitly
             print(f"{GREEN}cli>{RESET} ", end="", flush=True)
-            inp = tty_in.readline().strip()
+            inp = tty_in.readline()
+
             if not inp:
                 continue
+
             inp = inp.strip()
-            if not inp:
-                continue
+
             if inp.lower() in ("exit", "quit"):
                 print("Exiting.\n")
                 break
+
             if inp.lower().startswith("help"):
                 parts = shlex.split(inp)
                 if len(parts) == 1:
-                    # just 'help': show general help
                     print_help()
                 else:
-                    # 'help <script>'
                     script_name = parts[1]
                     info = SCRIPTS.get(script_name)
                     if not info:
@@ -121,8 +124,10 @@ def main():
             parts = shlex.split(inp)
             if not parts:
                 continue
+
             script_name, *script_args = parts
             run_script(script_name, script_args)
+
         except (EOFError, KeyboardInterrupt):
             print("\nExiting.\n")
             break
