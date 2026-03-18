@@ -10,6 +10,7 @@ import os
 import shlex
 
 BASE_URL = "https://karlo.observer/"
+
 SCRIPTS = {
     "sysinfo": {
         "description": "Show basic system information",
@@ -24,7 +25,25 @@ SCRIPTS = {
                 "description": "Path to the EPUB file to convert"
             }
         ]
-    }
+    },
+    "bundle": {
+        "description": "Bundle a directory structure and file contents into a single text file (useful for LLM context)",
+        "url": BASE_URL + "cli/bundle",
+        "args": [
+            {
+                "name": "output_file",
+                "description": "Path where the bundled text file will be saved"
+            },
+            {
+                "name": "root_dir",
+                "description": "Path to the source directory to scan"
+            },
+            {
+                "name": "extensions",
+                "description": "Optional: Specific extensions to include (e.g., .py .js). If omitted, uses default exclusion list."
+            }
+        ]
+    },
 }
 
 # ANSI colors are disabled on Windows cmd for compatibility
