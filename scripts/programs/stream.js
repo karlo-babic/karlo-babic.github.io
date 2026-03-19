@@ -1,19 +1,21 @@
 /**
  * Stream.js
  * A deterministic, synchronous generative text broadcast.
- * Uses a Reverse Context Trie with Katz Backoff to ensure high grammatical accuracy 
- * while maintaining absolute resilience against dead ends.
+ * Uses a Reverse Context Trie with Katz Backoff for grammatically coherent text generation.
+ * 
+ * Synchronization Architecture:
+ * Employs a Stateless Deterministic Time-Sync model. Time is divided into fixed blocks 
+ * of a predetermined number of steps. The block ID serves as the PRNG seed, ensuring that 
+ * any client calculating the elapsed time since the EPOCH will predictably construct 
+ * the exact same internal context and output without communicating with a server.
  */
 
 const Stream = {
-    // --- Configuration ---
     DATA_PATH: './data/ngrams.json',
     TICK_MS: 180,              
-    WORDS_PER_BLOCK: 200,      
-    CHUNK_STEPS: 5000,         // History depth before forcing a complete PRNG reset
-    EPOCH: 1709251200000,      
+    STEPS_PER_BLOCK: 300,      // Number of tokens before a hard visual and logical reset
+    EPOCH: 1709251200000,
 
-    // --- State ---
     screenEl: null,
     data: null,
     currentInterval: null,
@@ -21,9 +23,8 @@ const Stream = {
     currentContext: [],
     tokenBuffer: [],
     capitalizeNext: true,
-    visibleWords: 0,
-    needsClear: false,
     rng: null,
+    currentGlobalStep: 0,
 
     seededRandom: function(seed) {
         return function() {
@@ -59,10 +60,9 @@ const Stream = {
         }
     },
 
-    // ==========================================
-    // GLOBAL BROADCAST MODE
-    // ==========================================
-
+    /**
+     * Bootstraps the global broadcast loop based on time elapsed since the EPOCH.
+     */
     startGlobal: function() {
         const now = Date.now();
         const targetStep = Math.floor((now - this.EPOCH) / this.TICK_MS);
@@ -78,36 +78,24 @@ const Stream = {
         }, delay);
     },
 
+    /**
+     * Determines the current block and fast-forwards the Markov chain internally
+     * so that the visible output exactly matches the ongoing global stream.
+     */
     fastForwardTo: function(targetStep) {
-        const chunkID = Math.floor(targetStep / this.CHUNK_STEPS);
-        const stepInChunk = targetStep % this.CHUNK_STEPS;
+        const blockID = Math.floor(targetStep / this.STEPS_PER_BLOCK);
+        const stepInBlock = targetStep % this.STEPS_PER_BLOCK;
 
         this.currentContext = [];
         this.tokenBuffer = [];
-        this.visibleWords = 0;
         this.capitalizeNext = true;
-        this.needsClear = false;
         
         let renderBuffer = [];
-        this.rng = this.seededRandom(chunkID);
+        this.rng = this.seededRandom(blockID);
 
-        for (let i = 0; i <= stepInChunk; i++) {
-            if (this.needsClear) {
-                renderBuffer = [];
-                this.visibleWords = 0;
-                this.capitalizeNext = true;
-                this.needsClear = false;
-            }
-
+        for (let i = 0; i <= stepInBlock; i++) {
             const token = this.getNextToken(this.rng);
-            const isPunct = /^[.,!?]$/.test(token);
-            if (!isPunct) this.visibleWords++;
-
             renderBuffer.push({ token, isFirst: renderBuffer.length === 0 });
-
-            if (this.visibleWords >= this.WORDS_PER_BLOCK && /^[.!?]$/.test(token)) {
-                this.needsClear = true;
-            }
         }
 
         this.screenEl.innerHTML = '';
@@ -115,10 +103,13 @@ const Stream = {
         this.currentGlobalStep = targetStep;
     },
 
+    /**
+     * Evaluates the active time sync and appends new tokens. Includes a drift
+     * catch-up mechanic in case the browser throttles background tabs.
+     */
     runGlobalTick: function() {
         const targetStep = Math.floor((Date.now() - this.EPOCH) / this.TICK_MS);
         
-        // Handle tab backgrounding / interval drift
         if (targetStep - this.currentGlobalStep > 10) {
             this.fastForwardTo(targetStep);
             return;
@@ -126,58 +117,38 @@ const Stream = {
 
         while (this.currentGlobalStep < targetStep) {
             this.currentGlobalStep++;
-            const stepInChunk = this.currentGlobalStep % this.CHUNK_STEPS;
+            const stepInBlock = this.currentGlobalStep % this.STEPS_PER_BLOCK;
 
-            // Soft reset to prevent sequence length from drifting to infinity
-            if (stepInChunk === 0) {
-                const chunkID = Math.floor(this.currentGlobalStep / this.CHUNK_STEPS);
+            // Enforce a hard checkpoint at the start of every block
+            if (stepInBlock === 0) {
+                const blockID = Math.floor(this.currentGlobalStep / this.STEPS_PER_BLOCK);
                 this.screenEl.innerHTML = '';
                 this.currentContext = [];
                 this.tokenBuffer = [];
-                this.rng = this.seededRandom(chunkID);
-                this.visibleWords = 0;
+                this.rng = this.seededRandom(blockID);
                 this.capitalizeNext = true;
-                this.needsClear = false;
-            }
-
-            if (this.needsClear) {
-                this.screenEl.innerHTML = '';
-                this.visibleWords = 0;
-                this.capitalizeNext = true;
-                this.needsClear = false;
             }
 
             const token = this.getNextToken(this.rng);
-            const isPunct = /^[.,!?]$/.test(token);
-            if (!isPunct) this.visibleWords++;
-
             const isFirst = this.screenEl.childNodes.length === 0;
             this.appendToken(token, isFirst);
-
-            if (this.visibleWords >= this.WORDS_PER_BLOCK && /^[.!?]$/.test(token)) {
-                this.needsClear = true; // Clears visual state on the NEXT tick so period is seen
-            }
         }
     },
 
-    // ==========================================
-    // LOCAL ONE-SHOT MODE
-    // ==========================================
-
+    /**
+     * Initiates an offline, isolated generation sequence utilizing user-provided context.
+     */
     startLocal: function(customPrompt) {
         this.screenEl.innerHTML = '';
         this.currentContext = [];
         this.tokenBuffer = [];
-        this.visibleWords = 0;
+        let localStepCount = 0;
         
         const { v: vocab } = this.data;
         const words = customPrompt.toLowerCase().match(/[\w']+|[.,!?]/g) || [];
         
-        // Print and process initial prompt
         words.forEach((w, i) => {
             this.appendToken(w, i === 0);
-            if (!/^[.,!?]$/.test(w)) this.visibleWords++;
-            
             const id = vocab.indexOf(w);
             if (id !== -1) {
                 this.currentContext.push(id);
@@ -187,32 +158,24 @@ const Stream = {
 
         const lastWord = words[words.length - 1] || ".";
         this.capitalizeNext = /^[.!?]$/.test(lastWord);
-        
         this.rng = Math.random;
 
         this.currentInterval = setInterval(() => {
             const token = this.getNextToken(this.rng);
-            const isPunct = /^[.,!?]$/.test(token);
-            if (!isPunct) this.visibleWords++;
-
             this.appendToken(token, false);
+            localStepCount++;
 
-            if (this.visibleWords >= this.WORDS_PER_BLOCK && /^[.!?]$/.test(token)) {
+            if (localStepCount >= this.STEPS_PER_BLOCK) {
                 clearInterval(this.currentInterval);
                 this.currentInterval = null;
-                
-                const eof = document.createElement('span');
-                eof.textContent = " [EOF]";
-                eof.style.opacity = "0.5";
-                this.screenEl.appendChild(eof);
             }
         }, this.TICK_MS);
     },
 
-    // ==========================================
-    // N-GRAM CORE
-    // ==========================================
-
+    /**
+     * Queries the N-gram trie using the current context sequence. 
+     * Applies Katz Backoff if exact history match is unavailable.
+     */
     getNextToken: function(rng) {
         if (this.tokenBuffer.length > 0) {
             return this.tokenBuffer.shift();
