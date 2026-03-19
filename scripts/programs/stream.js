@@ -1,3 +1,4 @@
+// stream.js
 /**
  * Stream.js
  * A deterministic, synchronous generative text broadcast.
@@ -19,6 +20,7 @@ const Stream = {
     
     // Logic State
     currentContext: [],
+    tokenBuffer: [],
     capitalizeNext: true,
 
     /**
@@ -66,7 +68,9 @@ const Stream = {
 
         // Recreate the block history from the deterministic seed
         this.currentContext = []; 
+        this.tokenBuffer = [];
         const rng = this.seededRandom(blockID);
+
         for (let i = 0; i <= stepInBlock; i++) {
             const token = this.getNextToken(rng);
             this.appendToken(token, i === 0);
@@ -96,6 +100,7 @@ const Stream = {
         }
 
         this.currentContext = []; 
+        this.tokenBuffer = [];
         const rng = this.seededRandom(blockID);
         
         let token = "";
@@ -112,14 +117,21 @@ const Stream = {
      * the nested model tree using weighted probabilities.
      */
     getNextToken: function(rng) {
+        // Drain any remaining words buffered during a context reset
+        if (this.tokenBuffer.length > 0) {
+            return this.tokenBuffer.shift();
+        }
+
         const { m: model, v: vocab, s: starters } = this.data;
         const maxContextLen = starters[0].length;
 
-        // Reset to a random starter sequence if context is empty or exhausted
         const resetContext = () => {
             const starterSeq = starters[Math.floor(rng() * starters.length)];
             this.currentContext = [...starterSeq];
-            return vocab[this.currentContext[this.currentContext.length - 1]];
+            
+            // Buffer the full sequence so the visible text matches the internal state
+            this.tokenBuffer = this.currentContext.map(id => vocab[id]);
+            return this.tokenBuffer.shift();
         };
 
         if (this.currentContext.length < maxContextLen) {
@@ -174,17 +186,18 @@ const Stream = {
         const isPunct = /^[.,!?]$/.test(token);
         let out = "";
 
+        // Standard English spacing: Space before words, no space before punctuation
+        if (!isFirstInBlock && !isPunct) {
+            out += " ";
+        }
+
         if (isPunct) {
-            out = token;
-            this.capitalizeNext = (/[.!?]/.test(token));
+            out += token;
+            this.capitalizeNext = /^[.!?]$/.test(token);
         } else {
-            if (!isFirstInBlock) out += " ";
-            
-            let word = (this.capitalizeNext || token === 'i') 
+            out += (this.capitalizeNext || token === 'i') 
                 ? token.charAt(0).toUpperCase() + token.slice(1) 
                 : token;
-            
-            out += word;
             this.capitalizeNext = false;
         }
 
@@ -198,6 +211,7 @@ const Stream = {
         if (this.currentInterval) clearInterval(this.currentInterval);
         this.data = null;
         this.currentContext = [];
+        this.tokenBuffer = [];
     },
 
     onResize: function() {
