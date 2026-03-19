@@ -45,6 +45,11 @@
         "usage": "radio [id]",
         "details": "Generates real-time 8-bit music using algorithmic composition and chiptune synthesis.\n\nSubcommands/Arguments:\n  id            Displays the current station ID and copies it to the clipboard.\n  [number]      Tunes to a specific station ID and remains on that song."
     },
+    "stream": {
+        "description": "A synchronous generative text broadcast based on n-gram language modeling (trained on books I like).",
+        "usage": "stream [optional initial text]",
+        "details": "When run without arguments, connects to a globally synchronized timeline where all users observe the exact same procedural text being generated simultaneously.\n\nWhen provided with text arguments, detaches from the global broadcast and generates a single custom block continuing from your prompt."
+    },
     "img": {
         "description": "Displays a random image based on a specified topic.",
         "usage": "img [topic]",
