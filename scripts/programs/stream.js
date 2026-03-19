@@ -33,7 +33,7 @@ const Stream = {
         };
     },
 
-    init: async function(screenEl, args) {
+    init: async function(screenEl) {
         this.screenEl = screenEl;
         
         // Terminal Styling
@@ -61,19 +61,17 @@ const Stream = {
         const blockID = Math.floor(totalSteps / this.WORDS_PER_BLOCK);
         const stepInBlock = totalSteps % this.WORDS_PER_BLOCK;
 
-        // "Catch up" logic: Deterministically recreate the block history
-        // so a joining client has the exact same context as a persistent client.
         this.screenEl.innerHTML = '';
-        this.currentContext = [];
         this.capitalizeNext = true;
 
+        // Recreate the block history from the deterministic seed
+        this.currentContext = []; 
         const rng = this.seededRandom(blockID);
         for (let i = 0; i <= stepInBlock; i++) {
             const token = this.getNextToken(rng);
             this.appendToken(token, i === 0);
         }
 
-        // Precise alignment with the next global tick
         const nextTick = (totalSteps + 1) * this.TICK_MS + this.EPOCH;
         const delay = nextTick - Date.now();
 
@@ -84,22 +82,22 @@ const Stream = {
     },
 
     /**
-     * Advances the generator by one step.
+     * Advances the generator by one step, re-simulating from block start to 
+     * maintain perfect synchronization across all client clocks.
      */
     runTick: function() {
         const totalSteps = Math.floor((Date.now() - this.EPOCH) / this.TICK_MS);
         const blockID = Math.floor(totalSteps / this.WORDS_PER_BLOCK);
         const stepInBlock = totalSteps % this.WORDS_PER_BLOCK;
 
-        // Reset paragraph on block boundaries
         if (stepInBlock === 0) {
             this.screenEl.innerHTML = '';
-            this.currentContext = [];
             this.capitalizeNext = true;
         }
 
-        // Re-simulate from block start to ensure context is perfectly synced
+        this.currentContext = []; 
         const rng = this.seededRandom(blockID);
+        
         let token = "";
         for (let i = 0; i <= stepInBlock; i++) {
             token = this.getNextToken(rng);
@@ -109,13 +107,27 @@ const Stream = {
     },
 
     /**
-     * Deterministic n-gram selection.
+     * Deterministic n-gram selection. 
+     * Uses a full starter sequence to bootstrap context and then navigates
+     * the nested model tree using weighted probabilities.
      */
     getNextToken: function(rng) {
         const { m: model, v: vocab, s: starters } = this.data;
-        let predictions = model;
+        const maxContextLen = starters[0].length;
 
-        // Drill down into nested map based on current context
+        // Reset to a random starter sequence if context is empty or exhausted
+        const resetContext = () => {
+            const starterSeq = starters[Math.floor(rng() * starters.length)];
+            this.currentContext = [...starterSeq];
+            return vocab[this.currentContext[this.currentContext.length - 1]];
+        };
+
+        if (this.currentContext.length < maxContextLen) {
+            return resetContext();
+        }
+
+        // Traverse the nested model tree using the current context IDs
+        let predictions = model;
         for (const id of this.currentContext) {
             if (predictions && predictions[id]) {
                 predictions = predictions[id];
@@ -125,40 +137,38 @@ const Stream = {
             }
         }
 
-        let chosenId;
+        // Verify we are at a leaf node (counts) rather than a branch (nested IDs)
+        const sampleVal = predictions ? Object.values(predictions)[0] : null;
+        const isValidLeaf = (typeof sampleVal === 'number');
 
-        // Use PRNG to handle branching paths or dead ends
-        if (!predictions || typeof predictions !== 'object' || Array.isArray(predictions)) {
-            const starterSeq = starters[Math.floor(rng() * starters.length)];
-            chosenId = starterSeq[0];
-            this.currentContext = [chosenId];
-        } else {
-            const keys = Object.keys(predictions);
-            const weights = Object.values(predictions);
-            const total = weights.reduce((a, b) => a + b, 0);
-            
-            let r = rng() * total;
-            let idx = 0;
-            for (let i = 0; i < weights.length; i++) {
-                r -= weights[i];
-                if (r <= 0) {
-                    idx = i;
-                    break;
-                }
-            }
-            chosenId = parseInt(keys[idx]);
-            
-            // Slide window context
-            const maxContext = starters[0].length;
-            this.currentContext.push(chosenId);
-            if (this.currentContext.length > maxContext) this.currentContext.shift();
+        if (!isValidLeaf) {
+            return resetContext();
         }
 
-        return vocab[chosenId];
+        // Standard weighted random selection
+        const keys = Object.keys(predictions);
+        const weights = Object.values(predictions);
+        const total = weights.reduce((a, b) => a + b, 0);
+        
+        let r = rng() * total;
+        let chosenId = keys[0];
+        for (let i = 0; i < weights.length; i++) {
+            r -= weights[i];
+            if (r <= 0) {
+                chosenId = keys[i];
+                break;
+            }
+        }
+
+        const finalId = parseInt(chosenId);
+        this.currentContext.push(finalId);
+        if (this.currentContext.length > maxContextLen) this.currentContext.shift();
+
+        return vocab[finalId];
     },
 
     /**
-     * Renders token to the screen with grammar and terminal scrolling.
+     * Renders token to the screen with grammar rules and terminal scrolling.
      */
     appendToken: function(token, isFirstInBlock) {
         const isPunct = /^[.,!?]$/.test(token);
@@ -170,7 +180,6 @@ const Stream = {
         } else {
             if (!isFirstInBlock) out += " ";
             
-            // Capitalize if it's the start of a sentence or the pronoun "i"
             let word = (this.capitalizeNext || token === 'i') 
                 ? token.charAt(0).toUpperCase() + token.slice(1) 
                 : token;
