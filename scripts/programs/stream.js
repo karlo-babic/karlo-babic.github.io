@@ -2,30 +2,26 @@
 /**
  * Stream.js
  * A deterministic, synchronous generative text broadcast.
- * Uses n-gram statistics and a global temporal clock to ensure every client 
- * sees the identical word sequence at the exact same time.
+ * Uses a Reverse Context Trie with Katz Backoff to ensure high grammatical accuracy 
+ * while maintaining absolute resilience against dead ends.
  */
 
 const Stream = {
     // --- Configuration ---
     DATA_PATH: './data/ngrams.json',
-    TICK_MS: 180,              // Speed of generation
-    WORDS_PER_BLOCK: 200,      // Max words before clearing paragraph
-    EPOCH: 1709251200000,      // Global Start: March 1, 2024
+    TICK_MS: 180,              
+    WORDS_PER_BLOCK: 200,      
+    EPOCH: 1709251200000,      
 
     // --- State ---
     screenEl: null,
     data: null,
     currentInterval: null,
     
-    // Logic State
     currentContext: [],
     tokenBuffer: [],
     capitalizeNext: true,
 
-    /**
-     * Mulberry32 PRNG for deterministic results across all clients.
-     */
     seededRandom: function(seed) {
         return function() {
             let t = seed += 0x6D2B79F5;
@@ -38,7 +34,6 @@ const Stream = {
     init: async function(screenEl) {
         this.screenEl = screenEl;
         
-        // Terminal Styling
         this.screenEl.style.overflowY = 'auto';
         this.screenEl.style.whiteSpace = 'pre-wrap';
         this.screenEl.style.wordBreak = 'break-word';
@@ -54,9 +49,6 @@ const Stream = {
         }
     },
 
-    /**
-     * Synchronizes local state with global time and begins the generation loop.
-     */
     start: function() {
         const now = Date.now();
         const totalSteps = Math.floor((now - this.EPOCH) / this.TICK_MS);
@@ -65,10 +57,9 @@ const Stream = {
 
         this.screenEl.innerHTML = '';
         this.capitalizeNext = true;
-
-        // Recreate the block history from the deterministic seed
         this.currentContext = []; 
         this.tokenBuffer = [];
+        
         const rng = this.seededRandom(blockID);
 
         for (let i = 0; i <= stepInBlock; i++) {
@@ -85,10 +76,6 @@ const Stream = {
         }, delay);
     },
 
-    /**
-     * Advances the generator by one step, re-simulating from block start to 
-     * maintain perfect synchronization across all client clocks.
-     */
     runTick: function() {
         const totalSteps = Math.floor((Date.now() - this.EPOCH) / this.TICK_MS);
         const blockID = Math.floor(totalSteps / this.WORDS_PER_BLOCK);
@@ -112,54 +99,53 @@ const Stream = {
     },
 
     /**
-     * Deterministic n-gram selection. 
-     * Uses a full starter sequence to bootstrap context and then navigates
-     * the nested model tree using weighted probabilities.
+     * Traverses the reverse context Trie. If a specific high-order N-gram does 
+     * not exist, it automatically falls back to lower-order combinations until 
+     * it finds valid predictions (Stupid Backoff).
      */
     getNextToken: function(rng) {
-        // Drain any remaining words buffered during a context reset
         if (this.tokenBuffer.length > 0) {
             return this.tokenBuffer.shift();
         }
 
         const { m: model, v: vocab, s: starters } = this.data;
-        const maxContextLen = starters[0].length;
 
         const resetContext = () => {
             const starterSeq = starters[Math.floor(rng() * starters.length)];
             this.currentContext = [...starterSeq];
-            
-            // Buffer the full sequence so the visible text matches the internal state
             this.tokenBuffer = this.currentContext.map(id => vocab[id]);
             return this.tokenBuffer.shift();
         };
 
-        if (this.currentContext.length < maxContextLen) {
+        if (this.currentContext.length === 0) {
             return resetContext();
         }
 
-        // Traverse the nested model tree using the current context IDs
-        let predictions = model;
-        for (const id of this.currentContext) {
-            if (predictions && predictions[id]) {
-                predictions = predictions[id];
+        let node = model;
+        let bestPredictions = null;
+
+        // Iterate context backwards to dive down the Trie
+        for (let i = this.currentContext.length - 1; i >= 0; i--) {
+            const id = this.currentContext[i];
+            
+            if (node[id]) {
+                node = node[id];
+                // "" is the spatial key for leaf node predictions
+                if (node[""]) {
+                    bestPredictions = node[""];
+                }
             } else {
-                predictions = null;
+                // Highest order n-gram branch broken, rely on last saved bestPredictions
                 break;
             }
         }
 
-        // Verify we are at a leaf node (counts) rather than a branch (nested IDs)
-        const sampleVal = predictions ? Object.values(predictions)[0] : null;
-        const isValidLeaf = (typeof sampleVal === 'number');
-
-        if (!isValidLeaf) {
+        if (!bestPredictions) {
             return resetContext();
         }
 
-        // Standard weighted random selection
-        const keys = Object.keys(predictions);
-        const weights = Object.values(predictions);
+        const keys = Object.keys(bestPredictions);
+        const weights = Object.values(bestPredictions);
         const total = weights.reduce((a, b) => a + b, 0);
         
         let r = rng() * total;
@@ -174,19 +160,19 @@ const Stream = {
 
         const finalId = parseInt(chosenId);
         this.currentContext.push(finalId);
-        if (this.currentContext.length > maxContextLen) this.currentContext.shift();
+        
+        // Prevent array bloating, bounded by practical N-gram depth max
+        if (this.currentContext.length > 10) {
+            this.currentContext.shift();
+        }
 
         return vocab[finalId];
     },
 
-    /**
-     * Renders token to the screen with grammar rules and terminal scrolling.
-     */
     appendToken: function(token, isFirstInBlock) {
         const isPunct = /^[.,!?]$/.test(token);
         let out = "";
 
-        // Standard English spacing: Space before words, no space before punctuation
         if (!isFirstInBlock && !isPunct) {
             out += " ";
         }
