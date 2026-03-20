@@ -12,9 +12,13 @@
 
 const Stream = {
     DATA_PATH: './data/ngrams.json',
-    TICK_MS: 180,              
-    STEPS_PER_BLOCK: 300,      // Number of tokens before a hard visual and logical reset
+    TICK_MS: 250,              
+    STEPS_PER_BLOCK: 200,      // Number of tokens before a hard visual and logical reset
     EPOCH: 1709251200000,
+
+    rouletteInterval: null,
+    currentCandidates: ["..."],
+    rouletteEl: null,
 
     screenEl: null,
     data: null,
@@ -44,6 +48,9 @@ const Stream = {
         this.screenEl.style.fontSize = '0.88rem';
         this.screenEl.style.lineHeight = '1.3';
 
+        this.rouletteEl = document.createElement('span');
+        this.rouletteEl.style.opacity = '0.4';
+
         const customPrompt = args.positional.length > 0 ? args.positional.join(' ').trim() : null;
 
         try {
@@ -55,6 +62,7 @@ const Stream = {
             } else {
                 this.startGlobal();
             }
+            this.startRoulette();
         } catch (err) {
             this.screenEl.innerHTML = `<p style="color:red">Broadcast Offline: Data missing.</p>`;
         }
@@ -101,6 +109,7 @@ const Stream = {
         this.screenEl.innerHTML = '';
         renderBuffer.forEach(item => this.appendToken(item.token, item.isFirst));
         this.currentGlobalStep = targetStep;
+        this.currentCandidates = this.peekCandidates();
     },
 
     /**
@@ -115,11 +124,11 @@ const Stream = {
             return;
         }
 
+        let updated = false;
         while (this.currentGlobalStep < targetStep) {
             this.currentGlobalStep++;
             const stepInBlock = this.currentGlobalStep % this.STEPS_PER_BLOCK;
 
-            // Enforce a hard checkpoint at the start of every block
             if (stepInBlock === 0) {
                 const blockID = Math.floor(this.currentGlobalStep / this.STEPS_PER_BLOCK);
                 this.screenEl.innerHTML = '';
@@ -130,8 +139,15 @@ const Stream = {
             }
 
             const token = this.getNextToken(this.rng);
-            const isFirst = this.screenEl.childNodes.length === 0;
+            const isFirst = this.screenEl.childNodes.length === 0 || 
+                           (this.screenEl.childNodes.length === 1 && this.screenEl.firstChild === this.rouletteEl);
+            
             this.appendToken(token, isFirst);
+            updated = true;
+        }
+
+        if (updated) {
+            this.currentCandidates = this.peekCandidates();
         }
     },
 
@@ -159,15 +175,24 @@ const Stream = {
         const lastWord = words[words.length - 1] || ".";
         this.capitalizeNext = /^[.!?]$/.test(lastWord);
         this.rng = Math.random;
+        this.currentCandidates = this.peekCandidates();
 
         this.currentInterval = setInterval(() => {
             const token = this.getNextToken(this.rng);
             this.appendToken(token, false);
+            this.currentCandidates = this.peekCandidates();
             localStepCount++;
 
             if (localStepCount >= this.STEPS_PER_BLOCK) {
                 clearInterval(this.currentInterval);
+                if (this.rouletteInterval) clearInterval(this.rouletteInterval);
                 this.currentInterval = null;
+                this.rouletteEl.textContent = '';
+                
+                const eof = document.createElement('span');
+                eof.textContent = " [EOF]";
+                eof.style.opacity = "0.5";
+                this.screenEl.appendChild(eof);
             }
         }, this.TICK_MS);
     },
@@ -256,15 +281,87 @@ const Stream = {
 
         const span = document.createElement('span');
         span.textContent = out;
-        this.screenEl.appendChild(span);
+        
+        if (this.rouletteEl && this.rouletteEl.parentNode === this.screenEl) {
+            this.screenEl.insertBefore(span, this.rouletteEl);
+        } else {
+            this.screenEl.appendChild(span);
+        }
+        
+        if (this.rouletteEl) {
+            this.screenEl.appendChild(this.rouletteEl);
+        }
+        
         this.screenEl.scrollTop = this.screenEl.scrollHeight;
+    },
+
+    /**
+     * Inspects the Markov trie based on the current context without advancing 
+     * the PRNG, returning the highest probability tokens for visual flair.
+     */
+    peekCandidates: function() {
+        if (!this.data || this.currentContext.length === 0) return ["..."];
+        
+        const { m: model, v: vocab } = this.data;
+        let node = model;
+        let bestPredictions = null;
+
+        for (let i = this.currentContext.length - 1; i >= 0; i--) {
+            const id = this.currentContext[i];
+            if (node[id]) {
+                node = node[id];
+                if (node[""]) bestPredictions = node[""];
+            } else {
+                break;
+            }
+        }
+
+        if (!bestPredictions) return ["..."];
+
+        const keys = Object.keys(bestPredictions);
+        const sorted = keys.sort((a, b) => bestPredictions[b] - bestPredictions[a]).slice(0, 5);
+        
+        return sorted.map(id => vocab[parseInt(id)]);
+    },
+
+    /**
+     * Independent visual loop that flashes potential words before they are locked in.
+     */
+    startRoulette: function() {
+        if (this.rouletteInterval) clearInterval(this.rouletteInterval);
+        
+        this.rouletteInterval = setInterval(() => {
+            if (!this.currentCandidates || this.currentCandidates.length === 0) return;
+            
+            const word = this.currentCandidates[Math.floor(Math.random() * this.currentCandidates.length)];
+            let out = "";
+            const isPunct = /^[.,!?]$/.test(word);
+            
+            const isFirstInBlock = this.screenEl.firstChild === this.rouletteEl || this.screenEl.childNodes.length === 0;
+
+            if (!isPunct && !isFirstInBlock) {
+                out += " ";
+            }
+
+            if (isPunct) {
+                out += word;
+            } else {
+                out += (this.capitalizeNext || word === 'i') 
+                    ? word.charAt(0).toUpperCase() + word.slice(1) 
+                    : word;
+            }
+            
+            this.rouletteEl.textContent = out;
+        }, 45);
     },
 
     unload: function() {
         if (this.currentInterval) clearInterval(this.currentInterval);
+        if (this.rouletteInterval) clearInterval(this.rouletteInterval);
         this.data = null;
         this.currentContext = [];
         this.tokenBuffer = [];
+        this.currentCandidates = [];
     },
 
     onResize: function() {
