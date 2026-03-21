@@ -16,7 +16,7 @@ const Stream = {
     TICK_MS: 250,              
     STEPS_PER_BLOCK: 200,      
     EPOCH: 1709251200000,
-    GRAVITY_MULTIPLIER: 100,   // Defines how heavily the active theme skews word selection
+    GRAVITY_MULTIPLIER: 2.5,   // Defines how heavily the active theme skews word selection
 
     VERBOSE: false,
 
