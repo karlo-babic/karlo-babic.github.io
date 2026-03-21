@@ -1,30 +1,36 @@
 /**
  * Stream.js
- * A deterministic, synchronous generative text broadcast.
- * Uses a Reverse Context Trie with Katz Backoff for grammatically coherent text generation.
+ * A deterministic, synchronous generative text broadcast using Dual-Track NLP.
  * 
- * Synchronization Architecture:
- * Employs a Stateless Deterministic Time-Sync model. Time is divided into fixed blocks 
- * of a predetermined number of steps. The block ID serves as the PRNG seed, ensuring that 
- * any client calculating the elapsed time since the EPOCH will predictably construct 
- * the exact same internal context and output without communicating with a server.
+ * Architecture:
+ * - Employs a Stateless Deterministic Time-Sync model seeded by EPOCH block IDs.
+ * - Utilizes an Ensemble Text Generation system:
+ *   1. Grammar Engine (v, g, s): Deep Katz Backoff Trie ensuring local syntax.
+ *   2. Theme Engine (t, ts): Macro Trie governing long-term topic progression.
+ *   3. Gravity Map (w): Intersects the two engines by applying vocabulary 
+ *      weight multipliers to grammatical candidates based on the active theme.
  */
 
 const Stream = {
     DATA_PATH: './data/ngrams.json',
     TICK_MS: 250,              
-    STEPS_PER_BLOCK: 200,      // Number of tokens before a hard visual and logical reset
+    STEPS_PER_BLOCK: 200,      
     EPOCH: 1709251200000,
+    GRAVITY_MULTIPLIER: 100,   // Defines how heavily the active theme skews word selection
+
+    VERBOSE: false,
 
     rouletteInterval: null,
     currentCandidates: ["..."],
     rouletteEl: null,
-
     screenEl: null,
     data: null,
     currentInterval: null,
     
-    currentContext: [],
+    currentWordContext: [],
+    currentThemeContext: [],
+    activeThemeID: null,
+    
     tokenBuffer: [],
     capitalizeNext: true,
     rng: null,
@@ -68,9 +74,6 @@ const Stream = {
         }
     },
 
-    /**
-     * Bootstraps the global broadcast loop based on time elapsed since the EPOCH.
-     */
     startGlobal: function() {
         const now = Date.now();
         const targetStep = Math.floor((now - this.EPOCH) / this.TICK_MS);
@@ -87,23 +90,29 @@ const Stream = {
     },
 
     /**
-     * Determines the current block and fast-forwards the Markov chain internally
-     * so that the visible output exactly matches the ongoing global stream.
+     * Rebuilds state instantly to match ongoing external broadcast timing.
      */
     fastForwardTo: function(targetStep) {
         const blockID = Math.floor(targetStep / this.STEPS_PER_BLOCK);
         const stepInBlock = targetStep % this.STEPS_PER_BLOCK;
 
-        this.currentContext = [];
+        this.currentWordContext = [];
+        this.currentThemeContext = [];
         this.tokenBuffer = [];
         this.capitalizeNext = true;
         
         let renderBuffer = [];
         this.rng = this.seededRandom(blockID);
 
+        this.resetThemeContext(this.rng);
+
         for (let i = 0; i <= stepInBlock; i++) {
             const token = this.getNextToken(this.rng);
             renderBuffer.push({ token, isFirst: renderBuffer.length === 0 });
+            
+            if (token === '.') {
+                this.advanceTheme(this.rng);
+            }
         }
 
         this.screenEl.innerHTML = '';
@@ -112,10 +121,6 @@ const Stream = {
         this.currentCandidates = this.peekCandidates();
     },
 
-    /**
-     * Evaluates the active time sync and appends new tokens. Includes a drift
-     * catch-up mechanic in case the browser throttles background tabs.
-     */
     runGlobalTick: function() {
         const targetStep = Math.floor((Date.now() - this.EPOCH) / this.TICK_MS);
         
@@ -132,10 +137,11 @@ const Stream = {
             if (stepInBlock === 0) {
                 const blockID = Math.floor(this.currentGlobalStep / this.STEPS_PER_BLOCK);
                 this.screenEl.innerHTML = '';
-                this.currentContext = [];
+                this.currentWordContext = [];
                 this.tokenBuffer = [];
                 this.rng = this.seededRandom(blockID);
                 this.capitalizeNext = true;
+                this.resetThemeContext(this.rng);
             }
 
             const token = this.getNextToken(this.rng);
@@ -144,6 +150,10 @@ const Stream = {
             
             this.appendToken(token, isFirst);
             updated = true;
+            
+            if (token === '.') {
+                this.advanceTheme(this.rng);
+            }
         }
 
         if (updated) {
@@ -151,30 +161,29 @@ const Stream = {
         }
     },
 
-    /**
-     * Initiates an offline, isolated generation sequence utilizing user-provided context.
-     */
     startLocal: function(customPrompt) {
         this.screenEl.innerHTML = '';
-        this.currentContext = [];
+        this.currentWordContext = [];
         this.tokenBuffer = [];
         let localStepCount = 0;
         
         const { v: vocab } = this.data;
-        const words = customPrompt.toLowerCase().match(/[\w']+|[.,!?]/g) || [];
+        const words = customPrompt.toLowerCase().match(/[a-z]+|\./g) || [];
         
         words.forEach((w, i) => {
             this.appendToken(w, i === 0);
             const id = vocab.indexOf(w);
             if (id !== -1) {
-                this.currentContext.push(id);
-                if (this.currentContext.length > 10) this.currentContext.shift();
+                this.currentWordContext.push(id);
+                if (this.currentWordContext.length > 10) this.currentWordContext.shift();
             }
         });
 
         const lastWord = words[words.length - 1] || ".";
-        this.capitalizeNext = /^[.!?]$/.test(lastWord);
+        this.capitalizeNext = lastWord === ".";
         this.rng = Math.random;
+        
+        this.resetThemeContext(this.rng);
         this.currentCandidates = this.peekCandidates();
 
         this.currentInterval = setInterval(() => {
@@ -182,6 +191,10 @@ const Stream = {
             this.appendToken(token, false);
             this.currentCandidates = this.peekCandidates();
             localStepCount++;
+
+            if (token === '.') {
+                this.advanceTheme(this.rng);
+            }
 
             if (localStepCount >= this.STEPS_PER_BLOCK) {
                 clearInterval(this.currentInterval);
@@ -197,34 +210,43 @@ const Stream = {
         }, this.TICK_MS);
     },
 
+    resetThemeContext: function(rng) {
+        const { ts: themeStarters, v: vocab } = this.data;
+        if (themeStarters.length > 0) {
+            const starterSeq = themeStarters[Math.floor(rng() * themeStarters.length)];
+            this.currentThemeContext = [...starterSeq];
+            this.activeThemeID = this.currentThemeContext[this.currentThemeContext.length - 1];
+            if (this.VERBOSE) console.log(`[Stream] Active Theme: ${vocab[this.activeThemeID]}`);
+        }
+    },
+
+    advanceTheme: function(rng) {
+        const { t: themeModel, v: vocab } = this.data;
+        const candidates = this.getPredictions(themeModel, this.currentThemeContext);
+        if (!candidates) {
+            this.resetThemeContext(rng);
+            return;
+        }
+
+        const chosenId = this.weightedRandomSelect(candidates, rng);
+        this.currentThemeContext.push(parseInt(chosenId));
+        this.activeThemeID = chosenId;
+        if (this.VERBOSE) console.log(`[Stream] Active Theme: ${vocab[this.activeThemeID]}`);
+        
+        if (this.currentThemeContext.length > 5) {
+            this.currentThemeContext.shift();
+        }
+    },
+
     /**
-     * Queries the N-gram trie using the current context sequence. 
-     * Applies Katz Backoff if exact history match is unavailable.
+     * Traverses a reverse-context Katz Backoff Trie.
      */
-    getNextToken: function(rng) {
-        if (this.tokenBuffer.length > 0) {
-            return this.tokenBuffer.shift();
-        }
-
-        const { m: model, v: vocab, s: starters } = this.data;
-
-        const resetContext = () => {
-            const starterSeq = starters[Math.floor(rng() * starters.length)];
-            this.currentContext = [...starterSeq];
-            this.tokenBuffer = this.currentContext.map(id => vocab[id]);
-            return this.tokenBuffer.shift();
-        };
-
-        if (this.currentContext.length === 0) {
-            return resetContext();
-        }
-
-        let node = model;
+    getPredictions: function(trieRoot, contextArray) {
+        let node = trieRoot;
         let bestPredictions = null;
 
-        for (let i = this.currentContext.length - 1; i >= 0; i--) {
-            const id = this.currentContext[i];
-            
+        for (let i = contextArray.length - 1; i >= 0; i--) {
+            const id = contextArray[i];
             if (node[id]) {
                 node = node[id];
                 if (node[""]) bestPredictions = node[""];
@@ -232,37 +254,74 @@ const Stream = {
                 break;
             }
         }
+        return bestPredictions;
+    },
 
-        if (!bestPredictions) {
-            return resetContext();
+    getNextToken: function(rng) {
+        if (this.tokenBuffer.length > 0) {
+            return this.tokenBuffer.shift();
         }
 
-        const keys = Object.keys(bestPredictions);
-        const weights = Object.values(bestPredictions);
-        const total = weights.reduce((a, b) => a + b, 0);
+        const { g: grammarModel, v: vocab, s: starters, w: gravityMap } = this.data;
+
+        if (this.currentWordContext.length === 0) {
+            const starterSeq = starters[Math.floor(rng() * starters.length)];
+            this.currentWordContext = [...starterSeq];
+            this.tokenBuffer = this.currentWordContext.map(id => vocab[id]);
+            return this.tokenBuffer.shift();
+        }
+
+        let candidates = this.getPredictions(grammarModel, this.currentWordContext);
+
+        if (!candidates) {
+            const starterSeq = starters[Math.floor(rng() * starters.length)];
+            this.currentWordContext = [...starterSeq];
+            this.tokenBuffer = this.currentWordContext.map(id => vocab[id]);
+            return this.tokenBuffer.shift();
+        }
+
+        let weightedCandidates = Object.assign({}, candidates);
         
-        let r = rng() * total;
-        let chosenId = keys[0];
-        for (let i = 0; i < weights.length; i++) {
-            r -= weights[i];
-            if (r <= 0) {
-                chosenId = keys[i];
-                break;
+        if (this.activeThemeID && gravityMap[this.activeThemeID]) {
+            const activeGravity = gravityMap[this.activeThemeID];
+            for (let wordId in weightedCandidates) {
+                if (activeGravity[wordId]) {
+                    weightedCandidates[wordId] += (weightedCandidates[wordId] * activeGravity[wordId] * this.GRAVITY_MULTIPLIER);
+                }
             }
         }
 
-        const finalId = parseInt(chosenId);
-        this.currentContext.push(finalId);
+        const chosenId = parseInt(this.weightedRandomSelect(weightedCandidates, rng));
+        this.currentWordContext.push(chosenId);
         
-        if (this.currentContext.length > 10) {
-            this.currentContext.shift();
+        if (this.currentWordContext.length > 10) {
+            this.currentWordContext.shift();
         }
 
-        return vocab[finalId];
+        return vocab[chosenId];
+    },
+
+    /**
+     * Keys are sorted numerically to guarantee deterministic traversal 
+     * regardless of browser engine key iteration order implementations.
+     */
+    weightedRandomSelect: function(predictionsMap, rng) {
+        const keys = Object.keys(predictionsMap).sort((a, b) => Number(a) - Number(b));
+        const weights = keys.map(k => predictionsMap[k]);
+        const total = weights.reduce((a, b) => a + b, 0);
+        
+        let r = rng() * total;
+        for (let i = 0; i < weights.length; i++) {
+            r -= weights[i];
+            if (r <= 0) {
+                return keys[i];
+            }
+        }
+        return keys[0];
     },
 
     appendToken: function(token, isFirstInBlock) {
-        const isPunct = /^[.,!?]$/.test(token);
+        const isPunct = token === '.';
         let out = "";
 
         if (!isFirstInBlock && !isPunct) {
@@ -271,11 +330,10 @@ const Stream = {
 
         if (isPunct) {
             out += token;
-            this.capitalizeNext = /^[.!?]$/.test(token);
+            this.capitalizeNext = true;
         } else {
-            out += (this.capitalizeNext || token === 'i') 
-                ? token.charAt(0).toUpperCase() + token.slice(1) 
-                : token;
+            const shouldCapitalize = this.capitalizeNext || /^i(m|ve|ll|d)?$/.test(token);
+            out += shouldCapitalize ? token.charAt(0).toUpperCase() + token.slice(1) : token;
             this.capitalizeNext = false;
         }
 
@@ -295,38 +353,30 @@ const Stream = {
         this.screenEl.scrollTop = this.screenEl.scrollHeight;
     },
 
-    /**
-     * Inspects the Markov trie based on the current context without advancing 
-     * the PRNG, returning the highest probability tokens for visual flair.
-     */
     peekCandidates: function() {
-        if (!this.data || this.currentContext.length === 0) return ["..."];
+        if (!this.data || this.currentWordContext.length === 0) return ["..."];
         
-        const { m: model, v: vocab } = this.data;
-        let node = model;
-        let bestPredictions = null;
+        const { g: grammarModel, v: vocab, w: gravityMap } = this.data;
+        let candidates = this.getPredictions(grammarModel, this.currentWordContext);
 
-        for (let i = this.currentContext.length - 1; i >= 0; i--) {
-            const id = this.currentContext[i];
-            if (node[id]) {
-                node = node[id];
-                if (node[""]) bestPredictions = node[""];
-            } else {
-                break;
+        if (!candidates) return ["..."];
+
+        let weightedCandidates = Object.assign({}, candidates);
+        if (this.activeThemeID && gravityMap[this.activeThemeID]) {
+            const activeGravity = gravityMap[this.activeThemeID];
+            for (let wordId in weightedCandidates) {
+                if (activeGravity[wordId]) {
+                    weightedCandidates[wordId] += (weightedCandidates[wordId] * activeGravity[wordId] * this.GRAVITY_MULTIPLIER);
+                }
             }
         }
 
-        if (!bestPredictions) return ["..."];
-
-        const keys = Object.keys(bestPredictions);
-        const sorted = keys.sort((a, b) => bestPredictions[b] - bestPredictions[a]).slice(0, 5);
+        const keys = Object.keys(weightedCandidates);
+        const sorted = keys.sort((a, b) => weightedCandidates[b] - weightedCandidates[a]).slice(0, 5);
         
         return sorted.map(id => vocab[parseInt(id)]);
     },
 
-    /**
-     * Independent visual loop that flashes potential words before they are locked in.
-     */
     startRoulette: function() {
         if (this.rouletteInterval) clearInterval(this.rouletteInterval);
         
@@ -335,8 +385,7 @@ const Stream = {
             
             const word = this.currentCandidates[Math.floor(Math.random() * this.currentCandidates.length)];
             let out = "";
-            const isPunct = /^[.,!?]$/.test(word);
-            
+            const isPunct = word === '.';
             const isFirstInBlock = this.screenEl.firstChild === this.rouletteEl || this.screenEl.childNodes.length === 0;
 
             if (!isPunct && !isFirstInBlock) {
@@ -346,9 +395,8 @@ const Stream = {
             if (isPunct) {
                 out += word;
             } else {
-                out += (this.capitalizeNext || word === 'i') 
-                    ? word.charAt(0).toUpperCase() + word.slice(1) 
-                    : word;
+                const shouldCapitalize = this.capitalizeNext || /^i(m|ve|ll|d)?$/.test(word);
+                out += shouldCapitalize ? word.charAt(0).toUpperCase() + word.slice(1) : word;
             }
             
             this.rouletteEl.textContent = out;
@@ -359,7 +407,8 @@ const Stream = {
         if (this.currentInterval) clearInterval(this.currentInterval);
         if (this.rouletteInterval) clearInterval(this.rouletteInterval);
         this.data = null;
-        this.currentContext = [];
+        this.currentWordContext = [];
+        this.currentThemeContext = [];
         this.tokenBuffer = [];
         this.currentCandidates = [];
     },
