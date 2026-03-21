@@ -29,7 +29,6 @@ const TV = {
         this.screenEl.innerHTML = '';
 
         this.setupDOM();
-        // Removed setupTTS() call to allow immediate autoplay attempt
 
         // Initialize sub-systems simultaneously
         Fractal.init(this.fractalContainer);
@@ -178,7 +177,7 @@ const TV = {
         
         // Slightly lower pitch and rate to fit the surreal broadcast aesthetic
         utterance.rate = 1.3;
-        utterance.pitch = Math.abs(Math.sin(seed));
+        utterance.pitch = Math.max(0.1, Math.abs(Math.sin(seed)) * 2);
         utterance.volume = 0.9;
 
         window.speechSynthesis.speak(utterance);
