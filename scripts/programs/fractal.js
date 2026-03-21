@@ -54,7 +54,7 @@ class FractalProgram extends BaseShader {
                 float r3 = hash(u_seed + 84.2);
                 
                 // View transforms: Pulsing zoom and slow drift
-                float zoom = 3.0 + 2.0 * sin(u_time * 0.1);
+                float zoom = 6.0 + 4.0 * sin(u_time * 0.1);
                 float angle = u_time * 0.04 + (r1 * 6.28);
                 mat2 rot = mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
                 
