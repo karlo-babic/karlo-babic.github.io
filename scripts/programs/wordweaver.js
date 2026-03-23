@@ -257,14 +257,14 @@ const WordWeaver = {
     },
 
     /**
-     * Initializes the game UI elements, ensuring the typing interface and 
-     * candidate dropdown are separated for clean layout and logical styling.
+     * Initializes the UI with a hidden input field to facilitate mobile keyboard
+     * interaction and ensures the candidate list is interactive for touch users.
      */
     buildGameUI: function() {
         this.container.innerHTML = '';
         
         const header = document.createElement('div');
-        header.style.padding = '10px 10px 10px 10px';
+        header.style.padding = '20px 20px 10px 20px';
         header.style.borderBottom = '1px solid #333';
         header.style.backgroundColor = '#1a1a1a';
         
@@ -272,7 +272,7 @@ const WordWeaver = {
         infoStr.innerHTML = `Seed: <span style="color:#4CAF50">${this.currentSeedStr}</span>`;
         
         const goalStrEl = document.createElement('div');
-        goalStrEl.style.fontSize = '0.9rem';
+        goalStrEl.style.fontSize = '1.1rem';
         goalStrEl.style.marginTop = '10px';
         const goalWords = this.goalSeq.map(id => this.data.v[id]).join(' ');
         goalStrEl.innerHTML = `TARGET SEQUENCE: <span style="color:#FFC107; font-weight:bold;">[ ${goalWords} ]</span>`;
@@ -286,23 +286,33 @@ const WordWeaver = {
         this.ui.screenEl.style.overflowY = 'auto';
         this.ui.screenEl.style.whiteSpace = 'pre-wrap';
         this.ui.screenEl.style.wordBreak = 'break-word';
-        this.ui.screenEl.style.fontSize = '0.8rem';
+        this.ui.screenEl.style.fontSize = '0.88rem';
         this.ui.screenEl.style.lineHeight = '1.6';
 
-        // Span to hold the leading space before the underlined input
+        // Hidden input allows mobile devices to trigger the virtual keyboard
+        this.ui.hiddenInput = document.createElement('input');
+        this.ui.hiddenInput.type = "text";
+        this.ui.hiddenInput.autocapitalize = "none";
+        this.ui.hiddenInput.autocomplete = "off";
+        this.ui.hiddenInput.spellcheck = false;
+        this.ui.hiddenInput.style.position = 'absolute';
+        this.ui.hiddenInput.style.opacity = '0';
+        this.ui.hiddenInput.style.pointerEvents = 'none';
+        this.ui.hiddenInput.style.left = '-9999px';
+
         this.ui.prefixSpace = document.createElement('span');
-        
         this.ui.activeInput = document.createElement('span');
         this.ui.activeInput.style.color = '#4CAF50';
         this.ui.activeInput.style.fontWeight = 'bold';
         this.ui.activeInput.style.borderBottom = '2px solid #4CAF50';
         
-        // Candidate list displayed as a separate block (new row)
         this.ui.dropdown = document.createElement('div');
         this.ui.dropdown.style.color = '#666';
         this.ui.dropdown.style.marginTop = '12px';
         this.ui.dropdown.style.minHeight = '1.2em';
+        this.ui.dropdown.style.cursor = 'pointer';
 
+        this.ui.screenEl.appendChild(this.ui.hiddenInput);
         this.ui.screenEl.appendChild(this.ui.prefixSpace);
         this.ui.screenEl.appendChild(this.ui.activeInput);
         this.ui.screenEl.appendChild(this.ui.dropdown);
@@ -492,85 +502,115 @@ const WordWeaver = {
         return prefix;
     },
 
+    /**
+     * Binds input and touch events to support both desktop and mobile workflows.
+     * Clicking the screen focuses the hidden input to bring up the keyboard.
+     * Tapping the candidate list triggers autocomplete logic for mobile users.
+     */
     bindEvents: function() {
         this._keydownHandler = this.handleKeyDown.bind(this);
+        this._inputHandler = this.handleInput.bind(this);
+        this._focusHandler = () => {
+            if (this.gameState === 'PLAYING') this.ui.hiddenInput.focus();
+        };
+        this._dropdownClickHandler = (e) => {
+            if (this.gameState === 'PLAYING') {
+                e.preventDefault();
+                this.triggerAutocomplete();
+            }
+        };
+
         document.addEventListener('keydown', this._keydownHandler);
+        this.container.addEventListener('input', this._inputHandler);
+        this.container.addEventListener('click', this._focusHandler);
+        // Candidate list acts as a "Tab" button for mobile
+        this.container.addEventListener('click', (e) => {
+            if (this.ui.dropdown.contains(e.target)) this._dropdownClickHandler(e);
+        });
     },
 
     /**
-     * Handles keyboard input for navigation and word selection.
-     * Tab: Autocompletes the current typing buffer to the longest common prefix 
-     *      among valid candidates. If the buffer already matches a unique or 
-     *      valid candidate, it commits the word. Tab never clears the buffer.
-     * Space/Enter: Attempts to commit the current word. Clears the buffer if 
-     *      the word is not within the top-weighted candidate list.
+     * Synchronizes the hidden input buffer with the game state. 
+     * Detects trailing spaces to trigger word commitment on mobile keyboards.
+     */
+    handleInput: function(e) {
+        if (this.gameState !== 'PLAYING' || e.target !== this.ui.hiddenInput) return;
+
+        let val = this.ui.hiddenInput.value.toLowerCase();
+        
+        // Handle spacebar commitment from mobile keyboard
+        if (val.endsWith(' ')) {
+            this.currentTyping = val.trim();
+            this.commitWord();
+            this.ui.hiddenInput.value = "";
+        } else {
+            this.currentTyping = val.replace(/[^a-z0-9\.\-']/g, '');
+            this.ui.hiddenInput.value = this.currentTyping;
+            this.playSound('type');
+        }
+        
+        this.renderActiveState();
+    },
+
+    /**
+     * Unified autocomplete logic shared between the Tab key and touch interactions.
+     */
+    triggerAutocomplete: function() {
+        this.initAudio();
+        const filtered = this.getFilteredCandidates();
+        
+        if (filtered.length > 0) {
+            const prefix = this.getCommonPrefix(filtered);
+            if (prefix.length > this.currentTyping.length) {
+                this.currentTyping = prefix;
+                this.ui.hiddenInput.value = prefix;
+                this.playSound('type');
+            } else if (this.validCandidatesWords.includes(this.currentTyping)) {
+                this.commitWord();
+                this.ui.hiddenInput.value = "";
+            }
+        }
+        this.renderActiveState();
+    },
+
+    /**
+     * Specialized key handler for control keys (Tab, Enter, Backspace) 
+     * while character entry is handled by handleInput.
      */
     handleKeyDown: function(e) {
-        if (this.gameState === 'MENU') {
-            if (e.key === 'Enter' && this.ui.seedInput) {
-                this.initAudio();
-                let seed = this.ui.seedInput.value.trim();
-                if (!seed) seed = Math.random().toString(36).substring(2, 8).toUpperCase();
-                this.startGame(seed);
-            }
+        if (this.gameState === 'MENU' && e.key === 'Enter') {
+            this.initAudio();
+            let seed = this.ui.seedInput.value.trim();
+            if (!seed) seed = Math.random().toString(36).substring(2, 8).toUpperCase();
+            this.startGame(seed);
             return;
         }
 
-        if (this.gameState === 'GAMEOVER') {
-            if (e.key === 'Enter') {
-                this.showMenu();
-            }
+        if (this.gameState === 'GAMEOVER' && e.key === 'Enter') {
+            this.showMenu();
             return;
         }
 
-        if (e.ctrlKey || e.metaKey || e.altKey) return;
-
-        if (e.key === 'Backspace') {
-            if (this.currentTyping.length > 0) {
-                this.currentTyping = this.currentTyping.slice(0, -1);
-                this.playSound('type');
-                this.renderActiveState();
-            }
-            return;
-        }
+        if (this.gameState !== 'PLAYING' || e.ctrlKey || e.metaKey || e.altKey) return;
 
         if (e.key === 'Tab') {
             e.preventDefault();
-            this.initAudio();
-            const filtered = this.getFilteredCandidates();
-            
-            if (filtered.length > 0) {
-                const prefix = this.getCommonPrefix(filtered);
-                if (prefix.length > this.currentTyping.length) {
-                    // Fill buffer to the common prefix point
-                    this.currentTyping = prefix;
-                    this.playSound('type');
-                } else if (this.validCandidatesWords.includes(this.currentTyping)) {
-                    // Prefix matches current typing or is already as specific as possible.
-                    // If the typed string is a full valid candidate, commit it.
-                    this.commitWord();
-                }
-            }
-            // If no candidates match, Tab performs no action, preserving the buffer.
-            this.renderActiveState();
-            return;
-        }
-
-        if (e.key === ' ' || e.key === 'Enter') {
+            this.triggerAutocomplete();
+        } else if (e.key === 'Enter') {
             e.preventDefault();
             this.initAudio();
             this.commitWord();
-            return;
-        }
-
-        // Catch alphanumeric and standard punctuation for the generation engine
-        if (e.key.length === 1 && e.key.match(/[a-zA-Z0-9\.\-']/)) {
-            this.currentTyping += e.key.toLowerCase();
+            this.ui.hiddenInput.value = "";
+        } else if (e.key === 'Backspace') {
+            // hiddenInput automatically handles value sync via 'input' event, 
+            // but we play the sound here for immediate feedback.
             this.playSound('type');
-            this.renderActiveState();
         }
     },
 
+    /**
+     * Cleans the input buffer upon successful word commitment.
+     */
     commitWord: function() {
         if (this.validCandidatesWords.includes(this.currentTyping)) {
             const token = this.currentTyping;
@@ -578,21 +618,16 @@ const WordWeaver = {
             
             if (wordId !== -1) {
                 this.currentTyping = "";
+                this.ui.hiddenInput.value = "";
                 this.appendToken(token, false);
 
                 this.currentWordContext.push(wordId);
-                if (this.currentWordContext.length > 10) {
-                    this.currentWordContext.shift();
-                }
+                if (this.currentWordContext.length > 10) this.currentWordContext.shift();
 
                 this.lastTokens.push(wordId);
-                if (this.lastTokens.length > this.SEQUENCE_LENGTH) {
-                    this.lastTokens.shift();
-                }
+                if (this.lastTokens.length > this.SEQUENCE_LENGTH) this.lastTokens.shift();
 
-                if (token === '.') {
-                    this.advanceTheme(this.rng);
-                }
+                if (token === '.') this.advanceTheme(this.rng);
                 
                 if (this.checkWin()) {
                     this.triggerWin();
@@ -604,11 +639,12 @@ const WordWeaver = {
             }
         } else {
             this.currentTyping = "";
+            this.ui.hiddenInput.value = "";
             this.playSound('error');
             this.renderActiveState();
         }
     },
-
+    
     checkWin: function() {
         if (this.lastTokens.length < this.SEQUENCE_LENGTH) return false;
         const lastN = this.lastTokens.slice(-this.SEQUENCE_LENGTH);
