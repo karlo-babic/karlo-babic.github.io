@@ -264,7 +264,7 @@ const WordWeaver = {
         this.container.innerHTML = '';
         
         const header = document.createElement('div');
-        header.style.padding = '20px 20px 10px 20px';
+        header.style.padding = '10px 10px 10px 10px';
         header.style.borderBottom = '1px solid #333';
         header.style.backgroundColor = '#1a1a1a';
         
@@ -272,7 +272,7 @@ const WordWeaver = {
         infoStr.innerHTML = `Seed: <span style="color:#4CAF50">${this.currentSeedStr}</span>`;
         
         const goalStrEl = document.createElement('div');
-        goalStrEl.style.fontSize = '1.1rem';
+        goalStrEl.style.fontSize = '0.9rem';
         goalStrEl.style.marginTop = '10px';
         const goalWords = this.goalSeq.map(id => this.data.v[id]).join(' ');
         goalStrEl.innerHTML = `TARGET SEQUENCE: <span style="color:#FFC107; font-weight:bold;">[ ${goalWords} ]</span>`;
@@ -286,7 +286,7 @@ const WordWeaver = {
         this.ui.screenEl.style.overflowY = 'auto';
         this.ui.screenEl.style.whiteSpace = 'pre-wrap';
         this.ui.screenEl.style.wordBreak = 'break-word';
-        this.ui.screenEl.style.fontSize = '0.88rem';
+        this.ui.screenEl.style.fontSize = '0.8rem';
         this.ui.screenEl.style.lineHeight = '1.6';
 
         // Hidden input allows mobile devices to trigger the virtual keyboard
