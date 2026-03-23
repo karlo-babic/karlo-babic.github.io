@@ -275,7 +275,7 @@ const WordWeaver = {
         goalStrEl.style.fontSize = '0.9rem';
         goalStrEl.style.marginTop = '10px';
         const goalWords = this.goalSeq.map(id => this.data.v[id]).join(' ');
-        goalStrEl.innerHTML = `TARGET SEQUENCE: <span style="color:#FFC107; font-weight:bold;">[ ${goalWords} ]</span>`;
+        goalStrEl.innerHTML = `TARGET SEQUENCE: <span style="color:#FFC107; font-weight:bold;">${goalWords}</span>`;
         
         header.appendChild(infoStr);
         header.appendChild(goalStrEl);
