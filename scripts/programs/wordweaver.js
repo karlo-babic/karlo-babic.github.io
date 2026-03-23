@@ -450,25 +450,22 @@ const WordWeaver = {
     },
 
     /**
-     * Refreshes the display area. The prefix space is kept outside the underlined
-     * activeInput span to maintain visual distinction between established text
-     * and the current draft buffer.
+     * Refreshes the display area. A space is now consistently applied before 
+     * the active typing area if any tokens have been committed, ensuring that 
+     * both words and punctuation marks are followed by a visual gap for the next entry.
      */
     renderActiveState: function() {
         if (this.gameState !== 'PLAYING') return;
 
-        let prefix = "";
-        if (this.currentWordContext.length > 0) {
-            const lastId = this.currentWordContext[this.currentWordContext.length - 1];
-            const lastToken = this.data.v[lastId];
-            if (lastToken !== '.') prefix = " ";
-        }
+        // Provide a leading space if we aren't at the very start of the sequence
+        let prefix = (this.currentWordContext.length > 0) ? " " : "";
 
         let display = this.currentTyping;
         if (display.length > 0) {
             const shouldCap = this.capitalizeNext || /^i(m|ve|ll|d)?$/.test(display);
             if (shouldCap) display = display.charAt(0).toUpperCase() + display.slice(1);
         } else {
+            // Non-breaking space used as a layout placeholder for the underline
             display = "\u00A0";
         }
 
