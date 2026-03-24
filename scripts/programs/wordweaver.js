@@ -1,21 +1,24 @@
 /**
  * WordWeaver.js
- * A deterministic, seeded N-gram typing game utilizing Dual-Track NLP architecture.
+ * A deterministic, seeded N-gram typing game utilizing a single-track NLP architecture.
  * 
  * Architecture & Gameplay:
  * - Employs a Stateless Deterministic model seeded by user input or random generation.
- * - Utilizes an Ensemble Text Generation system identical to Stream.js:
- *   1. Grammar Engine (v, g, s): Deep Katz Backoff Trie ensuring local syntax.
- *   2. Theme Engine (t, ts): Macro Trie governing long-term topic progression.
- *   3. Gravity Map (w): Intersects the two engines by applying vocabulary weight multipliers.
+ * - Utilizes a Grammar Engine (v, g, s): Deep Katz Backoff Trie ensuring local syntax.
  * - Player traverses the latent space by typing words, restricted to the top 10% of 
- *   weighted grammatical candidates, aiming to organically construct a target sequence.
+ *   grammatical candidates, aiming to organically construct a target sequence.
+ * - Target sequences are generated deterministically via a random walk of hidden steps
+ *   from the starting sequence.
+ * - Words typed that belong to the hidden path are highlighted to guide the player.
  */
+
+// Encapsulated path state prevents exposing the target walk to the client console.
+let currentTargetPath = [];
 
 const WordWeaver = {
     DATA_PATH: './data/ngrams.json',
     SEQUENCE_LENGTH: 3,
-    GRAVITY_MULTIPLIER: 2.5,
+    WALK_STEPS: 10,
     
     container: null,
     data: null,
@@ -25,8 +28,7 @@ const WordWeaver = {
     startSeq: [],
     goalSeq: [],
     currentWordContext: [],
-    currentThemeContext: [],
-    activeThemeID: null,
+    history: [],
     capitalizeNext: true,
     
     validCandidatesWords: [],
@@ -144,32 +146,74 @@ const WordWeaver = {
         const wrapper = document.createElement('div');
         wrapper.style.margin = 'auto';
         wrapper.style.textAlign = 'center';
-        wrapper.style.padding = '20px';
+        wrapper.style.padding = '0px';
 
-        const title = document.createElement('h1');
+        const title = document.createElement('h2');
         title.textContent = 'WordWeaver';
         title.style.letterSpacing = '2px';
         title.style.color = '#4CAF50';
 
-        const desc = document.createElement('p');
-        desc.textContent = 'Navigate the latent space from start to goal sequence.';
+        const desc = document.createElement('div');
         desc.style.color = '#888';
-        desc.style.marginBottom = '30px';
+        desc.style.fontSize = '0.6rem';
+        desc.style.lineHeight = '1.3';
+        desc.style.maxWidth = '650px';
+        desc.style.margin = '0 auto 0px auto';
+        desc.style.textAlign = 'left';
+        desc.style.padding = '5px';
+        desc.innerHTML = `<ul style="padding-left: 5px; margin-bottom: 0; margin-top: 0;">
+                <li>Traverse the latent space by typing words to build a sentence.</li>
+                <li>Your goal is to organically reach the <span style="color:#FFC107; font-weight:bold;">TARGET SEQUENCE</span> at the end of your path.</li>
+                <li>You are restricted to typing the top predicted grammatical candidates shown in brackets at the bottom.</li>
+                <li>Words highlighted in <span style="color:#00BCD4; text-shadow:0 0 4px rgba(0,188,212,0.3); font-weight:bold;">BLUE</span> indicate you are walking the hidden optimal path.</li>
+                <li>Use <strong>Tab</strong> to autocomplete and <strong>Ctrl+Backspace</strong> to undo your last word.</li>
+            </ul>`;
 
         const inputGroup = document.createElement('div');
+        inputGroup.style.display = 'flex';
+        inputGroup.style.justifyContent = 'center';
+        inputGroup.style.gap = '10px';
+        inputGroup.style.flexWrap = 'wrap';
         
         const seedInput = document.createElement('input');
         seedInput.type = 'text';
-        seedInput.placeholder = 'Leave blank for random seed';
+        seedInput.placeholder = 'Seed (blank for random)';
         seedInput.value = this.currentSeedStr;
         seedInput.style.padding = '10px';
         seedInput.style.background = '#222';
         seedInput.style.border = '1px solid #444';
         seedInput.style.color = '#eee';
         seedInput.style.fontFamily = 'monospace';
-        seedInput.style.width = '250px';
-        seedInput.style.marginRight = '10px';
+        seedInput.style.width = '220px';
         this.ui.seedInput = seedInput;
+
+        const stepsLabel = document.createElement('div');
+        stepsLabel.style.display = 'flex';
+        stepsLabel.style.alignItems = 'center';
+        stepsLabel.style.background = '#222';
+        stepsLabel.style.border = '1px solid #444';
+        stepsLabel.style.padding = '0 10px';
+        stepsLabel.style.color = '#888';
+
+        const stepsText = document.createElement('span');
+        stepsText.textContent = 'STEPS:';
+        stepsText.style.marginRight = '5px';
+        stepsText.style.fontFamily = 'monospace';
+
+        const walkStepsInput = document.createElement('input');
+        walkStepsInput.type = 'number';
+        walkStepsInput.min = '4';
+        walkStepsInput.value = this.WALK_STEPS;
+        walkStepsInput.style.background = 'transparent';
+        walkStepsInput.style.border = 'none';
+        walkStepsInput.style.color = '#eee';
+        walkStepsInput.style.fontFamily = 'monospace';
+        walkStepsInput.style.width = '50px';
+        walkStepsInput.style.outline = 'none';
+        this.ui.walkStepsInput = walkStepsInput;
+
+        stepsLabel.appendChild(stepsText);
+        stepsLabel.appendChild(walkStepsInput);
 
         const startBtn = document.createElement('button');
         startBtn.textContent = 'INITIALIZE';
@@ -185,10 +229,16 @@ const WordWeaver = {
             this.initAudio();
             let seed = seedInput.value.trim();
             if (!seed) seed = Math.random().toString(36).substring(2, 8).toUpperCase();
+            
+            let steps = parseInt(walkStepsInput.value, 10);
+            if (isNaN(steps) || steps < 4) steps = 4;
+            this.WALK_STEPS = steps;
+
             this.startGame(seed);
         });
 
         inputGroup.appendChild(seedInput);
+        inputGroup.appendChild(stepsLabel);
         inputGroup.appendChild(startBtn);
 
         wrapper.appendChild(title);
@@ -198,9 +248,8 @@ const WordWeaver = {
     },
 
     /**
-     * Identifies a valid starting point and a high-frequency target sequence.
-     * Goal sequences are selected from the top 20% of the starters array, 
-     * which represents the most statistically significant latent paths.
+     * Identifies a valid starting point and simulates a random walk through 
+     * valid player states to determine the target goal sequence.
      */
     startGame: function(seedStr) {
         this.currentSeedStr = seedStr;
@@ -209,47 +258,70 @@ const WordWeaver = {
         this.currentTyping = "";
         this.appendedSpans = [];
         this.lastTokens = [];
-        this.capitalizeNext = true;
         this.currentWordContext = [];
+        this.history = [];
+        this.capitalizeNext = true;
 
         const { s: starters, v: vocab, g: grammarModel } = this.data;
 
-        const getFixedLenSequence = (baseSeq) => {
-            let seq = [...baseSeq];
-            while (seq.length < this.SEQUENCE_LENGTH) {
-                const predictions = this.getPredictions(grammarModel, seq);
-                const keys = Object.keys(predictions);
-                if (keys.length === 0) break;
-                keys.sort((a, b) => predictions[b] - predictions[a]);
-                seq.push(parseInt(keys[0]));
-            }
-            return seq.slice(0, this.SEQUENCE_LENGTH);
-        };
-
-        const idx1 = Math.floor(this.rng() * starters.length);
-        this.startSeq = getFixedLenSequence(starters[idx1]);
-
-        // Select goal from the top 20% of frequency-weighted starters
-        const popularThreshold = Math.max(1, Math.floor(starters.length * 0.2));
-        let idx2 = Math.floor(this.rng() * popularThreshold);
-        this.goalSeq = getFixedLenSequence(starters[idx2]);
+        let pathFound = false;
+        let generationAttempts = 0;
         
-        let safety = 0;
-        while (this.startSeq.join(',') === this.goalSeq.join(',') && safety < 20) {
-            idx2 = Math.floor(this.rng() * popularThreshold);
-            this.goalSeq = getFixedLenSequence(starters[idx2]);
-            safety++;
+        while (!pathFound && generationAttempts < 100) {
+            generationAttempts++;
+            const idx = Math.floor(this.rng() * starters.length);
+            this.startSeq = [...starters[idx]];
+            
+            currentTargetPath = [];
+            let tempContext = [...this.startSeq];
+            let walkDeadEnd = false;
+            
+            for (let i = 0; i < this.WALK_STEPS; i++) {
+                let candidates = this.getPredictions(grammarModel, tempContext);
+                let keys = Object.keys(candidates);
+                
+                if (keys.length === 0) {
+                    walkDeadEnd = true;
+                    break;
+                }
+                
+                keys.sort((a, b) => candidates[b] - candidates[a]);
+                
+                let limit = Math.ceil(keys.length * 0.1);
+                if (limit < 5) limit = 5;
+                if (limit > keys.length) limit = keys.length;
+                
+                const validIds = keys.slice(0, limit);
+                const chosenId = parseInt(validIds[Math.floor(this.rng() * validIds.length)]);
+                
+                currentTargetPath.push(chosenId);
+                tempContext.push(chosenId);
+                if (tempContext.length > 10) tempContext.shift();
+            }
+            
+            if (!walkDeadEnd && currentTargetPath.length === this.WALK_STEPS) {
+                this.goalSeq = tempContext.slice(-this.SEQUENCE_LENGTH);
+                const startTail = this.startSeq.slice(-this.SEQUENCE_LENGTH).join(',');
+                if (this.goalSeq.join(',') !== startTail) {
+                    pathFound = true;
+                }
+            }
+        }
+
+        if (!pathFound) {
+            this.startSeq = [...starters[0]];
+            this.goalSeq = [...starters[1]];
+            currentTargetPath = [...this.goalSeq];
         }
 
         this.buildGameUI();
-        this.resetThemeContext(this.rng);
 
         this.startSeq.forEach((wordId, index) => {
             const token = vocab[wordId];
+            this.history.push(wordId);
             this.currentWordContext.push(wordId);
             this.lastTokens.push(wordId);
-            this.appendToken(token, index === 0);
-            if (token === '.') this.advanceTheme(this.rng);
+            this.appendToken(token, index === 0, wordId);
         });
         
         this.updateCandidates();
@@ -340,58 +412,13 @@ const WordWeaver = {
         return bestPredictions || trieRoot[""] || {};
     },
 
-    resetThemeContext: function(rng) {
-        const { ts: themeStarters } = this.data;
-        if (themeStarters && themeStarters.length > 0) {
-            const starterSeq = themeStarters[Math.floor(rng() * themeStarters.length)];
-            this.currentThemeContext = [...starterSeq];
-            this.activeThemeID = this.currentThemeContext[this.currentThemeContext.length - 1];
-        }
-    },
-
-    advanceTheme: function(rng) {
-        const { t: themeModel } = this.data;
-        const candidates = this.getPredictions(themeModel, this.currentThemeContext);
-        if (!candidates) {
-            this.resetThemeContext(rng);
-            return;
-        }
-
-        const chosenId = parseInt(this.weightedRandomSelect(candidates, rng));
-        this.currentThemeContext.push(chosenId);
-        this.activeThemeID = chosenId;
-        
-        if (this.currentThemeContext.length > 5) {
-            this.currentThemeContext.shift();
-        }
-    },
-
-    /**
-     * Keys are sorted numerically to guarantee deterministic traversal 
-     * regardless of browser engine key iteration order implementations.
-     */
-    weightedRandomSelect: function(predictionsMap, rng) {
-        const keys = Object.keys(predictionsMap).sort((a, b) => Number(a) - Number(b));
-        const weights = keys.map(k => predictionsMap[k]);
-        const total = weights.reduce((a, b) => a + b, 0);
-        
-        let r = rng() * total;
-        for (let i = 0; i < weights.length; i++) {
-            r -= weights[i];
-            if (r <= 0) {
-                return keys[i];
-            }
-        }
-        return keys[0];
-    },
-
     /**
      * Determines which grammatical candidates are valid for selection.
      * Selects the top 10% of candidates, with a hard floor of the top 5
      * most probable words to ensure player agency and flow.
      */
     updateCandidates: function() {
-        const { g: grammarModel, v: vocab, w: gravityMap } = this.data;
+        const { g: grammarModel, v: vocab } = this.data;
         let candidates = this.getPredictions(grammarModel, this.currentWordContext);
         
         if (!candidates || Object.keys(candidates).length === 0) {
@@ -399,20 +426,9 @@ const WordWeaver = {
             return;
         }
 
-        let weightedCandidates = Object.assign({}, candidates);
-        if (this.activeThemeID && gravityMap[this.activeThemeID]) {
-            const activeGravity = gravityMap[this.activeThemeID];
-            for (let wordId in weightedCandidates) {
-                if (activeGravity[wordId]) {
-                    weightedCandidates[wordId] += (weightedCandidates[wordId] * activeGravity[wordId] * this.GRAVITY_MULTIPLIER);
-                }
-            }
-        }
+        const keys = Object.keys(candidates);
+        keys.sort((a, b) => candidates[b] - candidates[a]);
 
-        const keys = Object.keys(weightedCandidates);
-        keys.sort((a, b) => weightedCandidates[b] - weightedCandidates[a]);
-
-        // Top 10% but at least 5 words if possible
         let limit = Math.ceil(keys.length * 0.1);
         if (limit < 5) limit = 5;
         if (limit > keys.length) limit = keys.length;
@@ -423,8 +439,9 @@ const WordWeaver = {
     
     /**
      * Ensures newly committed tokens are inserted logically before the input area.
+     * Analyzes if the token belongs to the hidden target walk and applies a highlight.
      */
-    appendToken: function(token, isFirstInSequence) {
+    appendToken: function(token, isFirstInSequence, wordId = null) {
         const isPunct = token === '.';
         let out = "";
 
@@ -442,7 +459,11 @@ const WordWeaver = {
         const span = document.createElement('span');
         span.textContent = out;
         
-        // Insert before the prefixSpace to keep current typing at the end of the text flow
+        if (wordId !== null && currentTargetPath.includes(wordId)) {
+            span.style.color = '#00BCD4';
+            span.style.textShadow = '0 0 4px rgba(0, 188, 212, 0.3)';
+        }
+        
         this.ui.screenEl.insertBefore(span, this.ui.prefixSpace);
         this.appendedSpans.push(span);
         
@@ -451,13 +472,11 @@ const WordWeaver = {
 
     /**
      * Refreshes the display area. A space is now consistently applied before 
-     * the active typing area if any tokens have been committed, ensuring that 
-     * both words and punctuation marks are followed by a visual gap for the next entry.
+     * the active typing area if any tokens have been committed.
      */
     renderActiveState: function() {
         if (this.gameState !== 'PLAYING') return;
 
-        // Provide a leading space if we aren't at the very start of the sequence
         let prefix = (this.currentWordContext.length > 0) ? " " : "";
 
         let display = this.currentTyping;
@@ -465,7 +484,6 @@ const WordWeaver = {
             const shouldCap = this.capitalizeNext || /^i(m|ve|ll|d)?$/.test(display);
             if (shouldCap) display = display.charAt(0).toUpperCase() + display.slice(1);
         } else {
-            // Non-breaking space used as a layout placeholder for the underline
             display = "\u00A0";
         }
 
@@ -476,7 +494,7 @@ const WordWeaver = {
         if (filtered.length > 0) {
             this.ui.dropdown.textContent = `[ ${filtered.join(', ')} ]`;
         } else {
-            this.ui.dropdown.textContent = `[ - ]`;
+            this.ui.dropdown.textContent = `[ ]`;
         }
 
         this.ui.screenEl.scrollTop = this.ui.screenEl.scrollHeight;
@@ -520,7 +538,6 @@ const WordWeaver = {
         document.addEventListener('keydown', this._keydownHandler);
         this.container.addEventListener('input', this._inputHandler);
         this.container.addEventListener('click', this._focusHandler);
-        // Candidate list acts as a "Tab" button for mobile
         this.container.addEventListener('click', (e) => {
             if (this.ui.dropdown.contains(e.target)) this._dropdownClickHandler(e);
         });
@@ -535,7 +552,6 @@ const WordWeaver = {
 
         let val = this.ui.hiddenInput.value.toLowerCase();
         
-        // Handle spacebar commitment from mobile keyboard
         if (val.endsWith(' ')) {
             this.currentTyping = val.trim();
             this.commitWord();
@@ -549,9 +565,6 @@ const WordWeaver = {
         this.renderActiveState();
     },
 
-    /**
-     * Unified autocomplete logic shared between the Tab key and touch interactions.
-     */
     triggerAutocomplete: function() {
         this.initAudio();
         const filtered = this.getFilteredCandidates();
@@ -570,15 +583,16 @@ const WordWeaver = {
         this.renderActiveState();
     },
 
-    /**
-     * Specialized key handler for control keys (Tab, Enter, Backspace) 
-     * while character entry is handled by handleInput.
-     */
     handleKeyDown: function(e) {
         if (this.gameState === 'MENU' && e.key === 'Enter') {
             this.initAudio();
             let seed = this.ui.seedInput.value.trim();
             if (!seed) seed = Math.random().toString(36).substring(2, 8).toUpperCase();
+            
+            let steps = parseInt(this.ui.walkStepsInput.value, 10);
+            if (isNaN(steps) || steps < 4) steps = 4;
+            this.WALK_STEPS = steps;
+
             this.startGame(seed);
             return;
         }
@@ -588,7 +602,8 @@ const WordWeaver = {
             return;
         }
 
-        if (this.gameState !== 'PLAYING' || e.ctrlKey || e.metaKey || e.altKey) return;
+        if (this.gameState !== 'PLAYING' || e.altKey) return;
+        if ((e.ctrlKey || e.metaKey) && e.key !== 'Backspace') return;
 
         if (e.key === 'Tab') {
             e.preventDefault();
@@ -599,9 +614,19 @@ const WordWeaver = {
             this.commitWord();
             this.ui.hiddenInput.value = "";
         } else if (e.key === 'Backspace') {
-            // hiddenInput automatically handles value sync via 'input' event, 
-            // but we play the sound here for immediate feedback.
-            this.playSound('type');
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                if (this.currentTyping.length > 0) {
+                    this.currentTyping = "";
+                    this.ui.hiddenInput.value = "";
+                    this.playSound('type');
+                    this.renderActiveState();
+                } else {
+                    this.undoLastWord();
+                }
+            } else {
+                this.playSound('type');
+            }
         }
     },
 
@@ -616,15 +641,15 @@ const WordWeaver = {
             if (wordId !== -1) {
                 this.currentTyping = "";
                 this.ui.hiddenInput.value = "";
-                this.appendToken(token, false);
+                this.appendToken(token, false, wordId);
+
+                this.history.push(wordId);
 
                 this.currentWordContext.push(wordId);
                 if (this.currentWordContext.length > 10) this.currentWordContext.shift();
 
                 this.lastTokens.push(wordId);
                 if (this.lastTokens.length > this.SEQUENCE_LENGTH) this.lastTokens.shift();
-
-                if (token === '.') this.advanceTheme(this.rng);
                 
                 if (this.checkWin()) {
                     this.triggerWin();
@@ -640,6 +665,39 @@ const WordWeaver = {
             this.playSound('error');
             this.renderActiveState();
         }
+    },
+
+    /**
+     * Reverts the last committed word, restoring the previous game state.
+     * Prevents deletion of the initial starting sequence.
+     */
+    undoLastWord: function() {
+        if (this.history.length <= this.startSeq.length) {
+            this.playSound('error');
+            return;
+        }
+
+        this.history.pop();
+        
+        const span = this.appendedSpans.pop();
+        if (span) {
+            span.remove();
+        }
+
+        this.currentWordContext = this.history.slice(-10);
+        this.lastTokens = this.history.slice(-this.SEQUENCE_LENGTH);
+
+        if (this.history.length > 0) {
+            const lastWordId = this.history[this.history.length - 1];
+            const lastWord = this.data.v[lastWordId];
+            this.capitalizeNext = (lastWord === '.');
+        } else {
+            this.capitalizeNext = true;
+        }
+
+        this.playSound('type');
+        this.updateCandidates();
+        this.renderActiveState();
     },
     
     checkWin: function() {
@@ -662,10 +720,11 @@ const WordWeaver = {
         lastSpans.forEach(span => {
             span.style.color = '#FFC107';
             span.style.fontWeight = 'bold';
+            span.style.textShadow = 'none';
         });
 
         const winMsg = document.createElement('span');
-        winMsg.innerHTML = `<br><br><span style="color:#4CAF50; animation: blink 1s infinite;">SEQUENCE COMPLETE. Press [ENTER] to continue.</span>`;
+        winMsg.innerHTML = `<br><span style="color:#4CAF50; animation: blink 1s infinite;">SEQUENCE COMPLETE. Press [ENTER] to continue.</span>`;
         this.ui.screenEl.appendChild(winMsg);
         this.ui.dropdown.textContent = '';
         this.ui.screenEl.scrollTop = this.ui.screenEl.scrollHeight;
@@ -692,6 +751,8 @@ const WordWeaver = {
             this.container.innerHTML = '';
         }
         this.data = null;
+        this.history = [];
+        currentTargetPath = [];
     }
 };
 
