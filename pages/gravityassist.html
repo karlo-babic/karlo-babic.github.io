@@ -34,7 +34,7 @@
         }
 
         #sidebar {
-            width: 360px;
+            width: 380px;
             background-color: var(--panel-bg);
             padding: 25px 20px;
             box-shadow: 2px 0 15px rgba(0,0,0,0.7);
@@ -97,7 +97,6 @@
             color: #fff;
         }
 
-        /* Modernized Range Sliders */
         input[type="range"] {
             -webkit-appearance: none;
             width: 100%;
@@ -281,9 +280,9 @@
             height: 14px;
             margin-right: 10px;
             border-radius: 3px;
+            flex-shrink: 0;
         }
 
-        /* Mobile Responsiveness */
         @media (max-width: 800px) {
             body {
                 flex-direction: column;
@@ -376,10 +375,18 @@
         </div>
 
         <div class="legend">
-            <div class="legend-item"><div class="color-box" style="background: #fff;"></div> Spacecraft Velocity</div>
-            <div class="legend-item"><div class="color-box" style="background: var(--planet-color);"></div> Gravity Pull (Planet)</div>
-            <div class="legend-item"><div class="color-box" style="background: transparent; border: 1px dashed rgba(255,255,255,0.6);"></div> Predicted Ship Path</div>
-            <div class="legend-item"><div class="color-box" style="background: rgba(30, 144, 255, 0.3); border-radius: 50%;"></div> Predicted Planet Pos.</div>
+            <div class="legend-item">
+                <div class="color-box" style="background: transparent; border: 1px dashed rgba(255, 215, 0, 0.7);"></div> 
+                Relative Path (Planet Frame)
+            </div>
+            <div class="legend-item">
+                <div class="color-box" style="background: transparent; border: 1px dashed rgba(255, 255, 255, 0.6);"></div> 
+                Absolute Path (Observer Frame)
+            </div>
+            <div class="legend-item">
+                <div class="color-box" style="background: rgba(30, 144, 255, 0.3); border-radius: 50%;"></div> 
+                Predicted Planet Positions
+            </div>
         </div>
 
         <div class="telemetry">
@@ -399,7 +406,7 @@
             <canvas id="sim-canvas"></canvas>
         </div>
         <div id="plot-container">
-            <div class="plot-title">Speed vs Time</div>
+            <div class="plot-title">Absolute Speed vs Time</div>
             <canvas id="plot-canvas" width="280" height="100" style="width: 280px; height: 100px;"></canvas>
         </div>
     </div>
@@ -633,7 +640,12 @@
                 }
                 
                 if (step % 5 === 0) {
-                    state.predictionPath.push({ x: tempState.ship.x, y: tempState.ship.y });
+                    state.predictionPath.push({ 
+                        x: tempState.ship.x, 
+                        y: tempState.ship.y,
+                        relX: tempState.ship.x - tempState.planet.x,
+                        relY: tempState.ship.y - tempState.planet.y
+                    });
                 }
 
                 if (step % 200 === 0 && step > 0) {
@@ -713,7 +725,7 @@
             ctx.stroke();
         }
 
-        function draw() {
+function draw() {
             ctx.clearRect(0, 0, state.width, state.height);
             ctx.save();
             ctx.translate(state.width / 2, state.height / 2);
@@ -741,6 +753,38 @@
                 for (let p of state.predictionPath) {
                     ctx.lineTo(p.x, p.y);
                 }
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            /**
+             * The relative path is the orbit of the spacecraft drawn solely in the 
+             * planet's frame of reference, rendering a continuous hyperbolic curve 
+             * anchored to the current planet's absolute position.
+             * Because this path is statically defined in the planet's frame, we can 
+             * draw the entire pre-calculated future path translated to the 
+             * planet's current position, making the track fully visible at all times.
+             */
+            if (state.predictionPath.length > 0) {
+                ctx.beginPath();
+                ctx.setLineDash([4, 4]);
+                ctx.strokeStyle = 'rgba(255, 215, 0, 0.7)'; 
+                ctx.lineWidth = 1.5;
+
+                let relativePathStarted = false;
+
+                for (let p of state.predictionPath) {
+                    let px = state.planet.x + p.relX;
+                    let py = state.planet.y + p.relY;
+                    
+                    if (!relativePathStarted) {
+                        ctx.moveTo(px, py);
+                        relativePathStarted = true;
+                    } else {
+                        ctx.lineTo(px, py);
+                    }
+                }
+
                 ctx.stroke();
                 ctx.setLineDash([]);
             }
@@ -813,13 +857,18 @@
 
             ctx.restore();
         }
-
+        
         function gameLoop() {
             if (state.running) {
                 stepPhysics(state, PHYSICS.DT, true);
 
                 if (state.time % 3 === 0 && !state.crashed) {
-                    state.shipPath.push({ x: state.ship.x, y: state.ship.y });
+                    state.shipPath.push({ 
+                        x: state.ship.x, 
+                        y: state.ship.y,
+                        relX: state.ship.x - state.planet.x,
+                        relY: state.ship.y - state.planet.y
+                    });
                     if (state.shipPath.length > 400) state.shipPath.shift();
 
                     state.planetPath.push({ x: state.planet.x, y: state.planet.y });
