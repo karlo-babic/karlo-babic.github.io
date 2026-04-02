@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gravity Assist (Slingshot) Simulator</title>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --panel-bg: #1f2833;
+            --text-color: #c5c6c7;
+            --accent-color: #66fcf1;
+            --accent-hover: #45a29e;
+            --sun-color: #ffd700;
+            --planet-color: #1e90ff;
+            --ship-color: #ff4500;
+            --danger-color: #ff4c4c;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            flex-direction: row;
+        }
+
+        #sidebar {
+            width: 360px;
+            background-color: var(--panel-bg);
+            padding: 25px 20px;
+            box-shadow: 2px 0 15px rgba(0,0,0,0.7);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            overflow-y: auto;
+        }
+
+        #main-content {
+            flex-grow: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at center, #11151c 0%, #050608 100%);
+        }
+
+        h1 {
+            color: var(--accent-color);
+            font-size: 1.6rem;
+            margin-top: 0;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        p {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 15px;
+            color: #a0a3a8;
+        }
+
+        a {
+            color: var(--accent-color);
+            text-decoration: none;
+            border-bottom: 1px dotted var(--accent-color);
+        }
+
+        a:hover {
+            color: #fff;
+            border-bottom-style: solid;
+        }
+
+        .control-group {
+            margin-bottom: 18px;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(102, 252, 241, 0.1);
+        }
+
+        label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        /* Modernized Range Sliders */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        
+        input[type="range"]:focus {
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 8px rgba(102, 252, 241, 0.6);
+            transition: transform 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 8px rgba(102, 252, 241, 0.6);
+        }
+
+        input[type="range"]::-moz-range-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            background: #0b0c10;
+            color: #fff;
+            border: 1px solid var(--accent-hover);
+            border-radius: 6px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        select:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 5px rgba(102, 252, 241, 0.5);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            background-color: var(--accent-hover);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: var(--accent-color);
+            color: #000;
+            box-shadow: 0 0 10px rgba(102, 252, 241, 0.4);
+        }
+
+        button:disabled {
+            background-color: #2c353f;
+            color: #555;
+            cursor: not-allowed;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        canvas#sim-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .telemetry {
+            margin-top: auto;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.05rem;
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .telemetry-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .telemetry-row:last-child {
+            margin-bottom: 0;
+        }
+
+        #plot-container {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(11, 12, 16, 0.85);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.8);
+            border: 1px solid rgba(102, 252, 241, 0.3);
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+        }
+
+        .plot-title {
+            font-size: 0.8rem;
+            margin-bottom: 12px;
+            text-align: center;
+            font-weight: bold;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .legend {
+            margin-top: 20px;
+            margin-bottom: 20px;
+            font-size: 0.8rem;
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            color: #ddd;
+        }
+
+        .legend-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .color-box {
+            width: 14px;
+            height: 14px;
+            margin-right: 10px;
+            border-radius: 3px;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 800px) {
+            body {
+                flex-direction: column;
+            }
+
+            #sidebar {
+                width: 100%;
+                height: 45vh;
+                order: 2;
+                border-right: none;
+                border-top: 1px solid var(--accent-hover);
+                box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
+                padding: 15px;
+            }
+
+            #main-content {
+                width: 100%;
+                height: 55vh;
+                order: 1;
+            }
+
+            h1 {
+                font-size: 1.3rem;
+            }
+
+            .control-group {
+                margin-bottom: 12px;
+                padding: 10px 12px;
+            }
+
+            #plot-container {
+                bottom: 10px;
+                right: 10px;
+                padding: 10px;
+            }
+
+            #plot-canvas {
+                width: 200px !important;
+                height: 80px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <h1>Gravity Assist</h1>
+        <p>
+            A slingshot maneuver uses the relative movement and gravity of a planet to alter the path and speed of a spacecraft. 
+            <a href="https://en.wikipedia.org/wiki/Gravity_assist" target="_blank" rel="noopener noreferrer">Learn more</a>.
+        </p>
+        <p style="font-size: 0.8rem; color: #888; margin-top: -5px;">
+            <em>Adjust settings while paused. Dashed line indicates predicted path.</em>
+        </p>
+
+        <select id="scenario-select">
+            <option value="trailing">Trailing Assist (Speed Up)</option>
+            <option value="leading">Leading Assist (Slow Down)</option>
+            <option value="crash">Planet Collision (Crash)</option>
+        </select>
+
+        <div class="control-group">
+            <label>
+                <span>Spacecraft Start Y</span>
+                <span id="val-ship-y">150</span>
+            </label>
+            <input type="range" id="ship-y" min="-50" max="350" step="1" value="150">
+        </div>
+
+        <div class="control-group">
+            <label>
+                <span>Initial Speed</span>
+                <span id="val-ship-v">14.0</span>
+            </label>
+            <input type="range" id="ship-v" min="5" max="25" step="0.1" value="14.0">
+        </div>
+
+        <div class="control-group">
+            <label>
+                <span>Planet Mass</span>
+                <span id="val-planet-mass">5000</span>
+            </label>
+            <input type="range" id="planet-mass" min="1000" max="15000" step="100" value="5000">
+        </div>
+
+        <div class="btn-group">
+            <button id="btn-start">Start</button>
+            <button id="btn-pause" disabled>Pause</button>
+            <button id="btn-reset">Reset</button>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item"><div class="color-box" style="background: #fff;"></div> Spacecraft Velocity</div>
+            <div class="legend-item"><div class="color-box" style="background: var(--planet-color);"></div> Gravity Pull (Planet)</div>
+            <div class="legend-item"><div class="color-box" style="background: transparent; border: 1px dashed rgba(255,255,255,0.6);"></div> Predicted Ship Path</div>
+            <div class="legend-item"><div class="color-box" style="background: rgba(30, 144, 255, 0.3); border-radius: 50%;"></div> Predicted Planet Pos.</div>
+        </div>
+
+        <div class="telemetry">
+            <div class="telemetry-row">
+                <span>Current Speed:</span>
+                <span id="tel-speed" style="color: var(--accent-color); font-weight: bold;">0.00</span>
+            </div>
+            <div class="telemetry-row">
+                <span>Max Speed:</span>
+                <span id="tel-max-speed" style="color: #fff;">0.00</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-content">
+        <div id="canvas-container">
+            <canvas id="sim-canvas"></canvas>
+        </div>
+        <div id="plot-container">
+            <div class="plot-title">Speed vs Time</div>
+            <canvas id="plot-canvas" width="280" height="100" style="width: 280px; height: 100px;"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+
+        const canvasContainer = document.getElementById('canvas-container');
+        const plotCanvas = document.getElementById('plot-canvas');
+        const plotCtx = plotCanvas.getContext('2d');
+
+        const UI = {
+            scenarioSelect: document.getElementById('scenario-select'),
+            shipY: document.getElementById('ship-y'),
+            shipV: document.getElementById('ship-v'),
+            planetMass: document.getElementById('planet-mass'),
+            valShipY: document.getElementById('val-ship-y'),
+            valShipV: document.getElementById('val-ship-v'),
+            valPlanetMass: document.getElementById('val-planet-mass'),
+            btnStart: document.getElementById('btn-start'),
+            btnPause: document.getElementById('btn-pause'),
+            btnReset: document.getElementById('btn-reset'),
+            telSpeed: document.getElementById('tel-speed'),
+            telMaxSpeed: document.getElementById('tel-max-speed')
+        };
+
+        const PHYSICS = {
+            G: 1,
+            DT: 0.1,
+            SUB_STEPS: 10 
+        };
+
+        const PRESETS = {
+            'trailing': { y: 90, v: 10.0, mass: 8000 },
+            'leading': { y: 280, v: 10.0, mass: 8000 },
+            'crash': { y: 150, v: 10.0, mass: 8000 },
+        };
+
+        let state = {
+            running: false,
+            time: 0,
+            maxSpeed: 0,
+            crashed: false,
+            planet: { x: 0, y: 0, vx: 0, vy: 0, mass: 8000, radius: 18, color: '#1e90ff' },
+            ship: { x: 0, y: 0, vx: 0, vy: 0, radius: 4, color: '#ff4500', f_planet: {x:0, y:0} },
+            shipPath: [],
+            planetPath: [],
+            predictionPath: [],
+            predictionPlanets: [], 
+            speedHistory: [],
+            width: 0,
+            height: 0
+        };
+
+        const backgroundStars = [];
+
+        function init() {
+            generateStars();
+            bindEvents();
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+            initPlotCanvas();
+            loadPreset('trailing');
+            resetSimulation();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function generateStars() {
+            for(let i = 0; i < 200; i++) {
+                backgroundStars.push({
+                    x: (Math.random() - 0.5) * 3000,
+                    y: (Math.random() - 0.5) * 3000,
+                    size: Math.random() * 1.5 + 0.5,
+                    alpha: Math.random() * 0.7 + 0.1
+                });
+            }
+        }
+
+        function resizeCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            state.width = canvasContainer.clientWidth;
+            state.height = canvasContainer.clientHeight;
+            
+            canvas.width = state.width * dpr;
+            canvas.height = state.height * dpr;
+            
+            ctx.scale(dpr, dpr);
+
+            if (!state.running) {
+                draw();
+                drawPlot();
+            }
+        }
+
+        function initPlotCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            const pw = 280;
+            const ph = 100;
+            plotCanvas.width = pw * dpr;
+            plotCanvas.height = ph * dpr;
+            plotCtx.scale(dpr, dpr);
+        }
+
+        function bindEvents() {
+            UI.scenarioSelect.addEventListener('change', (e) => {
+                loadPreset(e.target.value);
+                resetSimulation();
+            });
+
+            const updateFromInputs = () => {
+                UI.valShipY.textContent = UI.shipY.value;
+                UI.valShipV.textContent = UI.shipV.value;
+                UI.valPlanetMass.textContent = UI.planetMass.value;
+                if (!state.running) resetSimulation();
+            };
+
+            UI.shipY.addEventListener('input', updateFromInputs);
+            UI.shipV.addEventListener('input', updateFromInputs);
+            UI.planetMass.addEventListener('input', updateFromInputs);
+
+            UI.btnStart.addEventListener('click', () => {
+                state.running = true;
+                UI.btnStart.disabled = true;
+                UI.btnPause.disabled = false;
+            });
+
+            UI.btnPause.addEventListener('click', () => {
+                state.running = false;
+                UI.btnStart.disabled = false;
+                UI.btnPause.disabled = true;
+            });
+
+            UI.btnReset.addEventListener('click', () => {
+                state.running = false;
+                UI.btnStart.disabled = false;
+                UI.btnPause.disabled = true;
+                resetSimulation();
+            });
+        }
+
+        function loadPreset(presetKey) {
+            const config = PRESETS[presetKey];
+            UI.shipY.value = config.y;
+            UI.shipV.value = config.v;
+            UI.planetMass.value = config.mass;
+            
+            UI.valShipY.textContent = config.y;
+            UI.valShipV.textContent = config.v;
+            UI.valPlanetMass.textContent = config.mass;
+        }
+
+        function resetSimulation() {
+            state.time = 0;
+            state.maxSpeed = 0;
+            state.crashed = false;
+            state.shipPath = [];
+            state.planetPath = [];
+            state.speedHistory = [];
+            
+            state.planet.mass = parseFloat(UI.planetMass.value);
+            
+            state.planet.x = 0;
+            state.planet.y = -180;
+            state.planet.vx = 0;
+            state.planet.vy = 10;
+
+            state.ship.x = -350;
+            state.ship.y = parseFloat(UI.shipY.value);
+            state.ship.vx = parseFloat(UI.shipV.value);
+            state.ship.vy = 0;
+
+            state.ship.f_planet = {x: 0, y: 0};
+
+            updatePrediction();
+            updateTelemetry();
+            draw();
+            drawPlot();
+        }
+
+        function stepPhysics(simState, dt, saveForces) {
+            if (simState.crashed) return;
+
+            const sdt = dt / PHYSICS.SUB_STEPS;
+
+            for (let i = 0; i < PHYSICS.SUB_STEPS; i++) {
+                simState.planet.x += simState.planet.vx * sdt;
+                simState.planet.y += simState.planet.vy * sdt;
+
+                let dx = simState.planet.x - simState.ship.x;
+                let dy = simState.planet.y - simState.ship.y;
+                let rsp2 = dx**2 + dy**2;
+                let rsp = Math.sqrt(rsp2);
+
+                if (rsp < simState.planet.radius + simState.ship.radius) {
+                    simState.crashed = true;
+                    return; 
+                }
+
+                let fs_planet = (PHYSICS.G * simState.planet.mass) / rsp2;
+                let ax_planet = fs_planet * (dx / rsp);
+                let ay_planet = fs_planet * (dy / rsp);
+
+                simState.ship.vx += ax_planet * sdt;
+                simState.ship.vy += ay_planet * sdt;
+                
+                simState.ship.x += simState.ship.vx * sdt;
+                simState.ship.y += simState.ship.vy * sdt;
+
+                if (saveForces && i === PHYSICS.SUB_STEPS - 1) {
+                    simState.ship.f_planet = { x: ax_planet, y: ay_planet };
+                }
+            }
+        }
+
+        function updatePrediction() {
+            let tempState = {
+                crashed: false,
+                planet: { ...state.planet },
+                ship: { ...state.ship }
+            };
+
+            state.predictionPath = [];
+            state.predictionPlanets = [];
+            
+            for (let step = 0; step < 3000; step++) {
+                stepPhysics(tempState, PHYSICS.DT, false);
+                
+                if (tempState.crashed) {
+                    break;
+                }
+                
+                if (step % 5 === 0) {
+                    state.predictionPath.push({ x: tempState.ship.x, y: tempState.ship.y });
+                }
+
+                if (step % 200 === 0 && step > 0) {
+                    state.predictionPlanets.push({ x: tempState.planet.x, y: tempState.planet.y });
+                }
+
+                if (Math.abs(tempState.ship.x) > 1500 || Math.abs(tempState.ship.y) > 1500) {
+                    break;
+                }
+            }
+        }
+
+        function updateTelemetry() {
+            let speed = Math.sqrt(state.ship.vx**2 + state.ship.vy**2);
+            if (speed > state.maxSpeed) state.maxSpeed = speed;
+
+            UI.telSpeed.textContent = speed.toFixed(2);
+            UI.telMaxSpeed.textContent = state.maxSpeed.toFixed(2);
+
+            if (state.crashed) {
+                UI.telSpeed.textContent = "CRASHED";
+                UI.telSpeed.style.color = "var(--danger-color)";
+            } else {
+                UI.telSpeed.style.color = "var(--accent-color)";
+            }
+        }
+
+        function drawPlot() {
+            const width = 280;
+            const height = 100;
+            
+            plotCtx.clearRect(0, 0, width, height);
+            
+            plotCtx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+            plotCtx.fillRect(0, 0, width, height);
+
+            if (state.speedHistory.length === 0) return;
+
+            const yMax = Math.max(25, state.maxSpeed * 1.1);
+            const history = state.speedHistory;
+            const xPoints = history.length;
+
+            plotCtx.beginPath();
+            plotCtx.strokeStyle = '#66fcf1';
+            plotCtx.lineWidth = 2;
+            plotCtx.lineJoin = 'round';
+
+            for (let i = 0; i < history.length; i++) {
+                let x = (i / Math.max(xPoints - 1, 1)) * width;
+                let y = height - (history[i] / yMax) * height;
+                
+                if (i === 0) plotCtx.moveTo(x, y);
+                else plotCtx.lineTo(x, y);
+            }
+            plotCtx.stroke();
+
+            plotCtx.lineTo(width, height);
+            plotCtx.lineTo(0, height);
+            plotCtx.fillStyle = 'rgba(102, 252, 241, 0.15)';
+            plotCtx.fill();
+        }
+
+        function drawArrow(ctx, fromX, fromY, toX, toY, color) {
+            const headlen = 8;
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, state.width, state.height);
+            ctx.save();
+            ctx.translate(state.width / 2, state.height / 2);
+
+            backgroundStars.forEach(star => {
+                ctx.fillStyle = `rgba(255, 255, 255, ${star.alpha})`;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            if (!state.running && state.predictionPath.length > 0) {
+                state.predictionPlanets.forEach(p => {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, state.planet.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(30, 144, 255, 0.15)';
+                    ctx.fill();
+                });
+
+                ctx.beginPath();
+                ctx.setLineDash([6, 6]);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.lineWidth = 1.5;
+                ctx.moveTo(state.ship.x, state.ship.y);
+                for (let p of state.predictionPath) {
+                    ctx.lineTo(p.x, p.y);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            if (state.planetPath.length > 1) {
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(30, 144, 255, 0.4)';
+                ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.moveTo(state.planetPath[0].x, state.planetPath[0].y);
+                for (let i = 1; i < state.planetPath.length; i++) {
+                    ctx.lineTo(state.planetPath[i].x, state.planetPath[i].y);
+                }
+                ctx.stroke();
+            }
+
+            if (state.shipPath.length > 1) {
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(255, 69, 0, 0.7)';
+                ctx.lineWidth = 2.5;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.moveTo(state.shipPath[0].x, state.shipPath[0].y);
+                for (let i = 1; i < state.shipPath.length; i++) {
+                    ctx.lineTo(state.shipPath[i].x, state.shipPath[i].y);
+                }
+                ctx.stroke();
+            }
+
+            ctx.beginPath();
+            ctx.arc(state.planet.x, state.planet.y, state.planet.radius, 0, Math.PI * 2);
+            ctx.fillStyle = state.planet.color;
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = state.planet.color;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            if (!state.crashed) {
+                ctx.beginPath();
+                ctx.arc(state.ship.x, state.ship.y, state.ship.radius, 0, Math.PI * 2);
+                ctx.fillStyle = state.ship.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = state.ship.color;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                let scaleF = 40; 
+                let fPlanetMax = Math.min(Math.sqrt(state.ship.f_planet.x**2 + state.ship.f_planet.y**2) * scaleF, 90);
+                if (fPlanetMax > 3) {
+                    let anglePlanet = Math.atan2(state.ship.f_planet.y, state.ship.f_planet.x);
+                    drawArrow(ctx, state.ship.x, state.ship.y, 
+                            state.ship.x + Math.cos(anglePlanet)*fPlanetMax, 
+                            state.ship.y + Math.sin(anglePlanet)*fPlanetMax, state.planet.color);
+                }
+
+                let vScale = 2.5;
+                drawArrow(ctx, state.ship.x, state.ship.y, 
+                        state.ship.x + state.ship.vx * vScale, 
+                        state.ship.y + state.ship.vy * vScale, '#ffffff');
+            } else {
+                ctx.beginPath();
+                ctx.arc(state.ship.x, state.ship.y, state.ship.radius * 5, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 76, 76, 0.6)';
+                ctx.shadowBlur = 25;
+                ctx.shadowColor = 'rgba(255, 76, 76, 1)';
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
+            ctx.restore();
+        }
+
+        function gameLoop() {
+            if (state.running) {
+                stepPhysics(state, PHYSICS.DT, true);
+
+                if (state.time % 3 === 0 && !state.crashed) {
+                    state.shipPath.push({ x: state.ship.x, y: state.ship.y });
+                    if (state.shipPath.length > 400) state.shipPath.shift();
+
+                    state.planetPath.push({ x: state.planet.x, y: state.planet.y });
+                    if (state.planetPath.length > 400) state.planetPath.shift();
+                }
+
+                if (!state.crashed && state.time % 2 === 0) {
+                    let currentSpeed = Math.sqrt(state.ship.vx**2 + state.ship.vy**2);
+                    state.speedHistory.push(currentSpeed);
+                    if (state.speedHistory.length > 600) state.speedHistory.shift();
+                }
+
+                state.time++;
+                updateTelemetry();
+            }
+
+            draw();
+            if (state.running && state.time % 2 === 0) drawPlot();
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        init();
+    </script>
+</body>
+</html>
