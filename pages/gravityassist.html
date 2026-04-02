@@ -232,9 +232,9 @@
             margin-bottom: 0;
         }
 
-        #plot-container {
+#plot-container {
             position: absolute;
-            bottom: 20px;
+            top: 20px;
             right: 20px;
             background: rgba(11, 12, 16, 0.85);
             padding: 15px;
@@ -314,7 +314,7 @@
             }
 
             #plot-container {
-                bottom: 10px;
+                top: 10px;
                 right: 10px;
                 padding: 10px;
             }
@@ -441,7 +441,7 @@
         };
 
         const PRESETS = {
-            'trailing': { y: 90, v: 10.0, mass: 8000 },
+            'trailing': { y: 132, v: 9.0, mass: 8000 },
             'leading': { y: 280, v: 10.0, mass: 8000 },
             'crash': { y: 150, v: 10.0, mass: 8000 },
         };
@@ -857,7 +857,7 @@ function draw() {
 
             ctx.restore();
         }
-        
+
         function gameLoop() {
             if (state.running) {
                 stepPhysics(state, PHYSICS.DT, true);
