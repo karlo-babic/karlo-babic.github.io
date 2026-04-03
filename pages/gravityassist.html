@@ -410,17 +410,31 @@
 
         <div class="telemetry">
             <div id="plot-container">
-                <div class="plot-title">Speed vs Time</div>
+                <div class="plot-title" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Speed vs Time</span>
+                    <span style="font-size: 0.65rem; font-weight: normal; color: #ccc;">
+                        <span style="color: var(--accent-color);">■</span> Abs
+                        <span style="color: #ffd700; margin-left: 5px;">■</span> Rel
+                    </span>
+                </div>
                 <canvas id="plot-canvas"></canvas>
             </div>
-
+        
             <div class="telemetry-row">
-                <span>Current Speed:</span>
-                <span id="tel-speed" style="color: var(--accent-color); font-weight: bold;">0.00</span>
+                <span>Abs Speed:</span>
+                <span id="tel-abs-speed" style="color: var(--accent-color); font-weight: bold;">0.00</span>
             </div>
             <div class="telemetry-row">
-                <span>Max Speed:</span>
-                <span id="tel-max-speed" style="color: #fff;">0.00</span>
+                <span>Rel Speed:</span>
+                <span id="tel-rel-speed" style="color: #ffd700; font-weight: bold;">0.00</span>
+            </div>
+            <div class="telemetry-row">
+                <span>Max Abs Speed:</span>
+                <span id="tel-max-abs-speed" style="color: #fff;">0.00</span>
+            </div>
+            <div class="telemetry-row">
+                <span>Max Rel Speed:</span>
+                <span id="tel-max-rel-speed" style="color: #fff;">0.00</span>
             </div>
         </div>
     </div>
@@ -452,8 +466,10 @@
             btnStart: document.getElementById('btn-start'),
             btnPause: document.getElementById('btn-pause'),
             btnReset: document.getElementById('btn-reset'),
-            telSpeed: document.getElementById('tel-speed'),
-            telMaxSpeed: document.getElementById('tel-max-speed')
+            telAbsSpeed: document.getElementById('tel-abs-speed'),
+            telRelSpeed: document.getElementById('tel-rel-speed'),
+            telMaxAbsSpeed: document.getElementById('tel-max-abs-speed'),
+            telMaxRelSpeed: document.getElementById('tel-max-rel-speed')
         };
 
         const PHYSICS = {
@@ -471,14 +487,16 @@
             running: false,
             viewMode: 'absolute',
             time: 0,
-            maxSpeed: 0,
+            maxAbsSpeed: 0,
+            maxRelSpeed: 0,
             crashed: false,
             planet: { x: 0, y: 0, vx: 0, vy: 0, mass: 8000, radius: 18, color: '#1e90ff' },
             ship: { x: 0, y: 0, vx: 0, vy: 0, radius: 4, color: '#ff4500', f_planet: {x:0, y:0} },
             shipPath: [],
             planetPath: [],
-            predictionPath:[],
-            speedHistory:[],
+            predictionPath: [],
+            speedHistoryAbs: [],
+            speedHistoryRel: [],
             width: 0,
             height: 0,
             plotWidth: 0,
@@ -592,11 +610,13 @@
 
         function resetSimulation() {
             state.time = 0;
-            state.maxSpeed = 0;
+            state.maxAbsSpeed = 0;
+            state.maxRelSpeed = 0;
             state.crashed = false;
             state.shipPath = [];
-            state.planetPath =[];
-            state.speedHistory =[];
+            state.planetPath = [];
+            state.speedHistoryAbs = [];
+            state.speedHistoryRel = [];
             
             state.planet.mass = parseFloat(UI.planetMass.value);
             
@@ -604,14 +624,14 @@
             state.planet.y = -180;
             state.planet.vx = 0;
             state.planet.vy = 10;
-
+            
             state.ship.x = -350;
             state.ship.y = parseFloat(UI.shipY.value);
             state.ship.vx = parseFloat(UI.shipV.value);
             state.ship.vy = 0;
-
+            
             state.ship.f_planet = {x: 0, y: 0};
-
+            
             updatePrediction();
             updateTelemetry();
             draw();
@@ -685,17 +705,28 @@
         }
 
         function updateTelemetry() {
-            let speed = Math.sqrt(state.ship.vx**2 + state.ship.vy**2);
-            if (speed > state.maxSpeed) state.maxSpeed = speed;
-
-            UI.telSpeed.textContent = speed.toFixed(2);
-            UI.telMaxSpeed.textContent = state.maxSpeed.toFixed(2);
-
+            let absSpeed = Math.sqrt(state.ship.vx**2 + state.ship.vy**2);
+            
+            let relVx = state.ship.vx - state.planet.vx;
+            let relVy = state.ship.vy - state.planet.vy;
+            let relSpeed = Math.sqrt(relVx**2 + relVy**2);
+            
+            if (absSpeed > state.maxAbsSpeed) state.maxAbsSpeed = absSpeed;
+            if (relSpeed > state.maxRelSpeed) state.maxRelSpeed = relSpeed;
+            
+            UI.telAbsSpeed.textContent = absSpeed.toFixed(2);
+            UI.telRelSpeed.textContent = relSpeed.toFixed(2);
+            UI.telMaxAbsSpeed.textContent = state.maxAbsSpeed.toFixed(2);
+            UI.telMaxRelSpeed.textContent = state.maxRelSpeed.toFixed(2);
+            
             if (state.crashed) {
-                UI.telSpeed.textContent = "CRASHED";
-                UI.telSpeed.style.color = "var(--danger-color)";
+                UI.telAbsSpeed.textContent = "CRASHED";
+                UI.telRelSpeed.textContent = "CRASHED";
+                UI.telAbsSpeed.style.color = "var(--danger-color)";
+                UI.telRelSpeed.style.color = "var(--danger-color)";
             } else {
-                UI.telSpeed.style.color = "var(--accent-color)";
+                UI.telAbsSpeed.style.color = "var(--accent-color)";
+                UI.telRelSpeed.style.color = "#ffd700";
             }
         }
 
@@ -704,36 +735,42 @@
             const height = state.plotHeight;
             
             if (width === 0 || height === 0) return;
-
+            
             plotCtx.clearRect(0, 0, width, height);
             
             plotCtx.fillStyle = 'rgba(255, 255, 255, 0.02)';
             plotCtx.fillRect(0, 0, width, height);
-
-            if (state.speedHistory.length === 0) return;
-
-            const yMax = Math.max(25, state.maxSpeed * 1.1);
-            const history = state.speedHistory;
-            const xPoints = history.length;
-
-            plotCtx.beginPath();
-            plotCtx.strokeStyle = '#66fcf1';
-            plotCtx.lineWidth = 2;
-            plotCtx.lineJoin = 'round';
-
-            for (let i = 0; i < history.length; i++) {
-                let x = (i / Math.max(xPoints - 1, 1)) * width;
-                let y = height - (history[i] / yMax) * height;
+            
+            if (state.speedHistoryAbs.length === 0) return;
+            
+            const yMax = Math.max(25, state.maxAbsSpeed * 1.1, state.maxRelSpeed * 1.1);
+            const xPoints = state.speedHistoryAbs.length;
+            
+            const drawLine = (history, color, fillStyle) => {
+                plotCtx.beginPath();
+                plotCtx.strokeStyle = color;
+                plotCtx.lineWidth = 2;
+                plotCtx.lineJoin = 'round';
                 
-                if (i === 0) plotCtx.moveTo(x, y);
-                else plotCtx.lineTo(x, y);
-            }
-            plotCtx.stroke();
-
-            plotCtx.lineTo(width, height);
-            plotCtx.lineTo(0, height);
-            plotCtx.fillStyle = 'rgba(102, 252, 241, 0.1)';
-            plotCtx.fill();
+                for (let i = 0; i < history.length; i++) {
+                    let x = (i / Math.max(xPoints - 1, 1)) * width;
+                    let y = height - (history[i] / yMax) * height;
+                    
+                    if (i === 0) plotCtx.moveTo(x, y);
+                    else plotCtx.lineTo(x, y);
+                }
+                plotCtx.stroke();
+                
+                if (fillStyle) {
+                    plotCtx.lineTo(width, height);
+                    plotCtx.lineTo(0, height);
+                    plotCtx.fillStyle = fillStyle;
+                    plotCtx.fill();
+                }
+            };
+            
+            drawLine(state.speedHistoryRel, '#ffd700', 'rgba(255, 215, 0, 0.05)');
+            drawLine(state.speedHistoryAbs, '#66fcf1', 'rgba(102, 252, 241, 0.1)');
         }
 
         function drawArrow(ctx, fromX, fromY, toX, toY, color, zoomScale = 1) {
@@ -938,9 +975,18 @@
                 }
 
                 if (!state.crashed && state.time % 2 === 0) {
-                    let currentSpeed = Math.sqrt(state.ship.vx**2 + state.ship.vy**2);
-                    state.speedHistory.push(currentSpeed);
-                    if (state.speedHistory.length > 600) state.speedHistory.shift();
+                    let absSpeed = Math.sqrt(state.ship.vx**2 + state.ship.vy**2);
+                    let relVx = state.ship.vx - state.planet.vx;
+                    let relVy = state.ship.vy - state.planet.vy;
+                    let relSpeed = Math.sqrt(relVx**2 + relVy**2);
+                    
+                    state.speedHistoryAbs.push(absSpeed);
+                    state.speedHistoryRel.push(relSpeed);
+                    
+                    if (state.speedHistoryAbs.length > 600) {
+                        state.speedHistoryAbs.shift();
+                        state.speedHistoryRel.shift();
+                    }
                 }
 
                 state.time++;
