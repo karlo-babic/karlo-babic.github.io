@@ -81,11 +81,7 @@
         }
 
         .control-group {
-            margin-bottom: 18px;
-            background: rgba(0, 0, 0, 0.25);
-            padding: 12px 15px;
-            border-radius: 8px;
-            border: 1px solid rgba(102, 252, 241, 0.1);
+            margin-top: 16px;
         }
 
         label {
@@ -156,7 +152,7 @@
             color: #fff;
             border: 1px solid var(--accent-hover);
             border-radius: 6px;
-            margin-bottom: 20px;
+            margin-top: 15px;
             cursor: pointer;
             font-size: 0.95rem;
             outline: none;
@@ -212,6 +208,58 @@
             display: block;
         }
 
+        .legend {
+            margin: 15px 0;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.85rem;
+            color: #d1d5db;
+        }
+
+        .color-box {
+            width: 24px;
+            height: 12px;
+            margin-right: 12px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .line-dashed-gold {
+            width: 100%;
+            height: 0;
+            border-top: 2px dashed rgba(255, 215, 0, 0.7);
+        }
+
+        .line-dashed-white {
+            width: 100%;
+            height: 0;
+            border-top: 2px dashed rgba(255, 255, 255, 0.5);
+        }
+        
+        .line-solid-orange {
+            width: 100%;
+            height: 0;
+            border-top: 2px solid rgba(255, 69, 0, 0.7);
+        }
+
+        .line-solid-blue {
+            width: 100%;
+            height: 0;
+            border-top: 2px solid rgba(30, 144, 255, 0.4);
+        }
+
         .telemetry {
             margin-top: auto;
             background: rgba(0, 0, 0, 0.4);
@@ -220,6 +268,8 @@
             font-family: 'Courier New', Courier, monospace;
             font-size: 1.05rem;
             border-left: 4px solid var(--accent-color);
+            display: flex;
+            flex-direction: column;
         }
 
         .telemetry-row {
@@ -228,59 +278,30 @@
             margin-bottom: 8px;
         }
 
-        .telemetry-row:last-child {
-            margin-bottom: 0;
-        }
-
-#plot-container {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(11, 12, 16, 0.85);
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.8);
-            border: 1px solid rgba(102, 252, 241, 0.3);
-            pointer-events: none;
-            backdrop-filter: blur(4px);
+        #plot-container {
+            margin-top: 15px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
         }
 
         .plot-title {
-            font-size: 0.8rem;
-            margin-bottom: 12px;
-            text-align: center;
-            font-weight: bold;
-            color: #fff;
+            font-size: 0.75rem;
+            margin-bottom: 8px;
+            text-align: left;
+            font-weight: 600;
+            color: #888;
             text-transform: uppercase;
             letter-spacing: 1px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        .legend {
-            margin-top: 20px;
-            margin-bottom: 20px;
-            font-size: 0.8rem;
-            background: rgba(0,0,0,0.2);
-            padding: 10px;
-            border-radius: 8px;
-        }
-        
-        .legend-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 8px;
-            color: #ddd;
-        }
-
-        .legend-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .color-box {
-            width: 14px;
-            height: 14px;
-            margin-right: 10px;
-            border-radius: 3px;
-            flex-shrink: 0;
+        canvas#plot-canvas {
+            width: 100%;
+            height: 100px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            border: 1px solid rgba(102, 252, 241, 0.15);
         }
 
         @media (max-width: 800px) {
@@ -290,7 +311,8 @@
 
             #sidebar {
                 width: 100%;
-                height: 45vh;
+                flex: 0 0 auto;
+                max-height: 55vh;
                 order: 2;
                 border-right: none;
                 border-top: 1px solid var(--accent-hover);
@@ -300,7 +322,7 @@
 
             #main-content {
                 width: 100%;
-                height: 55vh;
+                flex: 1 1 auto;
                 order: 1;
             }
 
@@ -311,17 +333,6 @@
             .control-group {
                 margin-bottom: 12px;
                 padding: 10px 12px;
-            }
-
-            #plot-container {
-                top: 10px;
-                right: 10px;
-                padding: 10px;
-            }
-
-            #plot-canvas {
-                width: 200px !important;
-                height: 80px !important;
             }
         }
     </style>
@@ -338,10 +349,20 @@
             <em>Adjust settings while paused. Dashed line indicates predicted path.</em>
         </p>
 
+        <div class="btn-group">
+            <button id="btn-start">Start</button>
+            <button id="btn-pause" disabled>Pause</button>
+            <button id="btn-reset">Reset</button>
+        </div>
+
         <select id="scenario-select">
             <option value="trailing">Trailing Assist (Speed Up)</option>
             <option value="leading">Leading Assist (Slow Down)</option>
-            <option value="crash">Planet Collision (Crash)</option>
+        </select>
+
+        <select id="view-select">
+            <option value="absolute">Absolute View (Fixed Space)</option>
+            <option value="relative">Planet-Relative View (Fixed Planet)</option>
         </select>
 
         <div class="control-group">
@@ -349,7 +370,7 @@
                 <span>Spacecraft Start Y</span>
                 <span id="val-ship-y">150</span>
             </label>
-            <input type="range" id="ship-y" min="-50" max="350" step="1" value="150">
+            <input type="range" id="ship-y" min="-200" max="350" step="1" value="150">
         </div>
 
         <div class="control-group">
@@ -365,31 +386,34 @@
                 <span>Planet Mass</span>
                 <span id="val-planet-mass">5000</span>
             </label>
-            <input type="range" id="planet-mass" min="1000" max="15000" step="100" value="5000">
-        </div>
-
-        <div class="btn-group">
-            <button id="btn-start">Start</button>
-            <button id="btn-pause" disabled>Pause</button>
-            <button id="btn-reset">Reset</button>
+            <input type="range" id="planet-mass" min="1000" max="50000" step="100" value="5000">
         </div>
 
         <div class="legend">
             <div class="legend-item">
-                <div class="color-box" style="background: transparent; border: 1px dashed rgba(255, 215, 0, 0.7);"></div> 
+                <div class="color-box"><div class="line-dashed-gold"></div></div> 
                 Relative Path (Planet Frame)
             </div>
             <div class="legend-item">
-                <div class="color-box" style="background: transparent; border: 1px dashed rgba(255, 255, 255, 0.6);"></div> 
-                Absolute Path (Observer Frame)
+                <div class="color-box"><div class="line-dashed-white"></div></div> 
+                Predicted Absolute Path
             </div>
             <div class="legend-item">
-                <div class="color-box" style="background: rgba(30, 144, 255, 0.3); border-radius: 50%;"></div> 
-                Predicted Planet Positions
+                <div class="color-box"><div class="line-solid-orange"></div></div> 
+                Spacecraft Trajectory
+            </div>
+            <div class="legend-item">
+                <div class="color-box"><div class="line-solid-blue"></div></div> 
+                Planet Trajectory
             </div>
         </div>
 
         <div class="telemetry">
+            <div id="plot-container">
+                <div class="plot-title">Speed vs Time</div>
+                <canvas id="plot-canvas"></canvas>
+            </div>
+
             <div class="telemetry-row">
                 <span>Current Speed:</span>
                 <span id="tel-speed" style="color: var(--accent-color); font-weight: bold;">0.00</span>
@@ -405,10 +429,6 @@
         <div id="canvas-container">
             <canvas id="sim-canvas"></canvas>
         </div>
-        <div id="plot-container">
-            <div class="plot-title">Absolute Speed vs Time</div>
-            <canvas id="plot-canvas" width="280" height="100" style="width: 280px; height: 100px;"></canvas>
-        </div>
     </div>
 
     <script>
@@ -418,9 +438,11 @@
         const canvasContainer = document.getElementById('canvas-container');
         const plotCanvas = document.getElementById('plot-canvas');
         const plotCtx = plotCanvas.getContext('2d');
+        const plotContainer = document.getElementById('plot-container');
 
         const UI = {
             scenarioSelect: document.getElementById('scenario-select'),
+            viewSelect: document.getElementById('view-select'),
             shipY: document.getElementById('ship-y'),
             shipV: document.getElementById('ship-v'),
             planetMass: document.getElementById('planet-mass'),
@@ -443,11 +465,11 @@
         const PRESETS = {
             'trailing': { y: 132, v: 9.0, mass: 8000 },
             'leading': { y: 280, v: 10.0, mass: 8000 },
-            'crash': { y: 150, v: 10.0, mass: 8000 },
         };
 
         let state = {
             running: false,
+            viewMode: 'absolute',
             time: 0,
             maxSpeed: 0,
             crashed: false,
@@ -455,21 +477,21 @@
             ship: { x: 0, y: 0, vx: 0, vy: 0, radius: 4, color: '#ff4500', f_planet: {x:0, y:0} },
             shipPath: [],
             planetPath: [],
-            predictionPath: [],
-            predictionPlanets: [], 
-            speedHistory: [],
+            predictionPath:[],
+            speedHistory:[],
             width: 0,
-            height: 0
+            height: 0,
+            plotWidth: 0,
+            plotHeight: 0
         };
 
-        const backgroundStars = [];
+        const backgroundStars =[];
 
         function init() {
             generateStars();
             bindEvents();
             window.addEventListener('resize', resizeCanvas);
             resizeCanvas();
-            initPlotCanvas();
             loadPreset('trailing');
             resetSimulation();
             requestAnimationFrame(gameLoop);
@@ -488,6 +510,8 @@
 
         function resizeCanvas() {
             const dpr = window.devicePixelRatio || 1;
+            
+            // Resize Main Canvas
             state.width = canvasContainer.clientWidth;
             state.height = canvasContainer.clientHeight;
             
@@ -496,25 +520,32 @@
             
             ctx.scale(dpr, dpr);
 
+            // Resize Plot Canvas
+            const pw = plotContainer.clientWidth;
+            const ph = 100;
+            
+            plotCanvas.width = pw * dpr;
+            plotCanvas.height = ph * dpr;
+            plotCtx.scale(dpr, dpr);
+            
+            state.plotWidth = pw;
+            state.plotHeight = ph;
+
             if (!state.running) {
                 draw();
                 drawPlot();
             }
         }
 
-        function initPlotCanvas() {
-            const dpr = window.devicePixelRatio || 1;
-            const pw = 280;
-            const ph = 100;
-            plotCanvas.width = pw * dpr;
-            plotCanvas.height = ph * dpr;
-            plotCtx.scale(dpr, dpr);
-        }
-
         function bindEvents() {
             UI.scenarioSelect.addEventListener('change', (e) => {
                 loadPreset(e.target.value);
                 resetSimulation();
+            });
+
+            UI.viewSelect.addEventListener('change', (e) => {
+                state.viewMode = e.target.value;
+                if (!state.running) draw();
             });
 
             const updateFromInputs = () => {
@@ -564,8 +595,8 @@
             state.maxSpeed = 0;
             state.crashed = false;
             state.shipPath = [];
-            state.planetPath = [];
-            state.speedHistory = [];
+            state.planetPath =[];
+            state.speedHistory =[];
             
             state.planet.mass = parseFloat(UI.planetMass.value);
             
@@ -629,8 +660,7 @@
                 ship: { ...state.ship }
             };
 
-            state.predictionPath = [];
-            state.predictionPlanets = [];
+            state.predictionPath =[];
             
             for (let step = 0; step < 3000; step++) {
                 stepPhysics(tempState, PHYSICS.DT, false);
@@ -646,10 +676,6 @@
                         relX: tempState.ship.x - tempState.planet.x,
                         relY: tempState.ship.y - tempState.planet.y
                     });
-                }
-
-                if (step % 200 === 0 && step > 0) {
-                    state.predictionPlanets.push({ x: tempState.planet.x, y: tempState.planet.y });
                 }
 
                 if (Math.abs(tempState.ship.x) > 1500 || Math.abs(tempState.ship.y) > 1500) {
@@ -674,12 +700,14 @@
         }
 
         function drawPlot() {
-            const width = 280;
-            const height = 100;
+            const width = state.plotWidth;
+            const height = state.plotHeight;
             
+            if (width === 0 || height === 0) return;
+
             plotCtx.clearRect(0, 0, width, height);
             
-            plotCtx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+            plotCtx.fillStyle = 'rgba(255, 255, 255, 0.02)';
             plotCtx.fillRect(0, 0, width, height);
 
             if (state.speedHistory.length === 0) return;
@@ -704,19 +732,23 @@
 
             plotCtx.lineTo(width, height);
             plotCtx.lineTo(0, height);
-            plotCtx.fillStyle = 'rgba(102, 252, 241, 0.15)';
+            plotCtx.fillStyle = 'rgba(102, 252, 241, 0.1)';
             plotCtx.fill();
         }
 
-        function drawArrow(ctx, fromX, fromY, toX, toY, color) {
-            const headlen = 8;
+        function drawArrow(ctx, fromX, fromY, toX, toY, color, zoomScale = 1) {
+            /**
+             * Scale the arrow head and line width inversely to the zoom scale
+             * to maintain consistent visual sizing on screen
+             */
+            const headlen = 8 / zoomScale;
             const dx = toX - fromX;
             const dy = toY - fromY;
             const angle = Math.atan2(dy, dx);
             
             ctx.beginPath();
             ctx.strokeStyle = color;
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 2 / zoomScale;
             ctx.moveTo(fromX, fromY);
             ctx.lineTo(toX, toY);
             ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
@@ -725,30 +757,43 @@
             ctx.stroke();
         }
 
-function draw() {
+        function draw() {
             ctx.clearRect(0, 0, state.width, state.height);
             ctx.save();
             ctx.translate(state.width / 2, state.height / 2);
 
+            /**
+             * Calculate a zoom scale to ensure that the initial positions 
+             * of all bodies (within an 800x800 logical area) remain visible
+             * even on smaller screens.
+             */
+            const minLogicalSize = 800;
+            const zoomScale = Math.min(state.width / minLogicalSize, state.height / minLogicalSize, 1);
+            ctx.scale(zoomScale, zoomScale);
+
+            let cameraX = state.viewMode === 'relative' ? state.planet.x : 0;
+            let cameraY = state.viewMode === 'relative' ? state.planet.y : 0;
+
             backgroundStars.forEach(star => {
+                let sx = (star.x - cameraX) % 3000;
+                let sy = (star.y - cameraY) % 3000;
+                
+                // Wrap stars infinitely for the moving camera
+                if (sx < -1500) sx += 3000; else if (sx > 1500) sx -= 3000;
+                if (sy < -1500) sy += 3000; else if (sy > 1500) sy -= 3000;
+
                 ctx.fillStyle = `rgba(255, 255, 255, ${star.alpha})`;
                 ctx.beginPath();
-                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.arc(sx, sy, star.size / zoomScale, 0, Math.PI * 2);
                 ctx.fill();
             });
 
-            if (!state.running && state.predictionPath.length > 0) {
-                state.predictionPlanets.forEach(p => {
-                    ctx.beginPath();
-                    ctx.arc(p.x, p.y, state.planet.radius, 0, Math.PI * 2);
-                    ctx.fillStyle = 'rgba(30, 144, 255, 0.15)';
-                    ctx.fill();
-                });
-
+            // Predicted Absolute Path (hidden in relative view to avoid confusion)
+            if (!state.running && state.predictionPath.length > 0 && state.viewMode === 'absolute') {
                 ctx.beginPath();
-                ctx.setLineDash([6, 6]);
+                ctx.setLineDash([6 / zoomScale, 6 / zoomScale]);
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-                ctx.lineWidth = 1.5;
+                ctx.lineWidth = 1.5 / zoomScale;
                 ctx.moveTo(state.ship.x, state.ship.y);
                 for (let p of state.predictionPath) {
                     ctx.lineTo(p.x, p.y);
@@ -759,23 +804,19 @@ function draw() {
 
             /**
              * The relative path is the orbit of the spacecraft drawn solely in the 
-             * planet's frame of reference, rendering a continuous hyperbolic curve 
-             * anchored to the current planet's absolute position.
-             * Because this path is statically defined in the planet's frame, we can 
-             * draw the entire pre-calculated future path translated to the 
-             * planet's current position, making the track fully visible at all times.
+             * planet's frame of reference.
              */
             if (state.predictionPath.length > 0) {
                 ctx.beginPath();
-                ctx.setLineDash([4, 4]);
+                ctx.setLineDash([4 / zoomScale, 4 / zoomScale]);
                 ctx.strokeStyle = 'rgba(255, 215, 0, 0.7)'; 
-                ctx.lineWidth = 1.5;
+                ctx.lineWidth = 1.5 / zoomScale;
 
                 let relativePathStarted = false;
 
                 for (let p of state.predictionPath) {
-                    let px = state.planet.x + p.relX;
-                    let py = state.planet.y + p.relY;
+                    let px = state.viewMode === 'relative' ? p.relX : state.planet.x + p.relX;
+                    let py = state.viewMode === 'relative' ? p.relY : state.planet.y + p.relY;
                     
                     if (!relativePathStarted) {
                         ctx.moveTo(px, py);
@@ -789,10 +830,11 @@ function draw() {
                 ctx.setLineDash([]);
             }
 
-            if (state.planetPath.length > 1) {
+            // Planet trajectory (only draw if absolute frame)
+            if (state.planetPath.length > 1 && state.viewMode === 'absolute') {
                 ctx.beginPath();
                 ctx.strokeStyle = 'rgba(30, 144, 255, 0.4)';
-                ctx.lineWidth = 3;
+                ctx.lineWidth = 3 / zoomScale;
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
                 ctx.moveTo(state.planetPath[0].x, state.planetPath[0].y);
@@ -802,32 +844,49 @@ function draw() {
                 ctx.stroke();
             }
 
+            // Spacecraft trajectory
             if (state.shipPath.length > 1) {
                 ctx.beginPath();
                 ctx.strokeStyle = 'rgba(255, 69, 0, 0.7)';
-                ctx.lineWidth = 2.5;
+                ctx.lineWidth = 2.5 / zoomScale;
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
-                ctx.moveTo(state.shipPath[0].x, state.shipPath[0].y);
+                
+                let first = state.shipPath[0];
+                ctx.moveTo(
+                    state.viewMode === 'relative' ? first.relX : first.x,
+                    state.viewMode === 'relative' ? first.relY : first.y
+                );
+                
                 for (let i = 1; i < state.shipPath.length; i++) {
-                    ctx.lineTo(state.shipPath[i].x, state.shipPath[i].y);
+                    let p = state.shipPath[i];
+                    ctx.lineTo(
+                        state.viewMode === 'relative' ? p.relX : p.x,
+                        state.viewMode === 'relative' ? p.relY : p.y
+                    );
                 }
                 ctx.stroke();
             }
 
+            let planetDrawX = state.viewMode === 'relative' ? 0 : state.planet.x;
+            let planetDrawY = state.viewMode === 'relative' ? 0 : state.planet.y;
+            
+            let shipDrawX = state.viewMode === 'relative' ? state.ship.x - state.planet.x : state.ship.x;
+            let shipDrawY = state.viewMode === 'relative' ? state.ship.y - state.planet.y : state.ship.y;
+
             ctx.beginPath();
-            ctx.arc(state.planet.x, state.planet.y, state.planet.radius, 0, Math.PI * 2);
+            ctx.arc(planetDrawX, planetDrawY, state.planet.radius, 0, Math.PI * 2);
             ctx.fillStyle = state.planet.color;
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = 20 / zoomScale;
             ctx.shadowColor = state.planet.color;
             ctx.fill();
             ctx.shadowBlur = 0;
 
             if (!state.crashed) {
                 ctx.beginPath();
-                ctx.arc(state.ship.x, state.ship.y, state.ship.radius, 0, Math.PI * 2);
+                ctx.arc(shipDrawX, shipDrawY, state.ship.radius, 0, Math.PI * 2);
                 ctx.fillStyle = state.ship.color;
-                ctx.shadowBlur = 10;
+                ctx.shadowBlur = 10 / zoomScale;
                 ctx.shadowColor = state.ship.color;
                 ctx.fill();
                 ctx.shadowBlur = 0;
@@ -836,20 +895,23 @@ function draw() {
                 let fPlanetMax = Math.min(Math.sqrt(state.ship.f_planet.x**2 + state.ship.f_planet.y**2) * scaleF, 90);
                 if (fPlanetMax > 3) {
                     let anglePlanet = Math.atan2(state.ship.f_planet.y, state.ship.f_planet.x);
-                    drawArrow(ctx, state.ship.x, state.ship.y, 
-                            state.ship.x + Math.cos(anglePlanet)*fPlanetMax, 
-                            state.ship.y + Math.sin(anglePlanet)*fPlanetMax, state.planet.color);
+                    drawArrow(ctx, shipDrawX, shipDrawY, 
+                            shipDrawX + Math.cos(anglePlanet)*fPlanetMax, 
+                            shipDrawY + Math.sin(anglePlanet)*fPlanetMax, state.planet.color, zoomScale);
                 }
 
                 let vScale = 2.5;
-                drawArrow(ctx, state.ship.x, state.ship.y, 
-                        state.ship.x + state.ship.vx * vScale, 
-                        state.ship.y + state.ship.vy * vScale, '#ffffff');
+                let shipDrawVx = state.viewMode === 'relative' ? state.ship.vx - state.planet.vx : state.ship.vx;
+                let shipDrawVy = state.viewMode === 'relative' ? state.ship.vy - state.planet.vy : state.ship.vy;
+
+                drawArrow(ctx, shipDrawX, shipDrawY, 
+                        shipDrawX + shipDrawVx * vScale, 
+                        shipDrawY + shipDrawVy * vScale, '#ffffff', zoomScale);
             } else {
                 ctx.beginPath();
-                ctx.arc(state.ship.x, state.ship.y, state.ship.radius * 5, 0, Math.PI * 2);
+                ctx.arc(shipDrawX, shipDrawY, state.ship.radius * 5, 0, Math.PI * 2);
                 ctx.fillStyle = 'rgba(255, 76, 76, 0.6)';
-                ctx.shadowBlur = 25;
+                ctx.shadowBlur = 25 / zoomScale;
                 ctx.shadowColor = 'rgba(255, 76, 76, 1)';
                 ctx.fill();
                 ctx.shadowBlur = 0;
