@@ -23,7 +23,7 @@ async function fetchFile(filename) {
     // Prioritized list of directories to search within.
     const basePaths = ['./data/sections/', './data/'];
     // Defines the search order for file extensions.
-    const extensions = ['md', 'txt', 'json'];
+    const extensions = ['md', 'txt', 'json', 'html'];
 
     for (const basePath of basePaths) {
         for (const ext of extensions) {
