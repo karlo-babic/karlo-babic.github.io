@@ -11,45 +11,7 @@ const Bml = {
         
         // YouTube Play-All bookmarklet
         'playall': `
-            (function() {
-                var linksAll = document.getElementsByTagName("a");
-                var linksVideos = [];
-                var linksOld = [];
-                
-                for (var i = 0; i < linksAll.length; i++) {
-                    var link = linksAll[i].getAttribute("href");
-                    if (link == null) continue;
-                    if (link.indexOf("/watch?v=") > -1) {
-                        linksVideos.push(link.slice(link.indexOf("/watch?v=")));
-                    } else if (link.indexOf("youtu") > -1) {
-                        linksVideos.push("/watch?v=" + link.slice(link.lastIndexOf("/") + 1));
-                    }
-                }
-                
-                var linksIFrame = document.getElementsByTagName("iframe");
-                for (var i = 0; i < linksIFrame.length; i++) {
-                    var link = linksIFrame[i].getAttribute("src");
-                    if (link == null) continue;
-                    if (link.indexOf("youtu") > -1) {
-                        linksVideos.push("/watch?v=" + link.slice(link.lastIndexOf("/") + 1));
-                    }
-                }
-                
-                var playlistLink = 'https://www.youtube.com/watch_videos?video_ids='; 
-                
-                for (var i = 0; i < linksVideos.length; i++) {
-                    var link = linksVideos[i].slice(9, 20);
-                    if (linksOld.indexOf(link) > -1 || link.length != 11 || link.indexOf('?') > -1 || link == "howyoutubew") continue;
-                    playlistLink += link + ',';
-                    linksOld.push(link);
-                }
-                
-                if (linksOld.length > 0) {
-                    window.open(playlistLink, '_blank').focus();
-                } else {
-                    alert("No YouTube videos found on this page.");
-                }
-            })();
+            (javascript: var linksAll = document.getElementsByTagName("a"); var linksVideos = []; var linksOld = []; for (var i = 0; i < linksAll.length; i++) {     var link = linksAll[i].getAttribute("href");     if (link == null) continue;     if (link.indexOf("/watch?v=") > -1) linksVideos.push(link.slice(link.indexOf("/watch?v=")) + 1, );     else if (link.indexOf("youtu") > -1) linksVideos.push("/watch?v=" + link.slice(link.lastIndexOf("/") + 1, )); } var linksIFrame = document.getElementsByTagName("iframe"); for (var i = 0; i < linksIFrame.length; i++) {     var link = linksIFrame[i].getAttribute("src");     if (link == null) continue;     if (link.indexOf("youtu") > -1) linksVideos.push("/watch?v=" + link.slice(link.lastIndexOf("/") + 1, )); } var playlistLink = 'https://www.youtube.com/embed/?playlist='; for (var i = 0; i < linksVideos.length; i++) {     var link = linksVideos[i].slice(9, 20);     if (linksOld.indexOf(link) > -1 || link.length != 11 || link.indexOf('?') > -1 || link == "howyoutubew") continue;     playlistLink += link;     playlistLink += ',';     linksOld.push(link); } window.open(playlistLink, '_blank').focus();)();
         `,
 
         // A simple example
