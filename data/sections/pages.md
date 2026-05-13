@@ -2,3 +2,4 @@
 [**God's Coin Toss**](/pages/cointoss)
 [**Spacetime Explorer**](/pages/spacetime)
 [**Gravity Assist**](/pages/gravityassist)
+[**Let Me LLM That For You**](/lmltfy/) & [**Let Me Do That For You**](/lmdtfy/)
