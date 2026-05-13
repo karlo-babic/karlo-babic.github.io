@@ -2,7 +2,14 @@ export const Console = {
     // --- Configuration ---
     availablePrograms: ['help', 'gameoflife', 'evoltree', 'mandelbrot', 'boids', 'gravitysim', 'glideroflife', 'gliderpong', 'wordweaver', 'eliza', 'radio', 'stream', 'fractal', 'tv', 'img', 'stats', 'read', 'txt', 'sun', 'nasa', 'ip', 'radar', 'chat', 'note', 'store'],
     // A list of programs to hide from UI elements like the dropdown, suggest-complete, and "next program".
-    hiddenPrograms: ['read', 'txt', 'sun', 'nasa', 'ip', 'radar', 'chat', 'note', 'store'],
+    hiddenPrograms: ['read', 'txt', 'sun', 'nasa', 'ip', 'chat', 'radar', 'note', 'store'],
+    // Category groupings for the dropdown. Only visible (non-hidden) programs need to be listed here.
+    programCategories: {
+        'Simulations': ['boids', 'evoltree', 'gameoflife', 'glideroflife', 'gravitysim', 'mandelbrot'],
+        'Games':       ['gliderpong', 'wordweaver'],
+        'Broadcast':   ['fractal', 'radio', 'stream', 'tv'],
+        'Utilities':   ['eliza', 'help', 'img', 'stats'],
+    },
 
     // --- State ---
     currentProgramIndex: 0,
@@ -193,25 +200,44 @@ export const Console = {
         this.loadProgram(this.availablePrograms[this.currentProgramIndex], this.currentProgramArgs);
     },
 
+    _createDropdownItem: function(programName) {
+        const item = document.createElement('a');
+        item.href = '#';
+        item.textContent = programName;
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.currentProgramIndex = this.availablePrograms.indexOf(programName);
+            this.loadProgram(programName);
+            this.programListEl.classList.remove('show');
+        });
+        return item;
+    },
+
     populateDropdown: function() {
         if (!this.programListEl) return;
         this.programListEl.innerHTML = '';
-        // Filter out hidden programs before populating the list.
         const visiblePrograms = this.availablePrograms.filter(p => !this.hiddenPrograms.includes(p));
+        const categorized = new Set();
 
-        visiblePrograms.forEach(programName => {
-            const item = document.createElement('a');
-            item.href = '#';
-            item.textContent = programName;
-            item.addEventListener('click', (e) => {
-                e.preventDefault();
-                // Find the original index in the complete list.
-                this.currentProgramIndex = this.availablePrograms.indexOf(programName);
-                this.loadProgram(programName);
-                this.programListEl.classList.remove('show');
+        for (const [catName, programs] of Object.entries(this.programCategories)) {
+            const catPrograms = programs.filter(p => visiblePrograms.includes(p));
+            if (catPrograms.length === 0) continue;
+
+            const label = document.createElement('span');
+            label.className = 'dropdown-category-label';
+            label.textContent = catName;
+            this.programListEl.appendChild(label);
+
+            catPrograms.forEach(programName => {
+                categorized.add(programName);
+                this.programListEl.appendChild(this._createDropdownItem(programName));
             });
-            this.programListEl.appendChild(item);
-        });
+        }
+
+        // Any visible program not assigned to a category falls through here.
+        visiblePrograms
+            .filter(p => !categorized.has(p))
+            .forEach(p => this.programListEl.appendChild(this._createDropdownItem(p)));
     },
 
     toggleDropdown: function() {

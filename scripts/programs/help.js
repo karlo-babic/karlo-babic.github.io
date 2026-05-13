@@ -1,79 +1,95 @@
 import { BaseText } from './engines/base_text.js';
 
-let helpData = null; // Use null to check if data has been loaded
+let helpData = null;
 
-/**
- * Fetches and caches the help data from the external JSON file.
- */
 async function loadHelpData() {
-    // If data is already loaded, don't fetch it again.
-    if (helpData) {
-        return helpData;
-    }
+    if (helpData) return helpData;
     try {
         const response = await fetch('./data/help.json');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         helpData = await response.json();
         return helpData;
     } catch (error) {
         console.error("Could not load help data:", error);
-        return { _general: "Error: Could not load help data." }; // Fallback data
+        return { _general: "Error: Could not load help data." };
     }
 }
 
-/**
- * Generates the main help screen listing all commands.
- * @param {object} data The loaded help data.
- */
+function levenshtein(a, b) {
+    const n = b.length;
+    const row = Array.from({ length: n + 1 }, (_, i) => i);
+    for (let i = 1; i <= a.length; i++) {
+        let prev = row[0];
+        row[0] = i;
+        for (let j = 1; j <= n; j++) {
+            const temp = row[j];
+            row[j] = a[i - 1] === b[j - 1] ? prev : 1 + Math.min(prev, row[j], row[j - 1]);
+            prev = temp;
+        }
+    }
+    return row[n];
+}
+
+function findSuggestion(data, topic) {
+    const topics = Object.keys(data).filter(k => !k.startsWith('_'));
+    let best = null, bestDist = Infinity;
+    for (const t of topics) {
+        const d = levenshtein(topic, t);
+        if (d < bestDist) { bestDist = d; best = t; }
+    }
+    return bestDist <= 3 ? best : null;
+}
+
 function getMainHelp(data) {
     let content = data._general || '';
-    for (const cmd in data) {
-        if (cmd.startsWith('_')) continue;
-        const usage = data[cmd].usage;
-        const description = data[cmd].description;
-        content += `\n<b><a href="/console?run=${cmd}">${cmd}</a></b>\n  ${usage}\n  ${description}\n`;
+    const categories = data._categories;
+
+    if (categories) {
+        for (const [catName, programs] of Object.entries(categories)) {
+            content += `\n<b>${catName.toUpperCase()}</b>\n`;
+            for (const cmd of programs) {
+                if (!data[cmd]) continue;
+                content += `\n  <b><a href="/console?run=${cmd}">${cmd}</a></b>\n    ${data[cmd].usage}\n    ${data[cmd].description}\n`;
+            }
+        }
+    } else {
+        for (const cmd in data) {
+            if (cmd.startsWith('_')) continue;
+            content += `\n<b><a href="/console?run=${cmd}">${cmd}</a></b>\n  ${data[cmd].usage}\n  ${data[cmd].description}\n`;
+        }
     }
     return content;
 }
 
-/**
- * Generates the detailed help for a specific topic.
- * @param {object} data The loaded help data.
- * @param {string} topic The command to get help for.
- */
 function getTopicHelp(data, topic) {
     if (!data[topic] || topic.startsWith('_')) {
-        return `Error: No help topic for '${topic}'.`;
+        const suggestion = findSuggestion(data, topic);
+        const hint = suggestion ? `\nDid you mean '<b>${suggestion}</b>'? Try: help ${suggestion}` : '';
+        return `Error: No help topic for '${topic}'.${hint}`;
     }
-    const topicData = data[topic];
+    const d = data[topic];
     let content = `<b>COMMAND</b>\n  ${topic}\n\n`;
-    content += `<b>DESCRIPTION</b>\n  ${topicData.description}\n\n`;
-    content += `<b>USAGE</b>\n  ${topicData.usage}\n\n`;
-    content += `<b>DETAILS</b>\n  ${topicData.details}`;
+    content += `<b>DESCRIPTION</b>\n  ${d.description}\n\n`;
+    content += `<b>USAGE</b>\n  ${d.usage}\n\n`;
+    content += `<b>DETAILS</b>\n  ${d.details}`;
+    if (d.see_also && d.see_also.length > 0) {
+        const links = d.see_also.map(cmd => `<a href="/console?run=${cmd}">${cmd}</a>`).join(', ');
+        content += `\n\n<b>SEE ALSO</b>\n  ${links}`;
+    }
     return content;
 }
 
-
-// The public interface for the Console.
 const Help = {
     engine: null,
 
-    // The init function must be async to wait for the data
     init: async function(screenEl, args = { positional: [], named: {} }) {
         this.engine = new BaseText(screenEl);
-        
-        // Wait for the help data to be loaded
         const data = await loadHelpData();
-        let content = '';
 
-        if (args.positional.length === 0) {
-            content = getMainHelp(data);
-        } else {
-            content = getTopicHelp(data, args.positional[0]);
-        }
-        
+        const content = args.positional.length === 0
+            ? getMainHelp(data)
+            : getTopicHelp(data, args.positional[0]);
+
         this.engine.render(content);
     },
 
@@ -84,9 +100,7 @@ const Help = {
         }
     },
 
-    onResize: function() {
-        // Not needed for this program.
-    }
+    onResize: function() {}
 };
 
 export default Help;

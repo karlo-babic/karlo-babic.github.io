@@ -1,78 +1,137 @@
 {
-    "_general": "Karlo's Observatory <a href=\"/console\" target=\"_blank\">Console</a> - v1.0\nType 'help [command]' for more information on a specific command.\n<br>",
+    "_general": "Karlo's Observatory <a href=\"/console\" target=\"_blank\">Console</a>\nType 'help [command]' for more information on a specific command.\n<br>",
+    "_categories": {
+        "Simulations": ["boids", "evoltree", "gameoflife", "glideroflife", "gravitysim", "mandelbrot"],
+        "Games": ["gliderpong", "wordweaver"],
+        "Broadcast": ["fractal", "radio", "stream", "tv"],
+        "Utilities": ["chat", "eliza", "help", "img", "ip", "nasa", "read", "stats", "sun", "txt"]
+    },
     "help": {
         "description": "Provides help information for console commands.",
         "usage": "help [command]",
-        "details": "Displays a list of all available commands. If a command is specified, it shows detailed information for that command."
+        "details": "Displays a list of all available commands grouped by category. If a command is specified, shows detailed information including usage, description, and examples.\n\nExamples:\n  help\n  help boids\n  help radio"
     },
     "boids": {
         "description": "A flocking simulation based on Craig Reynolds' Boids algorithm.",
         "usage": "boids [-b|--boids N] [-s|--separation N] [-a|--alignment N] [-c|--cohesion N]",
-        "details": "Simulates the collective motion of a group of boids. The simulation can be customized with the following options:\n\n  -b, --boids       [int]    The desired number of boids to simulate (Default: 1024)\n  -s, --separation  [float]  Strength of the force to avoid crowding (Default: 0.01)\n  -a, --alignment   [float]  Strength of the force to steer towards the average flock direction (Default: 0.015)\n  -c, --cohesion    [float]  Strength of the force to steer towards the center of the flock (Default: 0.6)\n\nUse your mouse to apply a repulsive force to the boids."
+        "details": "Simulates the collective motion of a group of boids. The simulation can be customized with the following options:\n\n  -b, --boids       [int]    The desired number of boids to simulate (Default: 1024)\n  -s, --separation  [float]  Strength of the force to avoid crowding (Default: 0.01)\n  -a, --alignment   [float]  Strength of the force to steer towards the average flock direction (Default: 0.015)\n  -c, --cohesion    [float]  Strength of the force to steer towards the center of the flock (Default: 0.6)\n\nUse your mouse to apply a repulsive force to the boids.\n\nExamples:\n  boids\n  boids -b 512\n  boids -b 2048 -s 0.02 -a 0.01 -c 0.4",
+        "see_also": ["gravitysim", "evoltree"]
     },
     "gameoflife": {
         "description": "Conway's Game of Life, a cellular automaton.",
         "usage": "gameoflife",
-        "details": "A zero-player game where the evolution of the system is determined by its initial state. Click or drag on the grid to draw living cells."
+        "details": "A zero-player game where the evolution of the system is determined by its initial state. Click or drag on the grid to draw living cells.\n\nExample:\n  gameoflife",
+        "see_also": ["glideroflife"]
     },
     "evoltree": {
         "description": "A simulation of evolutionary branching.",
         "usage": "evoltree",
-        "details": "Visualizes how species can diverge over time through reproduction and mutation. Organisms that are too similar or too far apart die out."
+        "details": "Visualizes how species can diverge over time through reproduction and mutation. Organisms that are too similar or too far apart die out.\n\nExample:\n  evoltree",
+        "see_also": ["boids"]
     },
     "mandelbrot": {
         "description": "An interactive visualization of the Mandelbrot set.",
         "usage": "mandelbrot",
-        "details": "A fractal viewer. Use the mouse wheel or pinch-to-zoom to explore. Click and drag to pan."
+        "details": "A fractal viewer. Use the mouse wheel or pinch-to-zoom to explore. Click and drag to pan.\n\nExample:\n  mandelbrot",
+        "see_also": ["fractal"]
     },
     "gravitysim": {
         "description": "A particle-based N-body gravity simulation.",
         "usage": "gravitysim",
-        "details": "Simulates a galaxy of particles interacting under a simplified gravity model. The mouse acts as a massive 'sun' that attracts particles."
+        "details": "Simulates a galaxy of particles interacting under a simplified gravity model. The mouse acts as a massive 'sun' that attracts particles.\n\nExample:\n  gravitysim",
+        "see_also": ["boids"]
     },
     "glideroflife": {
         "description": "A survival game based on Conway's Game of Life.",
         "usage": "glideroflife",
-        "details": "Control a single glider with the arrow keys. Navigate the grid to collect food for points while avoiding disruption by other 'wild' cells. Collecting food increases the game speed and spawns more wild cells."
+        "details": "Control a single glider with the arrow keys. Navigate the grid to collect food for points while avoiding disruption by other 'wild' cells. Collecting food increases the game speed and spawns more wild cells.\n\nExample:\n  glideroflife",
+        "see_also": ["gameoflife"]
+    },
+    "gliderpong": {
+        "description": "A physics-based Pong game using paper gliders. Inspired by Paperfall.",
+        "usage": "gliderpong",
+        "details": "A multi-mode game in which paper gliders deflect a bouncing ball. Gliders are governed by realistic aerodynamic physics: gravity, air resistance, and a rising wind zone near the bottom of the arena. The ball speeds up with each hit.\n\nModes (select on the title screen):\n  1  Single Player  Deflect the ball and clear all bricks\n  2  Versus         Two players on one keyboard; last glider standing wins\n  3  Practice       Ball bounces off the floor; drag the WIND tab to adjust wind height\n\nControls:\n  P1 (or single):  Arrow Keys, or tap screen halves on mobile\n  P2:              A / D\n  Space / Enter:   Start or restart\n  Escape:          Pause / return to title\n\nExample:\n  gliderpong"
+    },
+    "wordweaver": {
+        "description": "A word game where you navigate a latent language space to reach a target phrase.",
+        "usage": "wordweaver",
+        "details": "An NLP typing game powered by an n-gram language model. Starting from a seed phrase, you build a sentence one word at a time, guided by the model's top grammatical predictions.\n\nGoal: reach the TARGET SEQUENCE shown at the top before you run out of valid paths.\n\nRules:\n  - You may only type words that appear in the prediction candidates shown in brackets.\n  - Words highlighted in blue lie on the hidden optimal path to the target.\n  - Only the top 10% of predicted candidates are valid (minimum 5).\n\nControls:\n  Tab              Autocomplete to the common prefix; or commit if the word is already complete\n  Enter            Commit the current word\n  Ctrl+Backspace   Undo the last committed word\n\nThe seed input on the menu screen pins the puzzle — share a seed to challenge a friend to the same game.\n\nExample:\n  wordweaver",
+        "see_also": ["stream", "eliza"]
     },
     "eliza": {
         "description": "A simulation of a Rogerian psychotherapist.",
         "usage": "eliza",
-        "details": "A JavaScript port of Joseph Weizenbaum's classic 1966 ELIZA program. It engages in a text-based conversation by parodying a non-directional psychotherapist."
+        "details": "A JavaScript port of Joseph Weizenbaum's classic 1966 ELIZA program. It engages in a text-based conversation by parodying a non-directional psychotherapist.\n\nExample:\n  eliza",
+        "see_also": ["wordweaver", "chat"]
     },
     "radio": {
         "description": "An infinite procedural chiptune radio station and visualizer. The generated music is synchronized across all clients in real-time.",
         "usage": "radio [id]",
-        "details": "Generates real-time 8-bit music using algorithmic composition and chiptune synthesis.\n\nSubcommands/Arguments:\n  id            Displays the current station ID and copies it to the clipboard.\n  [number]      Tunes to a specific station ID and remains on that song."
+        "details": "Generates real-time 8-bit music using algorithmic composition and chiptune synthesis.\n\nSubcommands/Arguments:\n  id            Displays the current station ID and copies it to the clipboard.\n  [number]      Tunes to a specific station ID and stays on that song.\n\nExamples:\n  radio\n  radio id\n  radio 42",
+        "see_also": ["tv", "stream"]
     },
     "stream": {
         "description": "A synchronous generative text broadcast based on n-gram language modeling (trained on books I like).",
         "usage": "stream [optional initial text]",
-        "details": "When run without arguments, connects to a globally synchronized timeline where all users observe the exact same procedural text being generated simultaneously.\n\nWhen provided with text arguments, detaches from the global broadcast and generates a single custom block continuing from your prompt."
+        "details": "When run without arguments, connects to a globally synchronized timeline where all users observe the exact same procedural text being generated simultaneously.\n\nWhen provided with text arguments, detaches from the global broadcast and generates a single custom block continuing from your prompt.\n\nExamples:\n  stream\n  stream the ancient forest",
+        "see_also": ["tv", "radio", "wordweaver"]
+    },
+    "fractal": {
+        "description": "A synchronized procedural fractal visualizer that morphs between formulas over time.",
+        "usage": "fractal",
+        "details": "Renders an evolving GPU-accelerated fractal in real time, shared across all viewers. Seamlessly blends between Mandelbrot, Burning Ship, and higher-order power variants on a 60-second cycle.\n\nThe interior of the set uses orbit-trap coloring to produce nebula-like structures. No interaction required.\n\nExample:\n  fractal",
+        "see_also": ["tv", "mandelbrot"]
+    },
+    "tv": {
+        "description": "A composite audio-visual broadcast: synchronized fractals, chiptune music, and generative subtitles with speech synthesis.",
+        "usage": "tv",
+        "details": "Combines three programs into a single ambient broadcast:\n  - Visuals:   Evolving fractals (fractal)\n  - Audio:     Generative chiptune music (radio)\n  - Subtitles: Deterministic n-gram text (stream), read aloud via browser TTS\n\nAll layers are globally synchronized — every viewer sees and hears the same broadcast at the same moment.\n\nExample:\n  tv",
+        "see_also": ["fractal", "radio", "stream"]
     },
     "img": {
         "description": "Displays a random image based on a specified topic.",
         "usage": "img [topic]",
-        "details": "Fetches a high-resolution random image from LoremFlickr. If no topic is provided, it defaults to 'nature'. Supports multi-word topics for specific searches (e.g., 'img deep space')."
-    },
-    "sun": {
-        "description": "Displays live high-resolution imagery of the Sun from NASA's SDO.",
-        "usage": "sun",
-        "details": "Provides real-time solar observations from the Solar Dynamics Observatory. Hovering over the image toggles between the Photosphere (visible light) and the Corona (Extreme Ultraviolet, 171Å)."
-    },
-    "nasa": {
-        "description": "Displays NASA's Astronomy Picture of the Day.",
-        "usage": "nasa",
-        "details": "Fetches the daily featured image or video from NASA. The media fills the console view; scroll down to read the professional astronomer's explanation. Clicking the image opens the high-definition version in a new tab."
-    },
-    "ip": {
-        "description": "Displays information about an IP address.",
-        "usage": "ip [address]",
-        "details": "Retrieves network and geolocation data. If no address is provided, it returns data for your current public IP. Otherwise, it lookups the specified IPv4 or IPv6 address."
+        "details": "Fetches a high-resolution random image from LoremFlickr. If no topic is provided, it defaults to 'nature'. Supports multi-word topics for specific searches.\n\nExamples:\n  img\n  img deep space\n  img brutalist architecture",
+        "see_also": ["nasa", "sun"]
     },
     "stats": {
         "description": "Displays comprehensive system, hardware, and session diagnostics.",
         "usage": "stats",
-        "details": "Aggregates all available browser telemetry, including hardware specs (CPU cores, RAM estimate, GPU renderer), display metrics (resolution, refresh rate, HDR support), network performance, and persistent visit counts."
+        "details": "Aggregates all available browser telemetry, including hardware specs (CPU cores, RAM estimate, GPU renderer), display metrics (resolution, refresh rate, HDR support), network performance, and persistent visit counts.\n\nExample:\n  stats"
+    },
+    "sun": {
+        "description": "Displays live high-resolution imagery of the Sun from NASA's SDO.",
+        "usage": "sun",
+        "details": "Provides real-time solar observations from the Solar Dynamics Observatory. Hovering over the image toggles between the Photosphere (visible light) and the Corona (Extreme Ultraviolet, 171Å).\n\nExample:\n  sun",
+        "see_also": ["nasa"]
+    },
+    "nasa": {
+        "description": "Displays NASA's Astronomy Picture of the Day.",
+        "usage": "nasa",
+        "details": "Fetches the daily featured image or video from NASA. The media fills the console view; scroll down to read the professional astronomer's explanation. Clicking the image opens the high-definition version in a new tab.\n\nExample:\n  nasa",
+        "see_also": ["sun", "img"]
+    },
+    "ip": {
+        "description": "Displays information about an IP address.",
+        "usage": "ip [address]",
+        "details": "Retrieves network and geolocation data. If no address is provided, it returns data for your current public IP. Otherwise, it looks up the specified IPv4 or IPv6 address.\n\nExamples:\n  ip\n  ip 8.8.8.8"
+    },
+    "read": {
+        "description": "Reads and renders a file from the data directory.",
+        "usage": "read <filename>",
+        "details": "Fetches and displays a file from the data/sections/ or data/ directories. Supports Markdown (.md), plain text (.txt), HTML (.html), and JSON (.json). Markdown is rendered with formatting; plain text is shown verbatim.\n\nExamples:\n  read quotes\n  read games",
+        "see_also": ["txt"]
+    },
+    "txt": {
+        "description": "Text processing utilities: transform, analyze, or clean pasted text.",
+        "usage": "txt <subcommand> <text>",
+        "details": "Applies a text transformation to the supplied input. For all subcommands except 'stats', the result is automatically copied to the clipboard.\n\nSubcommands:\n  lower   Convert to lowercase\n  title   Convert to Title Case\n  clean   Strip all non-alphanumeric characters\n  sort    Clean and sort words alphabetically\n  stats   Show word count, top words, bigrams, and trigrams\n  urls    Extract all URLs from the text\n\nExamples:\n  txt lower Hello World\n  txt stats The quick brown fox jumped over the lazy dog\n  txt urls Visit https://example.com and https://nasa.gov",
+        "see_also": ["read"]
+    },
+    "chat": {
+        "description": "A decentralized P2P chat room over WebRTC.",
+        "usage": "chat",
+        "details": "Connects to a global peer-to-peer chat room with no central server. Uses WebRTC for direct browser-to-browser communication. Enter a username to join.\n\nCommands (once connected):\n  /users   List all currently connected users\n  /quit    Disconnect and leave the room\n\nExample:\n  chat",
+        "see_also": ["eliza"]
     }
 }
