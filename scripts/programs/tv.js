@@ -21,6 +21,11 @@ const TV = {
     sentenceBuffer: [],
     EPOCH: 1709251200000,
 
+    _speechQueue: [],
+    _speaking: false,
+    _unmuted: false,
+    _muteBtn: null,
+
     init: async function(screenEl, args = { positional: [], named: {} }) {
         this.screenEl = screenEl;
         this.screenEl.style.position = 'relative';
@@ -35,6 +40,7 @@ const TV = {
         Radio.init(this.radioContainer, args);
         await Stream.init(this.streamContainer, args);
 
+        this._setupMuteButton();
         this.attachSubtitleObserver();
     },
 
@@ -119,7 +125,7 @@ const TV = {
                     if (!text || text === '[EOF]') return;
 
                     const { seed } = this.getGlobalSyncState();
-                    const targetBatchSize = 3 + (Math.floor(Math.abs(Math.sin(seed) * 100.0)) % 6);
+                    const targetBatchSize = 8 + (Math.floor(Math.abs(Math.sin(seed) * 100.0)) % 6);
 
                     if (text === '.') {
                         if (this.sentenceBuffer.length > 0) {
@@ -169,17 +175,55 @@ const TV = {
         }
     },
 
-    speak: function(text) {
-        if (!window.speechSynthesis) return;
+    _setupMuteButton: function() {
+        const mutedSVG   = `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M16.5 12A4.5 4.5 0 0 0 14 7.97v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.796 8.796 0 0 0 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.99 8.99 0 0 0 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>`;
+        const unmutedSVG = `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>`;
 
-        const utterance = new SpeechSynthesisUtterance(text);
+        this._muteBtn = document.createElement('button');
+        Object.assign(this._muteBtn.style, {
+            position: 'absolute', bottom: '16px', right: '16px', zIndex: '20',
+            background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,0,0.2)',
+            borderRadius: '4px', padding: '5px 7px', cursor: 'pointer', lineHeight: '0',
+        });
+
+        const sync = () => {
+            this._muteBtn.innerHTML = this._unmuted ? unmutedSVG : mutedSVG;
+            this._muteBtn.style.color = this._unmuted ? '#ffff00' : 'rgba(255,255,255,0.4)';
+        };
+        sync();
+
+        this._muteBtn.addEventListener('click', () => {
+            this._unmuted = !this._unmuted;
+            sync();
+            if (this._unmuted) {
+                if (!this._speaking) this._speakNext();
+            } else {
+                window.speechSynthesis.cancel();
+                this._speaking = false;
+                this._speechQueue = [];
+            }
+        });
+
+        this.screenEl.appendChild(this._muteBtn);
+    },
+
+    speak: function(text) {
+        if (!this._unmuted || !window.speechSynthesis) return;
+        this._speechQueue.push(text);
+        if (!this._speaking) this._speakNext();
+    },
+
+    _speakNext: function() {
+        if (!this._unmuted || !this._speechQueue.length) { this._speaking = false; return; }
+        this._speaking = true;
+        const text = this._speechQueue.shift();
         const { seed } = this.getGlobalSyncState();
-        
-        // Slightly lower pitch and rate to fit the surreal broadcast aesthetic
+        const utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = 1.3;
         utterance.pitch = Math.max(0.1, Math.abs(Math.sin(seed)) * 2);
-        utterance.volume = 0.9;
-
+        utterance.volume = 1.4;
+        utterance.onend = () => this._speakNext();
+        utterance.onerror = () => this._speakNext();
         window.speechSynthesis.speak(utterance);
     },
     
@@ -188,6 +232,11 @@ const TV = {
             this.subtitleObserver.disconnect();
             this.subtitleObserver = null;
         }
+
+        this._speechQueue = [];
+        this._speaking = false;
+        this._unmuted = false;
+        this._muteBtn = null;
 
         if (window.speechSynthesis) {
             window.speechSynthesis.cancel();
