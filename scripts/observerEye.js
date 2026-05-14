@@ -1,6 +1,7 @@
 import { Mouse } from './utils.js';
 import { AppEvents } from './utils.js';
 import { rocket } from './rocket.js';
+import { userState } from './userState.js';
 // Note: rocket is a circular dependency here. It's better if Eye doesn't know about rocket directly.
 // We will leave it for now, but this could be improved later with more event-driven logic.
 
@@ -88,16 +89,40 @@ export const Eye = {
         }
     },
 
+    _getVisitorContext: function() {
+        const visits = userState.get('visitCount');
+        const gap = userState.gap; // ms away before this visit; null on first visit
+
+        if (visits === 1 || gap === null) {
+            return "Welcome to Karlo's observatory.";
+        }
+
+        // Milestone acknowledgements take priority
+        if (visits === 10)  return "Ten visits. I keep count.";
+        if (visits === 50)  return "Fifty visits now. A familiar presence.";
+        if (visits % 100 === 0) return `Visit ${visits}. I remember each one.`;
+
+        const hours = gap / 3_600_000;
+        const days  = hours / 24;
+
+        if (hours < 1)   return "Back so soon.";
+        if (hours < 6)   return "You returned.";
+        if (days  < 1)   return "Back again today.";
+        if (days  < 2)   return "It has been about a day.";
+        if (days  < 7)   return `${Math.round(days)} days have passed.`;
+        if (days  < 30)  {
+            const weeks = Math.round(days / 7);
+            return `About ${weeks} week${weeks > 1 ? 's' : ''} since your last visit.`;
+        }
+        const months = Math.round(days / 30);
+        return `${months} month${months > 1 ? 's' : ''} have passed. I noticed.`;
+    },
+
     _states: {
         "init": function () {
             Eye.state = "";
-            const greeting = Eye._getGreeting();
-
-            // Queue the time-based greeting with an initial delay.
-            TextField.buffer.push({ text: greeting, delay: 4000 });
-            // Queue the welcome message to appear immediately after.
-            TextField.buffer.push({ text: "Welcome to Karlo's observatory." });
-
+            TextField.buffer.push({ text: Eye._getGreeting(), delay: 4000 });
+            TextField.buffer.push({ text: Eye._getVisitorContext() });
             setTimeout(Eye._open, 3000);
         },
         "idle": function () { return; },

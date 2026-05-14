@@ -1,4 +1,5 @@
 import { BaseText } from './engines/base_text.js';
+import { userState } from '../userState.js';
 
 /**
  * Ultimate System, Hardware, and Environment Diagnostics.
@@ -50,11 +51,36 @@ const Stats = {
             getPermission('camera')
         ]);
 
-        // --- Persistence ---
-        let visits = parseInt(localStorage.getItem('console_stats_visits') || 0) + 1;
-        localStorage.setItem('console_stats_visits', visits);
+        const visits = userState.get('visitCount');
+
+        const fmtTime = (ms) => ms ? new Date(ms).toLocaleString() : "—";
+        const fmtDuration = (ms) => {
+            if (!ms) return "—";
+            const totalMin = Math.floor(ms / 60000);
+            const h = Math.floor(totalMin / 60);
+            const m = totalMin % 60;
+            return h > 0 ? `${h}h ${m}m` : `${m}m`;
+        };
+        const fmtGap = (ms) => {
+            if (ms === null) return "First visit";
+            const h = ms / 3_600_000;
+            const d = h / 24;
+            if (h < 1)  return `${Math.round(ms / 60000)}m ago`;
+            if (d < 1)  return `${Math.round(h)}h ago`;
+            if (d < 30) return `${Math.round(d)}d ago`;
+            return `${Math.round(d / 30)}mo ago`;
+        };
 
         const data = {
+            "USER STATE": {
+                "Visits": visits,
+                "Last Program": userState.get('lastProgram') || "—",
+                "This Visit": fmtTime(userState.get('currentVisitStart')),
+                "Previous Visit": fmtTime(userState.get('lastVisitStart')),
+                "Last Left": fmtTime(userState.get('lastVisitEnd')),
+                "Away For": fmtGap(userState.gap),
+                "Total Time": fmtDuration(userState.get('totalTimeMs')),
+            },
             "SESSION": {
                 "Visits": visits,
                 "Referrer": document.referrer || "Direct",

@@ -1,3 +1,5 @@
+import { userState } from './userState.js';
+
 export const Console = {
     // --- Configuration ---
     availablePrograms: ['help', 'gameoflife', 'evoltree', 'mandelbrot', 'boids', 'gravitysim', 'glideroflife', 'gliderpong', 'wordweaver', 'eliza', 'radio', 'stream', 'fractal', 'tv', 'img', 'stats', 'read', 'txt', 'sun', 'nasa', 'ip', 'radar', 'chat', 'note', 'store'],
@@ -5,8 +7,8 @@ export const Console = {
     hiddenPrograms: ['read', 'txt', 'sun', 'nasa', 'ip', 'chat', 'radar', 'note', 'store'],
     // Category groupings for the dropdown. Only visible (non-hidden) programs need to be listed here.
     programCategories: {
-        'Simulations': ['boids', 'evoltree', 'gameoflife', 'glideroflife', 'gravitysim', 'mandelbrot'],
-        'Games':       ['gliderpong', 'wordweaver'],
+        'Simulations': ['boids', 'evoltree', 'gameoflife', 'gravitysim', 'mandelbrot'],
+        'Games':       ['glideroflife', 'gliderpong', 'wordweaver'],
         'Broadcast':   ['fractal', 'radio', 'stream', 'tv'],
         'Utilities':   ['eliza', 'help', 'img', 'stats'],
     },
@@ -303,6 +305,8 @@ export const Console = {
 
         // Store the arguments used to launch this program instance.
         this.currentProgramArgs = args;
+
+        userState.set('lastProgram', programName);
 
         try {
             const path = `./programs/${programName}.js`;

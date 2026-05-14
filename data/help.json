@@ -1,8 +1,8 @@
 {
     "_general": "Karlo's Observatory <a href=\"/console\" target=\"_blank\">Console</a>\nType 'help [command]' for more information on a specific command.\n<br>",
     "_categories": {
-        "Simulations": ["boids", "evoltree", "gameoflife", "glideroflife", "gravitysim", "mandelbrot"],
-        "Games": ["gliderpong", "wordweaver"],
+        "Simulations": ["boids", "evoltree", "gameoflife", "gravitysim", "mandelbrot"],
+        "Games": ["glideroflife", "gliderpong", "wordweaver"],
         "Broadcast": ["fractal", "radio", "stream", "tv"],
         "Utilities": ["chat", "eliza", "help", "img", "ip", "nasa", "read", "stats", "sun", "txt"]
     },

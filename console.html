@@ -55,8 +55,10 @@
     -->
     <script type="module">
         import { Console } from './scripts/console.js';
-    
+        import { userState } from './scripts/userState.js';
+
         document.addEventListener('DOMContentLoaded', () => {
+            userState.init();
             const urlParams = new URLSearchParams(window.location.search);
             
             const programToRun = urlParams.get('run');     // View-only mode

@@ -7,9 +7,13 @@ import { paperInit, paper } from './paper.js';
 import { showQuote } from './quotes.js';
 import { Console } from './console.js';
 import { Blackboard } from './blackboard.js';
+import { userState } from './userState.js';
 
 // This function runs once the entire HTML document has been loaded.
 document.addEventListener('DOMContentLoaded', () => {
+    // Must run before any module that reads userState (e.g. Eye)
+    userState.init();
+
     // --- Initialize imported utilities ---
     Mouse.init();
     Keyboard.init();
@@ -62,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize console, checking for a program specified in the URL,
     // otherwise defaulting to 'gameoflife'.
     const urlParams = new URLSearchParams(window.location.search);
-    const initialProgram = urlParams.get('run') || 'gameoflife';
+    const initialProgram = urlParams.get('run') || userState.get('lastProgram') || 'gameoflife';
     Console.init(initialProgram);
 
     setTimeout(showQuote, 100);
