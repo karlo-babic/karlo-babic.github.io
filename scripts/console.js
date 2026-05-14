@@ -307,6 +307,7 @@ export const Console = {
         this.currentProgramArgs = args;
 
         userState.set('lastProgram', programName);
+        userState.set('lastProgramArgs', args);
 
         try {
             const path = `./programs/${programName}.js`;

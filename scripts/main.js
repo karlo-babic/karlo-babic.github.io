@@ -66,8 +66,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize console, checking for a program specified in the URL,
     // otherwise defaulting to 'gameoflife'.
     const urlParams = new URLSearchParams(window.location.search);
-    const initialProgram = urlParams.get('run') || userState.get('lastProgram') || 'gameoflife';
-    Console.init(initialProgram);
+    const runParam = urlParams.get('run');
+    const initialProgram = runParam || userState.get('lastProgram') || 'gameoflife';
+    const initialArgs = !runParam ? userState.get('lastProgramArgs') : null;
+    Console.init(initialProgram, initialArgs);
 
     setTimeout(showQuote, 100);
 

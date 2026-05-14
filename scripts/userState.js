@@ -7,6 +7,7 @@ const _defaults = {
     lastVisitEnd: null,
     totalTimeMs: 0,
     lastProgram: null,
+    lastProgramArgs: null,
 };
 
 let _state = {};
