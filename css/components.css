@@ -61,6 +61,13 @@
     position: relative; /* Add this */
 }
 
+@media (max-width: 799px) {
+    #rocket-placeholder,
+    #threebody {
+        display: none;
+    }
+}
+
 #threebody-img {
     image-rendering: pixelated;
     display: block;

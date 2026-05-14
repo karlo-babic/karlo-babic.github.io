@@ -58,4 +58,36 @@
         gap: 4rem;
         padding: 2rem 1rem;
     }
+
+    .mobile-about-label {
+        display: none;
+    }
+}
+
+/* Mobile: compact horizontal pill row */
+@media (max-width: 799px) {
+    .content-block {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.5rem;
+        width: auto;
+        padding: 0.5rem 1rem;
+    }
+
+    .content-block br {
+        display: none;
+    }
+
+    .content-block .h2.section-title {
+        font-size: 1em;
+        border: 1px solid rgba(80, 192, 240, 0.4);
+        border-radius: 999px;
+        padding: 0.25em 0.9em;
+    }
+
+    .section-trigger[data-section-file="about-me"]:not(.mobile-about-label) {
+        display: none;
+    }
 }
