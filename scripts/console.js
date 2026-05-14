@@ -3,8 +3,10 @@ import { userState } from './userState.js';
 export const Console = {
     // --- Configuration ---
     availablePrograms: ['help', 'gameoflife', 'evoltree', 'mandelbrot', 'boids', 'gravitysim', 'glideroflife', 'gliderpong', 'wordweaver', 'eliza', 'radio', 'stream', 'fractal', 'tv', 'img', 'stats', 'read', 'txt', 'sun', 'nasa', 'ip', 'radar', 'chat', 'note', 'store'],
-    // A list of programs to hide from UI elements like the dropdown, suggest-complete, and "next program".
-    hiddenPrograms: ['read', 'txt', 'sun', 'nasa', 'ip', 'chat', 'radar', 'note', 'store'],
+    // Hidden from UI (dropdown, next/prev), but still discoverable via autocomplete and help.
+    hiddenPrograms: ['read', 'txt', 'sun', 'nasa', 'ip', 'chat'],
+    // Private programs: hidden from UI, help, AND autocomplete.
+    privatePrograms: ['note', 'store', 'radar'],
     // Category groupings for the dropdown. Only visible (non-hidden) programs need to be listed here.
     programCategories: {
         'Simulations': ['boids', 'evoltree', 'gameoflife', 'gravitysim', 'mandelbrot'],
@@ -148,13 +150,26 @@ export const Console = {
             return;
         }
 
-        // Only suggest programs that are not hidden.
-        const visiblePrograms = this.availablePrograms.filter(p => !this.hiddenPrograms.includes(p));
-        const match = visiblePrograms.find(prog => prog.startsWith(inputText));
+        // Suggest all programs except private ones.
+        const visiblePrograms = this.availablePrograms.filter(p => !this.privatePrograms.includes(p));
+        const matches = visiblePrograms.filter(prog => prog.startsWith(inputText));
 
-        if (match && match !== inputText) {
-            this.currentSuggestion = match;
-            this.suggestionEl.textContent = match;
+        if (matches.length === 0) {
+            this.clearSuggestion();
+            return;
+        }
+
+        // Find the longest common prefix across all matches.
+        let common = matches[0];
+        for (let i = 1; i < matches.length; i++) {
+            let j = 0;
+            while (j < common.length && j < matches[i].length && common[j] === matches[i][j]) j++;
+            common = common.slice(0, j);
+        }
+
+        if (common && common !== inputText) {
+            this.currentSuggestion = common;
+            this.suggestionEl.textContent = common;
         } else {
             this.clearSuggestion();
         }
@@ -218,7 +233,7 @@ export const Console = {
     populateDropdown: function() {
         if (!this.programListEl) return;
         this.programListEl.innerHTML = '';
-        const visiblePrograms = this.availablePrograms.filter(p => !this.hiddenPrograms.includes(p));
+        const visiblePrograms = this.availablePrograms.filter(p => !this.hiddenPrograms.includes(p) && !this.privatePrograms.includes(p));
         const categorized = new Set();
 
         for (const [catName, programs] of Object.entries(this.programCategories)) {
@@ -252,7 +267,7 @@ export const Console = {
         // This loop ensures the next/prev buttons skip over any hidden programs.
         do {
             this.currentProgramIndex = (this.currentProgramIndex + direction + this.availablePrograms.length) % this.availablePrograms.length;
-        } while (this.hiddenPrograms.includes(this.availablePrograms[this.currentProgramIndex]));
+        } while (this.hiddenPrograms.includes(this.availablePrograms[this.currentProgramIndex]) || this.privatePrograms.includes(this.availablePrograms[this.currentProgramIndex]));
 
         this.loadProgram(this.availablePrograms[this.currentProgramIndex]);
     },
@@ -306,8 +321,10 @@ export const Console = {
         // Store the arguments used to launch this program instance.
         this.currentProgramArgs = args;
 
-        userState.set('lastProgram', programName);
-        userState.set('lastProgramArgs', args);
+        if (!this.privatePrograms.includes(programName)) {
+            userState.set('lastProgram', programName);
+            userState.set('lastProgramArgs', args);
+        }
 
         try {
             const path = `./programs/${programName}.js`;
