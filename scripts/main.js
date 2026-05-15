@@ -85,20 +85,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Start the master animation loop
-    requestAnimationFrame(mainLoop);
+    mainAnimId = requestAnimationFrame(mainLoop);
 });
 
 
 // --- Master Animation Loop ---
+let mainAnimId;
 let lastTime = 0;
+
+export function pauseMain()  { cancelAnimationFrame(mainAnimId); }
+export function resumeMain() { mainAnimId = requestAnimationFrame(mainLoop); }
 // Timers to control update frequency
 let fuzzyEcaTimer = 0;
 let eyeTimer = 0;
 let textFieldTimer = 0;
 
 function mainLoop(currentTime) {
-    // Schedule the next frame
-    requestAnimationFrame(mainLoop);
+    mainAnimId = requestAnimationFrame(mainLoop);
 
     const deltaTime = (currentTime - lastTime) / 1000 || 0;
     lastTime = currentTime;

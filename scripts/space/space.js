@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
 import { buildWorld, SCREEN_W } from './world.js';
-import { paper } from '../paper.js';
+import { pauseMain, resumeMain } from '../main.js';
+import { Console } from '../console.js';
 
 // iframe rendered at this pixel size; SCREEN_W / IFRAME_W gives the Three.js scale
 const IFRAME_W = 1280;
@@ -13,7 +14,8 @@ let renderer, css3dRenderer, css3dScene;
 let camera, scene, controls, animFrameId;
 let screenMesh;
 let active = false;
-let paperWasActive = false;
+let savedProgram = null;
+let savedProgramArgs = null;
 
 const keys = { w: false, a: false, s: false, d: false };
 const SPEED = 3;
@@ -25,8 +27,12 @@ export function enterSpace() {
     document.getElementById('enter-space').style.display = 'none';
     document.getElementById('space-backdrop').style.display = 'block';
 
-    paperWasActive = paper ? paper.active : false;
-    if (paper) paper.active = false;
+    // Swap console to a lightweight program and pause the 2D animation loop
+    savedProgram = Console.availablePrograms[Console.currentProgramIndex];
+    savedProgramArgs = Console.currentProgramArgs;
+    const screenUrl = Console._buildUrl('start');
+    Console.loadProgram('help');
+    pauseMain();
 
     // Scene — no background so WebGL canvas stays transparent where not drawn
     scene = new THREE.Scene();
@@ -45,7 +51,7 @@ export function enterSpace() {
     // iframe as a CSS3DObject at the screen wall position.
     // Relative URL avoids Firefox's localhost iframe restriction (Enhanced Tracking Protection).
     const iframe = document.createElement('iframe');
-    iframe.src = window.location.pathname + window.location.search;
+    iframe.src = screenUrl;
     Object.assign(iframe.style, {
         width: IFRAME_W + 'px', height: IFRAME_H + 'px',
         border: 'none', background: '#14141a',
@@ -144,7 +150,12 @@ export function exitSpace() {
     document.getElementById('space-overlay').style.display = 'none';
     document.getElementById('enter-space').style.display = '';
 
-    if (paper && paperWasActive) paper.active = true;
+    resumeMain();
+    if (savedProgram) {
+        Console.loadProgram(savedProgram, savedProgramArgs);
+        savedProgram = null;
+        savedProgramArgs = null;
+    }
 
     renderer = null;
     css3dRenderer = null;
