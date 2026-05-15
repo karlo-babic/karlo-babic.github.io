@@ -309,6 +309,7 @@ export const Console = {
             this.activeProgram.unload();
         }
         this.activeProgram = null;
+        this.screenEl.style.cssText = '';
         this.screenEl.innerHTML = '';
         
         // Update the current program index to match the program being loaded.
