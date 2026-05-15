@@ -23,6 +23,7 @@ export function enterSpace() {
     active = true;
 
     document.getElementById('enter-space').style.display = 'none';
+    document.getElementById('space-backdrop').style.display = 'block';
 
     paperWasActive = paper ? paper.active : false;
     if (paper) paper.active = false;
@@ -139,6 +140,7 @@ export function exitSpace() {
 
     keys.w = false; keys.a = false; keys.s = false; keys.d = false;
 
+    document.getElementById('space-backdrop').style.display = 'none';
     document.getElementById('space-overlay').style.display = 'none';
     document.getElementById('enter-space').style.display = '';
 

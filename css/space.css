@@ -21,6 +21,20 @@
     text-shadow: 0 0 6px var(--glow-color), 0 0 20px var(--glow-color), 0 0 40px var(--glow-color);
 }
 
+@media (max-width: 768px) {
+    #enter-space { display: none !important; }
+}
+
+/* Solid backdrop sitting below the CSS3D and WebGL layers.
+   Prevents the real 2D website from showing through transparent WebGL pixels at screen edges. */
+#space-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: #14141a;
+}
+
 /* Three.js canvas override — paper.js sets z-index: 1000 on its elements, so we go above */
 #space-canvas {
     position: fixed !important;
