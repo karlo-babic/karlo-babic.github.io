@@ -2,7 +2,7 @@
     "_general": "Karlo's Observatory <a href=\"/console\" target=\"_blank\">Console</a>\nType 'help [command]' for more information on a specific command.\n<br>",
     "_categories": {
         "Simulations": ["boids", "evoltree", "gameoflife", "gravitysim", "mandelbrot"],
-        "Games": ["glideroflife", "gliderpong", "wordweaver"],
+        "Games": ["bonsai", "glideroflife", "gliderpong", "wordweaver"],
         "Broadcast": ["fractal", "radio", "stream", "tv"],
         "Utilities": ["chat", "eliza", "help", "img", "ip", "nasa", "read", "stats", "sun", "txt"]
     },
@@ -10,6 +10,12 @@
         "description": "Provides help information for console commands.",
         "usage": "help [command]",
         "details": "Displays a list of all available commands grouped by category. If a command is specified, shows detailed information including usage, description, and examples.\n\nExamples:\n  help\n  help boids\n  help radio"
+    },
+    "bonsai": {
+        "description": "An idle bonsai tree that grows using the Space Colonization Algorithm, even while you're away.",
+        "usage": "bonsai",
+        "details": "A living bonsai tree that grows slowly over days. Each visit picks up where it left off — offline time is fast-forwarded on load.\n\nInteraction:\n  Click or tap any branch to prune it. Pruned branches release growth points back into the crown, letting the tree regrow in a new shape.\n  Click or tap the pot to start over with a fresh tree.\n\nThe trunk and first branches grow quickly on first load. After that, growth slows to a natural pace — a full canopy takes a few days.\n\nExample:\n  bonsai",
+        "see_also": ["evoltree"]
     },
     "boids": {
         "description": "A flocking simulation based on Craig Reynolds' Boids algorithm.",
@@ -27,7 +33,7 @@
         "description": "A simulation of evolutionary branching.",
         "usage": "evoltree",
         "details": "Visualizes how species can diverge over time through reproduction and mutation. Organisms that are too similar or too far apart die out.\n\nExample:\n  evoltree",
-        "see_also": ["boids"]
+        "see_also": ["bonsai"]
     },
     "mandelbrot": {
         "description": "An interactive visualization of the Mandelbrot set.",

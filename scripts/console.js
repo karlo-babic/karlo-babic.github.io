@@ -2,7 +2,7 @@ import { userState } from './userState.js';
 
 export const Console = {
     // --- Configuration ---
-    availablePrograms: ['help', 'gameoflife', 'evoltree', 'mandelbrot', 'boids', 'gravitysim', 'glideroflife', 'gliderpong', 'wordweaver', 'eliza', 'radio', 'stream', 'fractal', 'tv', 'img', 'stats', 'read', 'txt', 'sun', 'nasa', 'ip', 'radar', 'chat', 'note', 'store'],
+    availablePrograms: ['help', 'gameoflife', 'evoltree', 'mandelbrot', 'boids', 'gravitysim', 'glideroflife', 'gliderpong', 'wordweaver', 'bonsai', 'eliza', 'radio', 'stream', 'fractal', 'tv', 'img', 'stats', 'read', 'txt', 'sun', 'nasa', 'ip', 'radar', 'chat', 'note', 'store'],
     // Hidden from UI (dropdown, next/prev), but still discoverable via autocomplete and help.
     hiddenPrograms: ['read', 'txt', 'sun', 'nasa', 'ip', 'chat'],
     // Private programs: hidden from UI, help, AND autocomplete.
@@ -10,7 +10,7 @@ export const Console = {
     // Category groupings for the dropdown. Only visible (non-hidden) programs need to be listed here.
     programCategories: {
         'Simulations': ['boids', 'evoltree', 'gameoflife', 'gravitysim', 'mandelbrot'],
-        'Games':       ['glideroflife', 'gliderpong', 'wordweaver'],
+        'Games':       ['bonsai', 'glideroflife', 'gliderpong', 'wordweaver'],
         'Broadcast':   ['fractal', 'radio', 'stream', 'tv'],
         'Utilities':   ['eliza', 'help', 'img', 'stats'],
     },
