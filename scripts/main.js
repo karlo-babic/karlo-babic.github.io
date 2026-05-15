@@ -73,6 +73,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setTimeout(showQuote, 100);
 
+    // [3D] button — lazily load Three.js only when needed.
+    // Hidden when running inside the 3D wall iframe to prevent infinite nesting.
+    if (window.self === window.top) {
+        document.getElementById('enter-space').addEventListener('click', async () => {
+            const { enterSpace } = await import('./space/space.js');
+            enterSpace();
+        });
+    } else {
+        document.getElementById('enter-space').style.display = 'none';
+    }
+
     // Start the master animation loop
     requestAnimationFrame(mainLoop);
 });

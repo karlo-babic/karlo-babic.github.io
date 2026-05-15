@@ -13,6 +13,16 @@
     <link rel="stylesheet" href="css/layout.css">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/console.css">
+    <link rel="stylesheet" href="css/space.css">
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.171.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.171.0/examples/jsm/"
+        }
+    }
+    </script>
 </head>
 
 <body>
@@ -120,6 +130,17 @@
         </div>
     </center>
     <!--------------------------------------------------------------->
+
+    <!-- [3D] entry button -->
+    <button id="enter-space">[3D]</button>
+
+    <!-- 3D space overlay (hidden until space is entered) -->
+    <div id="space-overlay">
+        <div id="space-click-to-start">click to look around</div>
+        <div id="space-crosshair">+</div>
+        <div id="space-hint"></div>
+        <button id="space-exit">[exit]</button>
+    </div>
 
     <!-- All scripts are loaded as modules from main.js -->
     <script type="module" src="scripts/main.js"></script>
