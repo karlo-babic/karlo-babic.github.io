@@ -63,6 +63,8 @@ export const Keyboard = {
 
 export const AppEvents = EventBus;
 
+export const isMobile = () => window.matchMedia('(max-width: 768px)').matches;
+
 export function getScreenSize() {
     return {
         width: Math.max(window.innerWidth, document.body.getBoundingClientRect().width),

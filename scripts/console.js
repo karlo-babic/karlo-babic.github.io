@@ -1,4 +1,5 @@
 import { userState } from './userState.js';
+import { isMobile } from './utils.js';
 
 export const Console = {
     // --- Configuration ---
@@ -136,7 +137,7 @@ export const Console = {
         // Load the determined program with its arguments in a single step.
         this.loadProgram(programToLoad, argsToLoad);
 
-        if (window.innerWidth > 768) {
+        if (!isMobile()) {
             this.inputEl.focus();
         }
     },
