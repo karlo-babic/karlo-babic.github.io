@@ -49,13 +49,13 @@ function getMainHelp(data) {
             content += `\n<b>${catName.toUpperCase()}</b>\n`;
             for (const cmd of programs) {
                 if (!data[cmd]) continue;
-                content += `\n  <b><a href="/console?run=${cmd}">${cmd}</a></b>\n    ${data[cmd].usage}\n    ${data[cmd].description}\n`;
+                content += `\n  <b><a href="/console?start=help&topic=${cmd}">${cmd}</a></b>\n    ${data[cmd].usage}\n    ${data[cmd].description}\n`;
             }
         }
     } else {
         for (const cmd in data) {
             if (cmd.startsWith('_')) continue;
-            content += `\n<b><a href="/console?run=${cmd}">${cmd}</a></b>\n  ${data[cmd].usage}\n  ${data[cmd].description}\n`;
+            content += `\n<b><a href="/console?start=help&topic=${cmd}">${cmd}</a></b>\n  ${data[cmd].usage}\n  ${data[cmd].description}\n`;
         }
     }
     return content;
@@ -73,7 +73,7 @@ function getTopicHelp(data, topic) {
     content += `<b>USAGE</b>\n  ${d.usage}\n\n`;
     content += `<b>DETAILS</b>\n  ${d.details}`;
     if (d.see_also && d.see_also.length > 0) {
-        const links = d.see_also.map(cmd => `<a href="/console?run=${cmd}">${cmd}</a>`).join(', ');
+        const links = d.see_also.map(cmd => `<a href="/console?start=help&topic=${cmd}">${cmd}</a>`).join(', ');
         content += `\n\n<b>SEE ALSO</b>\n  ${links}`;
     }
     return content;
@@ -86,9 +86,10 @@ const Help = {
         this.engine = new BaseText(screenEl);
         const data = await loadHelpData();
 
-        const content = args.positional.length === 0
-            ? getMainHelp(data)
-            : getTopicHelp(data, args.positional[0]);
+        const topic = args.positional[0] || args.named.topic || null;
+        const content = topic
+            ? getTopicHelp(data, topic)
+            : getMainHelp(data);
 
         this.engine.render(content);
     },
