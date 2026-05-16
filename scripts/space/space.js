@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
 import { buildWorld, SCREEN_W } from './world.js';
+import { Pedestal } from './pedestal.js';
 import { pauseMain, resumeMain } from '../main.js';
 import { Console } from '../console.js';
 
@@ -72,6 +73,7 @@ export function enterSpace() {
 
     const world = buildWorld(scene);
     screenMesh = world.screen;
+    Pedestal.loadArtifact('threebody', scene, world.pedestalAnchor);
 
     controls = new PointerLockControls(camera, renderer.domElement);
     scene.add(controls.getObject());
@@ -116,6 +118,7 @@ export function enterSpace() {
             pos.y = 1.7;
         }
 
+        Pedestal.update(dt);
         css3dRenderer.render(css3dScene, camera);
         renderer.render(scene, camera);
     }
@@ -127,6 +130,7 @@ export function exitSpace() {
     active = false;
 
     cancelAnimationFrame(animFrameId);
+    Pedestal.unload();
 
     controls.removeEventListener('lock', onPointerLock);
     controls.removeEventListener('unlock', onPointerUnlock);

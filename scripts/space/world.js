@@ -4,12 +4,15 @@ import * as THREE from 'three';
 export const SCREEN_W = 2.4;
 export const SCREEN_H = 1.5; // 1280 × 800 iframe at scale 2.4/1280
 
+// Top surface of the pedestal cap in world space — artifact anchor point
+export const PEDESTAL_ANCHOR = new THREE.Vector3(0, 0.88, -0.2);
+
 export function buildWorld(scene) {
     addLighting(scene);
     addRoom(scene);
     const screen = addScreenHole(scene);
     addPedestal(scene);
-    return { screen };
+    return { screen, pedestalAnchor: PEDESTAL_ANCHOR };
 }
 
 function addLighting(scene) {
