@@ -2,22 +2,24 @@ const STORAGE_KEY = 'bonsai';
 
 // --- Tunable growth parameters ---
 const GROWTH = {
-    WARMUP_STEPS:         20,      // sim steps in the fast warm-up phase (trunk + first branches)
-    STEPS_PER_MS_WARMUP:  0.008,   // speed during warm-up (~8 steps/s, trunk visible in seconds)
-    STEPS_PER_MS_SLOW:    0.000002, // speed after warm-up (~173 steps/day → full tree in a few days)
+    WARMUP_STEPS:         16,      // sim steps in the fast warm-up phase (trunk + first branches)
+    STEPS_PER_MS_WARMUP:  0.008,   // speed during warm-up (trunk visible in seconds)
+    STEPS_PER_MS_SLOW:    0.0000005, // speed after warm-up (full tree in a few days)
     STEP_SIZE:        8,        // logical px grown per sim step
     INFLUENCE_RADIUS: 70,       // how far a tip "sees" attraction points (px)
-    KILL_RADIUS:      28,       // consumption radius around each node (px)
+    KILL_RADIUS:      16,       // consumption radius around each node (px)
     ATTRACTION_COUNT: 350,      // growth targets scattered in crown
-    FORK_CHANCE:      0.3,      // probability to branch at each new node
-    MAX_TIPS:         64,      // cap on concurrent active growing tips
+    FORK_CHANCE_MIN:  0.1,     // fork probability at trunk (depth 0)
+    FORK_CHANCE_MAX:  0.18,      // fork probability at full branch depth
+    FORK_DEPTH:       20,       // depth at which fork chance reaches max
+    MAX_TIPS:         200,      // cap on concurrent active growing tips
     REP_RADIUS_MULT:  1,        // repulsion acts within KILL_RADIUS * this (px)
     REP_STRENGTH:     1.0,      // how hard tips push each other apart
-    MOMENTUM:         0.2,      // fraction of previous growth direction retained each step
-    UPWARD_BIAS:      0.2,      // constant upward pull added to every tip's direction
-    WIDTH_MIN:        0.5,      // line width at tips (px)
-    WIDTH_MAX:        10.0,      // line width at trunk (px)
-    WIDTH_EXP:        0.5,      // taper curve exponent: 0.5=sqrt (da Vinci), 1=linear, <0.5=faster taper
+    MOMENTUM:         0.8,      // fraction of previous growth direction retained each step
+    UPWARD_BIAS:      0.1,      // constant upward pull added to every tip's direction
+    WIDTH_MIN:        1.0,      // line width at tips (px)
+    WIDTH_MAX:        30.0,      // line width at trunk (px)
+    WIDTH_EXP:        1.4,      // taper curve exponent: 0.5=sqrt (da Vinci), 1=linear
 };
 
 // Fixed logical canvas space — tree coordinates live here, scaled to screen on render
@@ -107,6 +109,7 @@ class BonsaiTree {
             y: [TRUNK_Y | 0],
             p: [-1],
             dead: [0],
+            depth: [0],
             consumed: [],
         };
         this._attrPts = generatePoints(seed, GROWTH.ATTRACTION_COUNT);
@@ -123,6 +126,12 @@ class BonsaiTree {
         this._activeAttr = new Set();
         for (let i = 0; i < this._attrPts.length; i++) {
             if (!this._consumedSet.has(i)) this._activeAttr.add(i);
+        }
+        if (!s.depth) {
+            s.depth = new Array(s.x.length).fill(0);
+            for (let i = 1; i < s.x.length; i++) {
+                if (s.p[i] >= 0) s.depth[i] = s.depth[s.p[i]] + 1;
+            }
         }
         this._rebuildTips();
     }
@@ -249,6 +258,7 @@ class BonsaiTree {
             s.y.push(ny | 0);
             s.p.push(ti);
             s.dead.push(0);
+            s.depth.push(s.depth[ti] + 1);
 
             newTips.delete(ti);
             newTips.add(newIdx);
@@ -256,7 +266,8 @@ class BonsaiTree {
 
             // Fork: perpendicular child; repulsion will push it apart over time
             const forkRng = mulberry32((s.seed + s.simStep * 1000003 + newIdx) | 0);
-            if (newTips.size < GROWTH.MAX_TIPS && forkRng() < GROWTH.FORK_CHANCE) {
+            const forkChance = GROWTH.FORK_CHANCE_MIN + (GROWTH.FORK_CHANCE_MAX - GROWTH.FORK_CHANCE_MIN) * Math.min(1, s.depth[ti] / GROWTH.FORK_DEPTH);
+            if (newTips.size < GROWTH.MAX_TIPS && forkRng() < forkChance) {
                 const side = forkRng() < 0.5 ? 1 : -1;
                 const fsx = (s.x[ti] - (dir.dy / len) * side * GROWTH.STEP_SIZE) | 0;
                 const fsy = (s.y[ti] + (dir.dx / len) * side * GROWTH.STEP_SIZE) | 0;
@@ -275,6 +286,7 @@ class BonsaiTree {
                     s.y.push(fsy);
                     s.p.push(ti);
                     s.dead.push(0);
+                    s.depth.push(s.depth[ti] + 1);
                     newTips.add(forkIdx);
                     this._consumeNear(forkIdx);
                 }
@@ -378,6 +390,19 @@ class BonsaiRenderer {
         this.scale = 1;
         this.ox = 0;
         this.oy = 0;
+        this._zoom = 1;
+        this._panX = 0;
+        this._panY = 0;
+    }
+
+    applyZoom(pivotCX, pivotCY, factor) {
+        const newZoom = Math.max(0.5, Math.min(10, this._zoom * factor));
+        const f = newZoom / this._zoom;
+        const px = pivotCX - this.ox;
+        const py = pivotCY - this.oy;
+        this._panX = px - (px - this._panX) * f;
+        this._panY = py - (py - this._panY) * f;
+        this._zoom = newZoom;
     }
 
     resize() {
@@ -397,8 +422,8 @@ class BonsaiRenderer {
         const rect = this.canvas.getBoundingClientRect();
         const dpr = window.devicePixelRatio || 1;
         return {
-            x: ((clientX - rect.left) * dpr - this.ox) / this.scale,
-            y: ((clientY - rect.top)  * dpr - this.oy) / this.scale,
+            x: ((clientX - rect.left) * dpr - this.ox - this._panX) / (this.scale * this._zoom),
+            y: ((clientY - rect.top)  * dpr - this.oy - this._panY) / (this.scale * this._zoom),
         };
     }
 
@@ -406,8 +431,8 @@ class BonsaiRenderer {
         const ctx = this.ctx;
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         ctx.save();
-        ctx.translate(this.ox, this.oy);
-        ctx.scale(this.scale, this.scale);
+        ctx.translate(this.ox + this._panX, this.oy + this._panY);
+        ctx.scale(this.scale * this._zoom, this.scale * this._zoom);
         this._drawPot(ctx);
         this._drawTree(ctx, tree);
         ctx.restore();
@@ -454,41 +479,24 @@ class BonsaiRenderer {
             }
         }
 
-        // Backward pass: living descendant count per node (thickness)
-        // Children always have higher indices than parents, so reverse order is safe.
-        const weight = new Float32Array(s.x.length).fill(1);
-        for (let i = s.x.length - 1; i >= 1; i--) {
-            if (s.dead[i]) continue;
-            const pi = s.p[i];
-            if (pi >= 0 && !s.dead[pi]) weight[pi] += weight[i];
+        // Rank live nodes by creation order, skipping dead (pruned) ones so they
+        // don't inflate the denominator and skew the age ratios of live nodes.
+        let liveCount = 0;
+        const liveRank = new Int32Array(s.x.length).fill(-1);
+        for (let i = 0; i < s.x.length; i++) {
+            if (!s.dead[i]) liveRank[i] = liveCount++;
         }
-        // da Vinci pipe rule: width ∝ √(descendants) gives natural tapering
-        const rootWeight = weight[0] || 1;
+        const maxLiveRank = liveCount - 1 || 1;
 
-        // Pass 1: wide transparent glow
+        // Crisp bright line
         for (let i = 1; i < s.x.length; i++) {
             if (s.dead[i]) continue;
             const pi = s.p[i];
             if (pi < 0 || s.dead[pi]) continue;
             const t = depth[i] / maxDepth;
             const hue = 170 + t * 110;
-            const w   = GROWTH.WIDTH_MIN + (GROWTH.WIDTH_MAX - GROWTH.WIDTH_MIN) * Math.pow(weight[i] / rootWeight, GROWTH.WIDTH_EXP);
-            ctx.beginPath();
-            ctx.moveTo(s.x[pi], s.y[pi]);
-            ctx.lineTo(s.x[i],  s.y[i]);
-            ctx.lineWidth   = w * 2.5;
-            ctx.strokeStyle = `hsla(${hue},100%,65%,0.12)`;
-            ctx.stroke();
-        }
-
-        // Pass 2: crisp bright line
-        for (let i = 1; i < s.x.length; i++) {
-            if (s.dead[i]) continue;
-            const pi = s.p[i];
-            if (pi < 0 || s.dead[pi]) continue;
-            const t = depth[i] / maxDepth;
-            const hue = 170 + t * 110;
-            const w   = GROWTH.WIDTH_MIN + (GROWTH.WIDTH_MAX - GROWTH.WIDTH_MIN) * Math.pow(weight[i] / rootWeight, GROWTH.WIDTH_EXP);
+            const age = 1 - liveRank[i] / maxLiveRank;
+            const w   = GROWTH.WIDTH_MIN + (GROWTH.WIDTH_MAX - GROWTH.WIDTH_MIN) * Math.pow(age * age, GROWTH.WIDTH_EXP);
             ctx.beginPath();
             ctx.moveTo(s.x[pi], s.y[pi]);
             ctx.lineTo(s.x[i],  s.y[i]);
@@ -524,18 +532,28 @@ class BonsaiInput {
         this.renderer = renderer;
         this.onPrune  = onPrune;
         this.onReset  = onReset;
-        this._onClick = this._onClick.bind(this);
-        this._onTouch = this._onTouch.bind(this);
+        this._pinch   = null;
+        this._onClick     = this._onClick.bind(this);
+        this._onTouch     = this._onTouch.bind(this);
+        this._onTouchMove = this._onTouchMove.bind(this);
+        this._onTouchEnd  = this._onTouchEnd.bind(this);
+        this._onWheel     = this._onWheel.bind(this);
     }
 
     attach() {
         this.canvas.addEventListener('click',      this._onClick);
-        this.canvas.addEventListener('touchstart', this._onTouch, { passive: false });
+        this.canvas.addEventListener('touchstart', this._onTouch,     { passive: false });
+        this.canvas.addEventListener('touchmove',  this._onTouchMove, { passive: false });
+        this.canvas.addEventListener('touchend',   this._onTouchEnd);
+        this.canvas.addEventListener('wheel',      this._onWheel,     { passive: false });
     }
 
     detach() {
         this.canvas.removeEventListener('click',      this._onClick);
         this.canvas.removeEventListener('touchstart', this._onTouch);
+        this.canvas.removeEventListener('touchmove',  this._onTouchMove);
+        this.canvas.removeEventListener('touchend',   this._onTouchEnd);
+        this.canvas.removeEventListener('wheel',      this._onWheel);
     }
 
     _inPot(lx, ly) {
@@ -553,10 +571,42 @@ class BonsaiInput {
 
     _onTouch(e) {
         e.preventDefault();
+        if (e.touches.length === 2) {
+            const t0 = e.touches[0], t1 = e.touches[1];
+            this._pinch = { dist: Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY) };
+            return;
+        }
+        if (this._pinch) return;
         const t = e.touches[0];
         const { x, y } = this.renderer.toLogical(t.clientX, t.clientY);
         if (this._inPot(x, y)) { this.onReset(); return; }
         if (this.tree.prune(x, y)) this.onPrune();
+    }
+
+    _onTouchMove(e) {
+        e.preventDefault();
+        if (e.touches.length !== 2 || !this._pinch) return;
+        const t0 = e.touches[0], t1 = e.touches[1];
+        const newDist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+        const rect = this.canvas.getBoundingClientRect();
+        const dpr  = window.devicePixelRatio || 1;
+        const mx   = ((t0.clientX + t1.clientX) / 2 - rect.left) * dpr;
+        const my   = ((t0.clientY + t1.clientY) / 2 - rect.top)  * dpr;
+        this.renderer.applyZoom(mx, my, newDist / this._pinch.dist);
+        this._pinch.dist = newDist;
+    }
+
+    _onTouchEnd(e) {
+        if (e.touches.length < 2) this._pinch = null;
+    }
+
+    _onWheel(e) {
+        e.preventDefault();
+        const rect = this.canvas.getBoundingClientRect();
+        const dpr  = window.devicePixelRatio || 1;
+        const cx   = (e.clientX - rect.left) * dpr;
+        const cy   = (e.clientY - rect.top)  * dpr;
+        this.renderer.applyZoom(cx, cy, e.deltaY < 0 ? 1.1 : 1 / 1.1);
     }
 }
 
