@@ -532,7 +532,9 @@ class BonsaiInput {
         this.renderer = renderer;
         this.onPrune  = onPrune;
         this.onReset  = onReset;
-        this._pinch   = null;
+        this._pinch       = null;
+        this._wasPinching = false;
+        this._tap         = null;
         this._onClick     = this._onClick.bind(this);
         this._onTouch     = this._onTouch.bind(this);
         this._onTouchMove = this._onTouchMove.bind(this);
@@ -574,13 +576,14 @@ class BonsaiInput {
         if (e.touches.length === 2) {
             const t0 = e.touches[0], t1 = e.touches[1];
             this._pinch = { dist: Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY) };
+            this._wasPinching = true;
+            this._tap = null;
             return;
         }
-        if (this._pinch) return;
-        const t = e.touches[0];
-        const { x, y } = this.renderer.toLogical(t.clientX, t.clientY);
-        if (this._inPot(x, y)) { this.onReset(); return; }
-        if (this.tree.prune(x, y)) this.onPrune();
+        if (e.touches.length === 1 && !this._wasPinching) {
+            const t = e.touches[0];
+            this._tap = { x: t.clientX, y: t.clientY };
+        }
     }
 
     _onTouchMove(e) {
@@ -598,6 +601,20 @@ class BonsaiInput {
 
     _onTouchEnd(e) {
         if (e.touches.length < 2) this._pinch = null;
+        if (e.touches.length === 0) {
+            if (this._tap && !this._wasPinching) {
+                const ct = e.changedTouches[0];
+                const dx = ct.clientX - this._tap.x;
+                const dy = ct.clientY - this._tap.y;
+                if (dx * dx + dy * dy < 10 * 10) {
+                    const { x, y } = this.renderer.toLogical(ct.clientX, ct.clientY);
+                    if (this._inPot(x, y)) { this.onReset(); }
+                    else if (this.tree.prune(x, y)) { this.onPrune(); }
+                }
+            }
+            this._tap = null;
+            this._wasPinching = false;
+        }
     }
 
     _onWheel(e) {
