@@ -411,6 +411,11 @@ class BonsaiRenderer {
         this._panY = 0;
     }
 
+    applyPan(dx, dy) {
+        this._panX += dx;
+        this._panY += dy;
+    }
+
     applyZoom(pivotCX, pivotCY, factor) {
         const newZoom = Math.max(0.5, Math.min(10, this._zoom * factor));
         const f = newZoom / this._zoom;
@@ -584,7 +589,12 @@ class BonsaiInput {
         this._pinch         = null;
         this._wasPinching   = false;
         this._tap           = null;
+        this._drag          = null;
+        this._dragMoved     = false;
+        this._touchDrag     = null;
         this._onClick       = this._onClick.bind(this);
+        this._onMouseDown   = this._onMouseDown.bind(this);
+        this._onMouseUp     = this._onMouseUp.bind(this);
         this._onMouseMove   = this._onMouseMove.bind(this);
         this._onMouseLeave  = this._onMouseLeave.bind(this);
         this._onTouch       = this._onTouch.bind(this);
@@ -595,6 +605,8 @@ class BonsaiInput {
 
     attach() {
         this.canvas.addEventListener('click',      this._onClick);
+        this.canvas.addEventListener('mousedown',  this._onMouseDown);
+        this.canvas.addEventListener('mouseup',    this._onMouseUp);
         this.canvas.addEventListener('mousemove',  this._onMouseMove);
         this.canvas.addEventListener('mouseleave', this._onMouseLeave);
         this.canvas.addEventListener('touchstart', this._onTouch,     { passive: false });
@@ -605,6 +617,8 @@ class BonsaiInput {
 
     detach() {
         this.canvas.removeEventListener('click',      this._onClick);
+        this.canvas.removeEventListener('mousedown',  this._onMouseDown);
+        this.canvas.removeEventListener('mouseup',    this._onMouseUp);
         this.canvas.removeEventListener('mousemove',  this._onMouseMove);
         this.canvas.removeEventListener('mouseleave', this._onMouseLeave);
         this.canvas.removeEventListener('touchstart', this._onTouch);
@@ -620,19 +634,48 @@ class BonsaiInput {
         return lx >= px && lx <= px + pw && ly >= py && ly <= py + ph;
     }
 
+    _onMouseDown(e) {
+        if (e.button !== 0) return;
+        const dpr = window.devicePixelRatio || 1;
+        this._drag = { lastX: e.clientX * dpr, lastY: e.clientY * dpr };
+        this._dragMoved = false;
+    }
+
+    _onMouseUp() {
+        this._drag = null;
+    }
+
     _onClick(e) {
+        if (this._dragMoved) { this._dragMoved = false; return; }
         const { x, y } = this.renderer.toLogical(e.clientX, e.clientY);
         if (this._inPot(x, y)) { this.onReset(); return; }
         if (this.tree.prune(x, y)) this.onPrune();
     }
 
     _onMouseMove(e) {
+        const dpr = window.devicePixelRatio || 1;
+        if (this._drag) {
+            const cx = e.clientX * dpr;
+            const cy = e.clientY * dpr;
+            const dx = cx - this._drag.lastX;
+            const dy = cy - this._drag.lastY;
+            if (Math.abs(dx) > 2 || Math.abs(dy) > 2) this._dragMoved = true;
+            this.renderer.applyPan(dx, dy);
+            this._drag.lastX = cx;
+            this._drag.lastY = cy;
+            this.renderer.hoverNode = -1;
+            return;
+        }
         const { x, y } = this.renderer.toLogical(e.clientX, e.clientY);
         this.renderer.hoverNode = this.tree.findNearest(x, y);
     }
 
     _onMouseLeave() {
         this.renderer.hoverNode = -1;
+        if (this._drag) {
+            this._drag = null;
+            this._dragMoved = false;
+        }
     }
 
     _onTouch(e) {
@@ -642,12 +685,14 @@ class BonsaiInput {
             this._pinch = { dist: Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY) };
             this._wasPinching = true;
             this._tap = null;
+            this._touchDrag = null;
             this.renderer.hoverNode = -1;
             return;
         }
         if (e.touches.length === 1 && !this._wasPinching) {
             const t = e.touches[0];
             this._tap = { x: t.clientX, y: t.clientY };
+            this._touchDrag = { clientX: t.clientX, clientY: t.clientY };
             const { x, y } = this.renderer.toLogical(t.clientX, t.clientY);
             this.renderer.hoverNode = this.tree.findNearest(x, y);
         }
@@ -657,8 +702,17 @@ class BonsaiInput {
         e.preventDefault();
         if (e.touches.length === 1 && !this._wasPinching) {
             const t = e.touches[0];
+            if (this._touchDrag) {
+                const dpr = window.devicePixelRatio || 1;
+                const dx = (t.clientX - this._touchDrag.clientX) * dpr;
+                const dy = (t.clientY - this._touchDrag.clientY) * dpr;
+                this.renderer.applyPan(dx, dy);
+                this._touchDrag.clientX = t.clientX;
+                this._touchDrag.clientY = t.clientY;
+            }
             const { x, y } = this.renderer.toLogical(t.clientX, t.clientY);
             this.renderer.hoverNode = this.tree.findNearest(x, y);
+            return;
         }
         if (e.touches.length !== 2 || !this._pinch) return;
         const t0 = e.touches[0], t1 = e.touches[1];
@@ -673,6 +727,7 @@ class BonsaiInput {
 
     _onTouchEnd(e) {
         if (e.touches.length < 2) this._pinch = null;
+        if (e.touches.length < 1) this._touchDrag = null;
         if (e.touches.length === 0) {
             if (this._tap && !this._wasPinching) {
                 const ct = e.changedTouches[0];
