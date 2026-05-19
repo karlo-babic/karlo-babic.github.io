@@ -75,14 +75,14 @@ export const Console = {
 
         const restartBtn = document.getElementById('restart-program');
         const nextBtn = document.getElementById('next-program');
-        const fullscreenBtn = document.getElementById('fullscreen-btn');
-        const viewOnlyBtn = document.getElementById('view-only-btn');
+        const openFullscreenConsoleBtn = document.getElementById('open-fullscreen-console-btn');
+        const openFullscreenProgramBtn = document.getElementById('open-fullscreen-program-btn');
 
         if (restartBtn) restartBtn.addEventListener('click', () => this.restartCurrentProgram());
         if (this.dropdownBtn) this.dropdownBtn.addEventListener('click', () => this.toggleDropdown());
         if (nextBtn) nextBtn.addEventListener('click', () => this.browse(1));
-        if (fullscreenBtn) fullscreenBtn.addEventListener('click', () => this.openInNewTab());
-        if (viewOnlyBtn) viewOnlyBtn.addEventListener('click', () => this.openViewOnly());
+        if (openFullscreenConsoleBtn) openFullscreenConsoleBtn.addEventListener('click', () => this.openConsoleOnly());
+        if (openFullscreenProgramBtn) openFullscreenProgramBtn.addEventListener('click', () => this.openFullscreenProgram());
 
         this.inputEl.addEventListener('input', () => {
             this.inputEl.style.height = 'auto';
@@ -346,14 +346,14 @@ export const Console = {
         this.updateDisplays();
     },
     
-    openInNewTab: function() {
+    openConsoleOnly: function() {
         const url = this._buildUrl('start');
-        if (url) window.open(url, '_blank');
+        if (url) window.location.href = url;
     },
 
-    openViewOnly: function() {
+    openFullscreenProgram: function() {
         const url = this._buildUrl('run');
-        if (url) window.open(url, '_blank');
+        if (url) window.location.href = url;
     },
 
     // --- Private helper for generating console URLs ---
