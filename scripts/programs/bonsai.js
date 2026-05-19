@@ -4,7 +4,7 @@ const STORAGE_KEY = 'bonsai';
 const GROWTH = {
     WARMUP_STEPS:         16,      // sim steps in the fast warm-up phase (trunk + first branches)
     STEPS_PER_MS_WARMUP:  0.008,   // speed during warm-up (trunk visible in seconds)
-    STEPS_PER_MS_SLOW:    0.0000005, // speed after warm-up (full tree in a few days)
+    STEPS_PER_MS_SLOW:    0.0000002, // speed after warm-up (full tree in a few days)
     STEP_SIZE:        8,        // logical px grown per sim step
     INFLUENCE_RADIUS: 70,       // how far a tip "sees" attraction points (px)
     KILL_RADIUS:      16,       // consumption radius around each node (px)
@@ -313,6 +313,21 @@ class BonsaiTree {
         }
     }
 
+    // Returns the node index closest to (lx, ly), or -1 if none within hit radius
+    findNearest(lx, ly) {
+        const s = this._state;
+        const HIT = 10;
+        let bestNode = -1, bestDist = HIT;
+        for (let i = 1; i < s.x.length; i++) {
+            if (s.dead[i]) continue;
+            const pi = s.p[i];
+            if (pi < 0 || s.dead[pi]) continue;
+            const dist = this._ptSegDist(lx, ly, s.x[pi], s.y[pi], s.x[i], s.y[i]);
+            if (dist < bestDist) { bestDist = dist; bestNode = i; }
+        }
+        return bestNode;
+    }
+
     // Returns true if a branch was pruned, false if click missed
     prune(lx, ly) {
         const s = this._state;
@@ -390,6 +405,7 @@ class BonsaiRenderer {
         this.scale = 1;
         this.ox = 0;
         this.oy = 0;
+        this.hoverNode = -1;
         this._zoom = 1;
         this._panX = 0;
         this._panY = 0;
@@ -516,6 +532,39 @@ class BonsaiRenderer {
             ctx.fill();
         }
         ctx.shadowBlur = 0;
+
+        // Hover highlight: collect subtree of hoverNode and redraw it in red
+        if (this.hoverNode !== -1 && !s.dead[this.hoverNode]) {
+            const children = new Map();
+            for (let i = 1; i < s.x.length; i++) {
+                if (!s.dead[i] && s.p[i] >= 0) {
+                    if (!children.has(s.p[i])) children.set(s.p[i], []);
+                    children.get(s.p[i]).push(i);
+                }
+            }
+            const pruneSet = new Set();
+            const queue = [this.hoverNode];
+            while (queue.length) {
+                const cur = queue.pop();
+                pruneSet.add(cur);
+                for (const ch of (children.get(cur) || [])) queue.push(ch);
+            }
+            ctx.shadowBlur  = 10;
+            ctx.shadowColor = 'rgba(255,80,0,0.6)';
+            for (const i of pruneSet) {
+                const pi = s.p[i];
+                if (pi < 0 || s.dead[pi]) continue;
+                const age = 1 - liveRank[i] / maxLiveRank;
+                const w   = GROWTH.WIDTH_MIN + (GROWTH.WIDTH_MAX - GROWTH.WIDTH_MIN) * Math.pow(age * age, GROWTH.WIDTH_EXP);
+                ctx.beginPath();
+                ctx.moveTo(s.x[pi], s.y[pi]);
+                ctx.lineTo(s.x[i],  s.y[i]);
+                ctx.lineWidth   = w;
+                ctx.strokeStyle = 'hsl(20,100%,60%)';
+                ctx.stroke();
+            }
+            ctx.shadowBlur = 0;
+        }
     }
 
     remove() {
@@ -532,18 +581,22 @@ class BonsaiInput {
         this.renderer = renderer;
         this.onPrune  = onPrune;
         this.onReset  = onReset;
-        this._pinch       = null;
-        this._wasPinching = false;
-        this._tap         = null;
-        this._onClick     = this._onClick.bind(this);
-        this._onTouch     = this._onTouch.bind(this);
-        this._onTouchMove = this._onTouchMove.bind(this);
-        this._onTouchEnd  = this._onTouchEnd.bind(this);
-        this._onWheel     = this._onWheel.bind(this);
+        this._pinch         = null;
+        this._wasPinching   = false;
+        this._tap           = null;
+        this._onClick       = this._onClick.bind(this);
+        this._onMouseMove   = this._onMouseMove.bind(this);
+        this._onMouseLeave  = this._onMouseLeave.bind(this);
+        this._onTouch       = this._onTouch.bind(this);
+        this._onTouchMove   = this._onTouchMove.bind(this);
+        this._onTouchEnd    = this._onTouchEnd.bind(this);
+        this._onWheel       = this._onWheel.bind(this);
     }
 
     attach() {
         this.canvas.addEventListener('click',      this._onClick);
+        this.canvas.addEventListener('mousemove',  this._onMouseMove);
+        this.canvas.addEventListener('mouseleave', this._onMouseLeave);
         this.canvas.addEventListener('touchstart', this._onTouch,     { passive: false });
         this.canvas.addEventListener('touchmove',  this._onTouchMove, { passive: false });
         this.canvas.addEventListener('touchend',   this._onTouchEnd);
@@ -552,6 +605,8 @@ class BonsaiInput {
 
     detach() {
         this.canvas.removeEventListener('click',      this._onClick);
+        this.canvas.removeEventListener('mousemove',  this._onMouseMove);
+        this.canvas.removeEventListener('mouseleave', this._onMouseLeave);
         this.canvas.removeEventListener('touchstart', this._onTouch);
         this.canvas.removeEventListener('touchmove',  this._onTouchMove);
         this.canvas.removeEventListener('touchend',   this._onTouchEnd);
@@ -571,6 +626,15 @@ class BonsaiInput {
         if (this.tree.prune(x, y)) this.onPrune();
     }
 
+    _onMouseMove(e) {
+        const { x, y } = this.renderer.toLogical(e.clientX, e.clientY);
+        this.renderer.hoverNode = this.tree.findNearest(x, y);
+    }
+
+    _onMouseLeave() {
+        this.renderer.hoverNode = -1;
+    }
+
     _onTouch(e) {
         e.preventDefault();
         if (e.touches.length === 2) {
@@ -578,16 +642,24 @@ class BonsaiInput {
             this._pinch = { dist: Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY) };
             this._wasPinching = true;
             this._tap = null;
+            this.renderer.hoverNode = -1;
             return;
         }
         if (e.touches.length === 1 && !this._wasPinching) {
             const t = e.touches[0];
             this._tap = { x: t.clientX, y: t.clientY };
+            const { x, y } = this.renderer.toLogical(t.clientX, t.clientY);
+            this.renderer.hoverNode = this.tree.findNearest(x, y);
         }
     }
 
     _onTouchMove(e) {
         e.preventDefault();
+        if (e.touches.length === 1 && !this._wasPinching) {
+            const t = e.touches[0];
+            const { x, y } = this.renderer.toLogical(t.clientX, t.clientY);
+            this.renderer.hoverNode = this.tree.findNearest(x, y);
+        }
         if (e.touches.length !== 2 || !this._pinch) return;
         const t0 = e.touches[0], t1 = e.touches[1];
         const newDist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
@@ -614,6 +686,7 @@ class BonsaiInput {
             }
             this._tap = null;
             this._wasPinching = false;
+            this.renderer.hoverNode = -1;
         }
     }
 
