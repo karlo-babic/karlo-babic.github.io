@@ -1,13 +1,12 @@
 /**
  * Parameters (pass as named args, e.g. `evoltree -n 200 -f -400`):
- * n  - number of initial organisms
- * f  - fertility, average number of offspring
- *      (negative = dynamic: fertility = abs(f / numberOfLiveOrganisms))
- * m  - mutation strength per offspring
- * r  - max distance between organisms to reproduce
- * d  - max divergence a branch can stray
- * ds - divergence speed multiplier
- * s  - horizontal step size per evolution tick
+ * n  - initial population size
+ * f  - fecundity, average offspring per mating pair
+ *      (negative = dynamic: fecundity = abs(f / population size))
+ * m  - mutation scale per offspring
+ * r  - mating range: max y-distance between two organisms to mate
+ * dr - density radius: y-radius within which organisms compete for the same niche
+ * s  - pixels per generation (visual only)
  */
 class EvolTreeProgram {
     constructor(screenEl, args = { positional: [], named: {} }) {
@@ -18,8 +17,8 @@ class EvolTreeProgram {
         this.screenEl.appendChild(this.canvas);
 
         this.isRunning = true;
-        this.loopCount = 0;
-        this.particles = [];
+        this.generation = 0;
+        this.population = [];
 
         this.config = this._parseArgs(args);
 
@@ -30,13 +29,12 @@ class EvolTreeProgram {
     _parseArgs(args) {
         const n = args.named;
         return {
-            n:              parseInt(n.n   ?? 200),
-            fertility:      parseFloat(n.f  ?? -400),
-            mutation:       parseFloat(n.m  ?? 1.0),
-            step:           parseInt(n.s   ?? 1),
-            reproduceDist:  parseFloat(n.r  ?? 1.9),
-            divergence:     parseFloat(n.d  ?? 0.9),
-            divergenceSpeed: parseFloat(n.ds ?? 1),
+            initialSize:   parseInt(n.n   ?? 300),
+            fecundity:     parseFloat(n.f  ?? -5000),
+            mutationScale: parseFloat(n.m  ?? 5.0),
+            matingRange:   parseFloat(n.r  ?? 5),
+            densityRadius: parseFloat(n.dr ?? 4),
+            step:          parseInt(n.s   ?? 2),
         };
     }
 
@@ -44,104 +42,146 @@ class EvolTreeProgram {
         this.canvas.width = this.screenEl.getBoundingClientRect().width;
         this.canvas.height = this.screenEl.getBoundingClientRect().height;
 
-        this._initializeParticles();
-        
-        // Prevent backspace from navigating away
-        document.addEventListener('keydown', this.handleBackspace);
+        this._initializePopulation();
 
+        document.addEventListener('keydown', this.handleBackspace);
         requestAnimationFrame(this.run);
     }
 
-    /**
-     * Creates the initial set of particles (the first "generation").
-     */
-    _initializeParticles() {
-        // The initial spread is based on the mutation parameter, which is a reasonable assumption.
-        let lastY = this.canvas.height / 2 - (this.config.n * this.config.mutation) / 1.5;
-        for (let i = 0; i < this.config.n; i++) {
-            if (i % 4) {
-                lastY += this.config.mutation;
-            } else {
-                lastY += this.config.mutation * 2;
-            }
-            this.particles.push({ 
-                x: 0, 
-                y: lastY, 
-                alive: true, 
-                divergence: Math.random() - 0.5 
-            });
+    _initializePopulation() {
+        const midY = this.canvas.height / 2;
+        const spread = this.canvas.height * 0.5;
+        for (let i = 0; i < this.config.initialSize; i++) {
+            const y = midY + (Math.random() - 0.5) * spread;
+            this.population.push({ x: 0, y, birthY: y });
         }
     }
-    
+
     run() {
         if (!this.isRunning) return;
 
         this._updateAndRender();
 
-        if (this.particles.length === 0) {
-            this._initializeParticles();
+        if (this.population.length === 0) {
+            this._initializePopulation();
         }
 
-        this.loopCount++;
+        this.generation++;
         requestAnimationFrame(this.run);
     }
 
-    _updateAndRender() {
-        this.ctx.clearRect((this.loopCount * this.config.step) % this.canvas.width, 0, this.config.step, this.canvas.height);
+    // Draws a traitgram segment from (x, birthY) to (x+step, y), splitting into two
+    // pieces if the shortest path in wrapped y-space crosses the canvas boundary.
+    _drawSegment(x, birthY, y) {
+        const H = this.canvas.height;
+        const step = this.config.step;
 
-        const nextGeneration = [];
-        const ll = this.particles.length;
+        let dy = y - birthY;
+        if (dy >  H / 2) dy -= H;
+        if (dy < -H / 2) dy += H;
+        const endY = birthY + dy;
 
-        // Calculate fertility for this generation
-        let currentFertility = this.config.fertility;
-        if (currentFertility < 0) {
-            // Dynamic fertility: absolute value of f / number of live organisms
-            currentFertility = ll > 0 ? Math.abs(this.config.fertility / ll) : Math.abs(this.config.fertility);
+        this.ctx.beginPath();
+        if (endY >= 0 && endY <= H) {
+            this.ctx.moveTo(x, birthY);
+            this.ctx.lineTo(x + step, endY);
+        } else if (endY < 0) {
+            const t = birthY / (birthY - endY);
+            this.ctx.moveTo(x, birthY);
+            this.ctx.lineTo(x + t * step, 0);
+            this.ctx.moveTo(x + t * step, H);
+            this.ctx.lineTo(x + step, endY + H);
+        } else {
+            const t = (H - birthY) / (endY - birthY);
+            this.ctx.moveTo(x, birthY);
+            this.ctx.lineTo(x + t * step, H);
+            this.ctx.moveTo(x + t * step, 0);
+            this.ctx.lineTo(x + step, endY - H);
         }
-        
-        for (let i = 1; i < ll; i++) {
-            const currentParticle = this.particles[i];
-            const prevParticle = this.particles[i-1];
-            
-            // Render the current particle's step
-            this.ctx.beginPath();
-            this.ctx.moveTo(currentParticle.x, currentParticle.y);
-            this.ctx.lineTo(currentParticle.x + this.config.step, currentParticle.y);
-            this.ctx.strokeStyle = "white";
-            this.ctx.lineWidth = 0.5;
-            this.ctx.stroke();
+        this.ctx.stroke();
+    }
 
-            // Boundary check
-            if (currentParticle.y < 0 || currentParticle.y > this.canvas.height) {
-                currentParticle.alive = false;
+    _updateAndRender() {
+        const { step, matingRange, mutationScale, fecundity, densityRadius } = this.config;
+        const W = this.canvas.width;
+        const H = this.canvas.height;
+
+        this.ctx.clearRect((this.generation * step) % W, 0, step, H);
+
+        this.population.sort((a, b) => a.y - b.y);
+
+        this.ctx.strokeStyle = 'white';
+        this.ctx.lineWidth = 0.5;
+        for (const org of this.population) {
+            this._drawSegment(org.x, org.birthY, org.y);
+        }
+
+        const n = this.population.length;
+        const currentFecundity = fecundity < 0 ? Math.abs(fecundity / n) : fecundity;
+        const nextX = ((this.generation + 1) * step) % W;
+        const nextGeneration = [];
+
+        let firstConsumed = false;
+        let lastConsumed = false;
+
+        // Alternate scan direction each generation to avoid systematic y-bias:
+        // left-to-right leaves the highest-y odd-one-out unpaired; right-to-left leaves lowest-y.
+        const dir = Math.random() < 0.5 ? 1 : -1;
+        let i = dir === 1 ? 0 : n - 2;
+
+        while (i >= 0 && i < n - 1) {
+            const a = this.population[i];
+            const b = this.population[i + 1];
+
+            if (b.y - a.y > matingRange) {
+                i += dir;
+                continue;
             }
-            
-            // Reproduction check
-            const distance = Math.abs(prevParticle.y - currentParticle.y);
-            if (prevParticle.alive && currentParticle.alive && distance <= this.config.reproduceDist) {
-                prevParticle.alive = false;
-                currentParticle.alive = false;
-                
-                const offspringCount = Math.floor(Math.random() * (currentFertility + 1)) + 1;
-                const startY = (prevParticle.y + currentParticle.y) / 2;
 
+            const pairIdx = i;
+            i += dir * 2;
+            if (pairIdx === 0)     firstConsumed = true;
+            if (pairIdx === n - 2) lastConsumed = true;
+
+            const midY = (a.y + b.y) / 2;
+
+            let localCount = 0;
+            for (let k = pairIdx;     k >= 0 && midY - this.population[k].y <= densityRadius; k--) localCount++;
+            for (let k = pairIdx + 1; k < n  && this.population[k].y - midY <= densityRadius; k++) localCount++;
+
+            const effectiveFecundity = currentFecundity / (1 + localCount*localCount);
+            const offspringCount = Math.floor(Math.random() * (effectiveFecundity + 1)) + 1;
+
+            for (let j = 0; j < offspringCount; j++) {
+                const y = ((midY + (Math.random() - 0.5) * mutationScale) % H + H) % H;
+                nextGeneration.push({ x: nextX, y, birthY: midY });
+            }
+        }
+
+        // Wrap-around pair: last organism mates with first across the y boundary
+        if (n >= 2 && !firstConsumed && !lastConsumed) {
+            const first = this.population[0];
+            const last  = this.population[n - 1];
+            const wrapDist = H - last.y + first.y;
+            if (wrapDist <= matingRange) {
+                const midY = (last.y + wrapDist / 2) % H;
+
+                let localCount = 0;
+                for (const org of this.population) {
+                    const d = Math.abs(org.y - midY);
+                    if (Math.min(d, H - d) <= densityRadius) localCount++;
+                }
+
+                const effectiveFecundity = currentFecundity / (1 + localCount*localCount);
+                const offspringCount = Math.floor(Math.random() * (effectiveFecundity + 1)) + 1;
                 for (let j = 0; j < offspringCount; j++) {
-                    // Calculate new divergence based on parents + random mutation
-                    let newDivergence = (currentParticle.divergence + prevParticle.divergence) / 2 + (Math.random() - 0.5) * this.config.mutation;
-                    // Clamp the divergence by the configured maximum
-                    newDivergence = Math.max(-this.config.divergence, Math.min(this.config.divergence, newDivergence));
-                    
-                    nextGeneration.push({
-                        x: (currentParticle.x + this.config.step) % this.canvas.width,
-                        // New position is based on the new divergence, scaled by divergence speed
-                        y: startY + newDivergence * this.config.divergenceSpeed,
-                        alive: true,
-                        divergence: newDivergence
-                    });
+                    const y = ((midY + (Math.random() - 0.5) * mutationScale) % H + H) % H;
+                    nextGeneration.push({ x: nextX, y, birthY: midY });
                 }
             }
         }
-        this.particles = nextGeneration;
+
+        this.population = nextGeneration;
     }
 
     stop() {
@@ -155,7 +195,7 @@ class EvolTreeProgram {
             this.screenEl.removeChild(this.canvas);
         }
     }
-    
+
     handleBackspace(e) {
         if (e.key === 'Backspace' && e.target.nodeName.toLowerCase() !== 'input' && e.target.nodeName.toLowerCase() !== 'textarea') {
             e.preventDefault();

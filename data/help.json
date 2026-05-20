@@ -30,9 +30,9 @@
         "see_also": ["glideroflife"]
     },
     "evoltree": {
-        "description": "A simulation of evolutionary branching.",
-        "usage": "evoltree",
-        "details": "Visualizes how species can diverge over time through reproduction and mutation. Organisms that are too similar or too far apart die out.\n\nExample:\n  evoltree",
+        "description": "A genealogical network simulation — lineages branch, merge, and drift through trait space over time.",
+        "usage": "evoltree [-n N] [-f F] [-m M] [-r R] [-dr DR] [-s S]",
+        "details": "Each line is one organism living for one generation. The horizontal axis is time; the vertical axis is a continuous heritable trait that wraps around. Offspring inherit the average trait of their two parents plus a random mutation, so lineages drift, split, and occasionally converge — forming a reticulate network rather than a strict tree.\n\nOrganisms only mate with others within mating range (-r) on the trait axis. Lineages that drift too far apart speciate; those that drift back together can merge again. Dense regions of trait space suppress reproduction (-dr), pushing lineages to spread out and maintain separation.\n\nParameters:\n  -n   initial population size (default: 300)\n  -f   fecundity — average offspring per mating pair; negative enables dynamic mode where fecundity scales inversely with population size, keeping headcount stable (default: -5000)\n  -m   mutation scale — how far offspring can stray from the parental midpoint in trait space (default: 5)\n  -r   mating range — max trait-axis distance for two organisms to mate; governs how readily lineages merge or stay separate (default: 5)\n  -dr  density radius — trait-space radius used to count local competitors; more neighbors means fewer offspring, pushing lineages apart (default: 4)\n  -s   pixels per generation, visual only (default: 2)\n\nExamples:\n  evoltree\n  evoltree -n 500 -m 4 -r 4",
         "see_also": ["bonsai"]
     },
     "mandelbrot": {
