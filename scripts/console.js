@@ -231,30 +231,40 @@ export const Console = {
         return item;
     },
 
+    _getOrderedVisiblePrograms: function() {
+        const visible = new Set(this.availablePrograms.filter(p => !this.hiddenPrograms.includes(p) && !this.privatePrograms.includes(p)));
+        const ordered = [];
+        for (const programs of Object.values(this.programCategories)) {
+            for (const p of programs) {
+                if (visible.has(p)) ordered.push(p);
+            }
+        }
+        // Uncategorized visible programs fall through at the end.
+        for (const p of visible) {
+            if (!ordered.includes(p)) ordered.push(p);
+        }
+        return ordered;
+    },
+
     populateDropdown: function() {
         if (!this.programListEl) return;
         this.programListEl.innerHTML = '';
-        const visiblePrograms = this.availablePrograms.filter(p => !this.hiddenPrograms.includes(p) && !this.privatePrograms.includes(p));
-        const categorized = new Set();
+        const visible = new Set(this._getOrderedVisiblePrograms());
 
         for (const [catName, programs] of Object.entries(this.programCategories)) {
-            const catPrograms = programs.filter(p => visiblePrograms.includes(p));
+            const catPrograms = programs.filter(p => visible.has(p));
             if (catPrograms.length === 0) continue;
 
             const label = document.createElement('span');
             label.className = 'dropdown-category-label';
             label.textContent = catName;
             this.programListEl.appendChild(label);
-
-            catPrograms.forEach(programName => {
-                categorized.add(programName);
-                this.programListEl.appendChild(this._createDropdownItem(programName));
-            });
+            catPrograms.forEach(p => this.programListEl.appendChild(this._createDropdownItem(p)));
         }
 
         // Any visible program not assigned to a category falls through here.
-        visiblePrograms
-            .filter(p => !categorized.has(p))
+        this._getOrderedVisiblePrograms()
+            .filter(p => !Object.values(this.programCategories).flat().includes(p))
             .forEach(p => this.programListEl.appendChild(this._createDropdownItem(p)));
     },
 
@@ -265,12 +275,12 @@ export const Console = {
     },
 
     browse: function(direction) {
-        // This loop ensures the next/prev buttons skip over any hidden programs.
-        do {
-            this.currentProgramIndex = (this.currentProgramIndex + direction + this.availablePrograms.length) % this.availablePrograms.length;
-        } while (this.hiddenPrograms.includes(this.availablePrograms[this.currentProgramIndex]) || this.privatePrograms.includes(this.availablePrograms[this.currentProgramIndex]));
-
-        this.loadProgram(this.availablePrograms[this.currentProgramIndex]);
+        const ordered = this._getOrderedVisiblePrograms();
+        const current = this.availablePrograms[this.currentProgramIndex];
+        const idx = ordered.indexOf(current);
+        const next = ordered[(idx + direction + ordered.length) % ordered.length];
+        this.currentProgramIndex = this.availablePrograms.indexOf(next);
+        this.loadProgram(next);
     },
 
     runProgramFromInput: function() {

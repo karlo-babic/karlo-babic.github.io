@@ -125,7 +125,7 @@
     z-index: 10;
     bottom: 100%;
     border: 1px solid #444;
-    max-height: 192px;
+    max-height: 250px;
     overflow-y: auto;
     scrollbar-width: none; 
     -ms-overflow-style: none;
