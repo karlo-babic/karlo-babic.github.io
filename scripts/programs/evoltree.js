@@ -1,44 +1,42 @@
 /**
- * Parameters that can be changed in url:
- * n - number of initial organisms
- * f - fertility, average number of offspring
- *   - if set to a negative number fertility will be dynamical: fertility = abs(f / numberOfLiveOrganisms)
- * m - how much each offspring mutates (mutation strength)
- * r - maximum distance between organisms while still being able to reproduce
- * d - degree of possible divergence (limits how far a branch can stray)
- * ds - divergence speed (a multiplier on how fast branches spread vertically)
- * s - length of evolution time steps (horizontal step size)
+ * Parameters (pass as named args, e.g. `evoltree -n 200 -f -400`):
+ * n  - number of initial organisms
+ * f  - fertility, average number of offspring
+ *      (negative = dynamic: fertility = abs(f / numberOfLiveOrganisms))
+ * m  - mutation strength per offspring
+ * r  - max distance between organisms to reproduce
+ * d  - max divergence a branch can stray
+ * ds - divergence speed multiplier
+ * s  - horizontal step size per evolution tick
  */
 class EvolTreeProgram {
-    constructor(screenEl) {
+    constructor(screenEl, args = { positional: [], named: {} }) {
         this.screenEl = screenEl;
+        this.args = args;
         this.canvas = document.createElement('canvas');
         this.ctx = this.canvas.getContext('2d');
         this.screenEl.appendChild(this.canvas);
-        
+
         this.isRunning = true;
         this.loopCount = 0;
         this.particles = [];
 
-        this.config = this._parseUrlParams();
-        
+        this.config = this._parseArgs(args);
+
         this.handleBackspace = this.handleBackspace.bind(this);
         this.run = this.run.bind(this);
     }
 
-    /**
-     * Parses configuration from URL or uses default values.
-     */
-    _parseUrlParams() {
-        const params = new URLSearchParams(window.location.search);
+    _parseArgs(args) {
+        const n = args.named;
         return {
-            n: parseInt(params.get('n') || 200),
-            fertility: parseFloat(params.get('f') || -400),
-            mutation: parseFloat(params.get('m') || 1.0),
-            step: parseInt(params.get('s') || 1),
-            reproduceDist: parseInt(params.get('r') || 1.9),
-            divergence: parseFloat(params.get('d') || 0.9),
-            divergenceSpeed: parseFloat(params.get('ds') || 1),
+            n:              parseInt(n.n   ?? 200),
+            fertility:      parseFloat(n.f  ?? -400),
+            mutation:       parseFloat(n.m  ?? 1.0),
+            step:           parseInt(n.s   ?? 1),
+            reproduceDist:  parseFloat(n.r  ?? 1.9),
+            divergence:     parseFloat(n.d  ?? 0.9),
+            divergenceSpeed: parseFloat(n.ds ?? 1),
         };
     }
 
@@ -80,10 +78,8 @@ class EvolTreeProgram {
 
         this._updateAndRender();
 
-        // Check stop conditions
-        if (this.loopCount * this.config.step >= this.canvas.width || this.particles.length === 0) {
-            this.stop();
-            return;
+        if (this.particles.length === 0) {
+            this._initializeParticles();
         }
 
         this.loopCount++;
@@ -91,6 +87,8 @@ class EvolTreeProgram {
     }
 
     _updateAndRender() {
+        this.ctx.clearRect((this.loopCount * this.config.step) % this.canvas.width, 0, this.config.step, this.canvas.height);
+
         const nextGeneration = [];
         const ll = this.particles.length;
 
@@ -134,7 +132,7 @@ class EvolTreeProgram {
                     newDivergence = Math.max(-this.config.divergence, Math.min(this.config.divergence, newDivergence));
                     
                     nextGeneration.push({
-                        x: currentParticle.x + this.config.step,
+                        x: (currentParticle.x + this.config.step) % this.canvas.width,
                         // New position is based on the new divergence, scaled by divergence speed
                         y: startY + newDivergence * this.config.divergenceSpeed,
                         alive: true,
@@ -169,8 +167,8 @@ class EvolTreeProgram {
 const EvolTree = {
     instance: null,
 
-    init: function(screenEl) {
-        this.instance = new EvolTreeProgram(screenEl);
+    init: function(screenEl, args) {
+        this.instance = new EvolTreeProgram(screenEl, args);
         this.instance.init();
     },
 
@@ -182,10 +180,11 @@ const EvolTree = {
     },
 
     onResize: function() {
-        // A full restart is the simplest way to handle this program's resize.
         if (this.instance) {
+            const screenEl = this.instance.screenEl;
+            const args = this.instance.args;
             this.instance.unload();
-            this.init(this.instance.screenEl);
+            this.init(screenEl, args);
         }
     }
 };
