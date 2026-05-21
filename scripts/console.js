@@ -116,6 +116,21 @@ export const Console = {
                 this.programListEl.classList.remove('show');
             }
         });
+
+        this.screenEl.addEventListener('click', (e) => {
+            const link = e.target.closest('[data-cmd]');
+            if (!link) return;
+            e.preventDefault();
+            const cmdString = link.dataset.cmd;
+            this.addToHistory(cmdString);
+            this.historyIndex = -1;
+            const { command, args } = this._parseCommand(cmdString);
+            const programIndex = this.availablePrograms.indexOf(command);
+            if (programIndex !== -1) {
+                this.currentProgramIndex = programIndex;
+                this.loadProgram(command, args);
+            }
+        });
         
         this.populateDropdown();
 
