@@ -12,14 +12,14 @@ const GROWTH = {
     FORK_CHANCE_MIN:  0.1,     // fork probability at trunk (depth 0)
     FORK_CHANCE_MAX:  0.18,      // fork probability at full branch depth
     FORK_DEPTH:       20,       // depth at which fork chance reaches max
-    MAX_TIPS:         200,      // cap on concurrent active growing tips
+    MAX_TIPS:         300,      // cap on concurrent active growing tips
     REP_RADIUS_MULT:  1,        // repulsion acts within KILL_RADIUS * this (px)
     REP_STRENGTH:     1.0,      // how hard tips push each other apart
     MOMENTUM:         0.8,      // fraction of previous growth direction retained each step
     UPWARD_BIAS:      0.1,      // constant upward pull added to every tip's direction
     WIDTH_MIN:        1.0,      // line width at tips (px)
     WIDTH_MAX:        30.0,      // line width at trunk (px)
-    WIDTH_EXP:        1.4,      // taper curve exponent: 0.5=sqrt (da Vinci), 1=linear
+    WIDTH_EXP:        2.2,      // taper curve exponent: 0.5=sqrt (da Vinci), 1=linear
 };
 
 // Fixed logical canvas space — tree coordinates live here, scaled to screen on render
