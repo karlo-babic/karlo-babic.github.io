@@ -1,3 +1,4 @@
 [**Graph Meme Pool**](/graph-meme-pool)
-[**InfoCoV**](https://infocov.uniri.hr/)
 [**PyRv Learning**](https://github.com/karlo-babic/pyrv#readme)
+[**InfoCoV**](https://infocov.uniri.hr/)
+**The Beginning:** [Master's thesis](/data/karlo-babic-diplomski-rad.pdf), [presentation](/data/karlo-babic-diplomski-rad-prez.pdf)
