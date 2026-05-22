@@ -969,6 +969,7 @@
                     btnVis.style.background = 'var(--cell-on)';
                     btnVis.style.color = 'var(--bg)';
                     document.getElementById('phaseDesc').innerHTML = getDesc();
+                    requestAnimationFrame(() => { sizeFourierCanvas(); drawPhase(); });
                 }
             } catch (e) {}
         }
