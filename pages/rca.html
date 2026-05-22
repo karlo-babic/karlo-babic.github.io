@@ -282,26 +282,23 @@
         }
 
         @media (max-width: 640px) {
-            body {
-                height: auto;
-                min-height: 100vh;
-                overflow-y: auto;
-            }
             .app-wrap {
                 flex-direction: column;
-                flex: none;
+                overflow-y: auto;
             }
             .left-col {
                 max-width: none;
                 flex: none;
-            }
-            .ca-container {
-                height: 380px;
+                width: 100%;
+                height: 100%;
             }
             .side-panel {
                 width: 100%;
                 height: 480px;
                 flex-shrink: 0;
+            }
+            button, select {
+                min-width: 0;
             }
         }
     </style>
@@ -329,7 +326,7 @@
                     <button id="btnConserve" style="background:var(--cell-on);color:var(--bg)">Energy: conserved</button>
                 </div>
                 <div class="control-row" style="align-items:center;">
-                    <span style="color:var(--text-muted);font-size:0.75em;white-space:nowrap;flex:none;">Fuzzy AND:</span>
+                    <span style="color:var(--text-muted);font-size:0.75em;white-space:nowrap;flex:none;">Fuzzy:</span>
                     <select id="logicType">
                         <option value="sharp_lukasiewicz">Sharp Łukasiewicz</option>
                         <option value="nilpotent">Nilpotent</option>
