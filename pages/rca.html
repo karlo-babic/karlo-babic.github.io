@@ -360,9 +360,21 @@
                     <p>Elementary Cellular Automata (ECA) assign each cell a binary state updated by a fixed 3-cell neighborhood rule. There are 256 such rules; see <a href="https://en.wikipedia.org/wiki/Elementary_cellular_automaton" target="_blank" style="color:var(--cell-on)">Wikipedia</a> or <a href="https://mathworld.wolfram.com/ElementaryCellularAutomaton.html" target="_blank" style="color:var(--cell-on)">MathWorld</a> for a full survey.</p>
                     <p>Fuzzy automata extend ECA by allowing continuous values on [0, 1] instead of strict binary states, producing smoother, gradient-like dynamics with the same neighborhood logic.</p>
                     <p>This simulator goes further: cell values act as both states and rule weights. The neighborhood sum indexes into the grid to retrieve the weight applied at that position, so the grid encodes the configuration and its own transition logic at once. There is no separate rule table.</p>
-                    <p>Some cycles I found:
-                        <a href="#eyJyIjpbMSwwLjczNjQ0ODYyMTk3ODI3MDksMC42OTE4MjM4NDY3ODc4MDEzLDAuMzUyMjI5OTcyMTg2NDc2ODQsMC45MDM1ODExMTY1MDExNSwwLjI5MjQ2OTU3ODI2Nzg5MDEsMC42NjQ3MTYwMzMxMzQ3MzA2LDAuNjYzNzEzMzY1MTgzMzAwN10sImwiOiJzaGFycF9sdWthc2lld2ljeiIsImMiOjEsIm4iOiJwZW50YXRvbmljIiwidiI6MX0=" style="color:var(--cell-on)">long</a>,
-                        <a href="#eyJyIjpbMC42MjU2MjUxOTc3Njg0Mzc2LDAuMDMyNTA2NTI5MTA2NjY2ODQsMC45NTQ3NjA5NzY1MDYzMDY2LDAuMjc2MjU4NjEwMTc2NzU0NDYsMC4xNDc3Nzg2MjMxODkyNTYyLDAuNjY5MTgwMjYyMjU1NjM3NiwxLDFdLCJsIjoic2hhcnBfbHVrYXNpZXdpY3oiLCJjIjoxLCJuIjoicGVudGF0b25pYyIsInYiOjF9" style="color:var(--cell-on)">short</a>.
+                    <p>Some attractors I found:</p>
+                    <p>
+                        <a href="#eyJyIjpbMC42MjU2MjUxOTc3Njg0Mzc2LDAuMDMyNTA2NTI5MTA2NjY2ODQsMC45NTQ3NjA5NzY1MDYzMDY2LDAuMjc2MjU4NjEwMTc2NzU0NDYsMC4xNDc3Nzg2MjMxODkyNTYyLDAuNjY5MTgwMjYyMjU1NjM3NiwxLDFdLCJsIjoic2hhcnBfbHVrYXNpZXdpY3oiLCJjIjoxLCJuIjoicGVudGF0b25pYyIsInYiOjF9" style="color:var(--cell-on)">short cycle</a>
+                        <a href="#eyJyIjpbMSwwLjczNjQ0ODYyMTk3ODI3MDksMC42OTE4MjM4NDY3ODc4MDEzLDAuMzUyMjI5OTcyMTg2NDc2ODQsMC45MDM1ODExMTY1MDExNSwwLjI5MjQ2OTU3ODI2Nzg5MDEsMC42NjQ3MTYwMzMxMzQ3MzA2LDAuNjYzNzEzMzY1MTgzMzAwN10sImwiOiJzaGFycF9sdWthc2lld2ljeiIsImMiOjEsIm4iOiJwZW50YXRvbmljIiwidiI6MX0=" style="color:var(--cell-on)">medium cycle 1</a>
+                        <a href="#eyJyIjpbMC45NjkzMTQ2ODUyNTYzODUzLDAuNzYzNDYzNjA0ODg1NTEsMC40OTAxMzYyNDc5MDM5ODg3LDAuMTc0NDg4ODQ2Mzg1MTAwMzIsMC45NjkzMTQ2ODUyNTYzODUzLDAuMjEwMjI5MTYwNDkwOTY2OCwwLjk2OTMxNDY4NTI1NjM4NTMsMC4wNTI0NDM3NDcxNDYyNTc1NTRdLCJsIjoic2hhcnBfbHVrYXNpZXdpY3oiLCJjIjoxLCJuIjoicGVudGF0b25pYyIsInYiOjF9" style="color:var(--cell-on)">medium cycle 2</a>
+                        <a href="#eyJyIjpbMC44NTQ2NzE2MDEyMDQ0Mjk5LDAuMTgyNzQ0ODEyNzMzNTQxMiwwLjA1NzI2OTcxODcwMzg1MDYxNCwwLjM5Nzk4NDQwNzIyMTEwMTIsMC42NDk0OTQzMjYwMjcxMjQ5LDEsMSwwLjk3OTI2NTAxOTM4MjcwNzRdLCJsIjoic2hhcnBfbHVrYXNpZXdpY3oiLCJjIjoxLCJuIjoicGVudGF0b25pYyIsInYiOjF9" style="color:var(--cell-on)">medium cycle 3</a>
+                    </p>
+                    <p>
+                        <a href="#eyJyIjpbMC44MjQyMzY3MDg3ODI5MjEsMCwwLjEyNDI4Nzc4NDg3MjU2NDk2LDAuMTE4OTIzNTg4MjQ4NDg4NDksMC42MjI1MDYxMzEwNDMyMzI5LDAuMTU5NjE1NzAwNjUxNTIyMTQsMC42ODM0MTI0MDM0MjA1MTk4LDAuMjM4NTUyODAxODM1MTQ0MjddLCJsIjoibmlscG90ZW50IiwiYyI6MSwibiI6InBlbnRhdG9uaWMiLCJ2IjoxfQ==" style="color:var(--cell-on)">long cycle</a>
+                    </p>
+                    <p>
+                        <a href="#eyJyIjpbMC4xMTA1MDI3MDMyMTc5MjEyLDEsMC41MTUxNDk4NzkwNDQ3OTI3LDEsMC4xMTA1MDI3MDMyMTc5MjEyLDAuMTEwNTAyNzAzMjE3OTIxMiwwLjM0NzQ1NDYyNDQ4ODM3OTU1LDAuMTEwNTAyNzAzMjE3OTIxMl0sImwiOiJkdWFsX25pbHBvdGVudCIsImMiOjEsIm4iOiJwZW50YXRvbmljIiwidiI6MX0=" style="color:var(--cell-on)">tiny cycle</a>
+                    </p>
+                    <p>
+                        <a href="#eyJyIjpbMC40MzQ1NzIzODE3OTU2MTIxNCwwLjI4ODQ0NTU5OTgyOTQ0MTg1LDAuMjQ1MzQ0Mzg1MzU4MzMyNiwwLjMxMzUyMjM1OTg4NTUxNDUsMC42OTk5MjE5NTU0NzE2ODI4LDEsMC4zODIzNzY2NDEyNTYyNjc4LDAuODU5MDEyOTQ4MjUxODcxXSwibCI6ImludGVyZmVyZW5jZSIsImMiOjEsIm4iOiJwZW50YXRvbmljIiwidiI6MX0=" style="color:var(--cell-on)">chaotic attractor</a>
                     </p>
                     <p style="margin-top:auto;padding-top:1em;border-top:1px solid var(--border);"><a href="https://karlo-babic.github.io" target="_blank" style="color:var(--cell-on)">Karlo Babi&#263;</a></p>
                 </div>
