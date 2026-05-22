@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reflective Cellular Automata</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel-bg: #1e293b;
+            --cell-off: #0f172a;
+            --cell-on: #38bdf8;
+            --highlight: #f43f5e;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: var(--bg);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            margin: 0;
+            user-select: none;
+            height: 100vh;
+            box-sizing: border-box;
+            overflow: hidden;
+            gap: 8px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.1rem;
+            color: var(--cell-on);
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .app-wrap {
+            display: flex;
+            flex-direction: row;
+            flex: 1;
+            min-height: 0;
+            width: 100%;
+            max-width: 1100px;
+            gap: 10px;
+        }
+
+        .left-col {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+            min-width: 0;
+            max-width: 420px;
+            gap: 8px;
+        }
+
+        /* ── CA ───────────────────────────────── */
+        .ca-container {
+            display: flex;
+            flex-direction: column;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 2px solid var(--border);
+            background: var(--bg);
+            flex: 1;
+            min-height: 0;
+        }
+
+        .canvas-wrapper {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 0;
+            background: #000;
+        }
+
+        #caCanvas {
+            display: block;
+            image-rendering: pixelated;
+        }
+
+        .input-editor {
+            display: flex;
+            width: 100%;
+            height: 60px;
+            background: var(--panel-bg);
+            border-top: 2px solid var(--highlight);
+            flex-shrink: 0;
+        }
+
+        .input-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--bg);
+        }
+
+        .bar-area {
+            flex-grow: 1;
+            position: relative;
+            cursor: ns-resize;
+        }
+
+        .bar-fill {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            background: var(--cell-on);
+            pointer-events: none;
+        }
+
+        .val-input {
+            width: 100%;
+            border: none;
+            border-top: 1px solid var(--border);
+            background: #0a0f1a;
+            color: var(--text-muted);
+            font-size: 0.6rem;
+            padding: 2px 0;
+            text-align: center;
+            font-family: inherit;
+        }
+
+        .visualizer {
+            display: flex;
+            width: 100%;
+            background: var(--panel-bg);
+            border-top: 2px solid var(--highlight);
+            padding: 6px 0;
+            flex-shrink: 0;
+        }
+
+        .rule-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            border-right: 1px solid var(--bg);
+        }
+
+        .neighborhood { display: flex; gap: 1px; }
+
+        .mini-cell {
+            width: 10px;
+            height: 10px;
+            background: var(--cell-off);
+            border: 1px solid var(--border);
+        }
+
+        .mini-cell.active { background: var(--cell-on); border-color: var(--cell-on); }
+
+        /* ── Controls strip ───────────────────── */
+        .controls {
+            background: var(--panel-bg);
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 100%;
+            flex-shrink: 0;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 6px;
+        }
+
+        button {
+            background: var(--border);
+            color: var(--text-main);
+            border: none;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.85em;
+            flex: 1;
+        }
+
+        button:hover { background: #475569; }
+        .primary { background: var(--highlight) !important; }
+        .primary:hover { background: #e11d48 !important; }
+
+        select {
+            background: var(--border);
+            color: var(--text-main);
+            border: none;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.85em;
+            flex: 1;
+        }
+
+        input[type=range] {
+            flex: 1;
+            accent-color: var(--cell-on);
+            cursor: pointer;
+        }
+
+        /* ── Side panel ───────────────────────── */
+        .side-panel {
+            width: 620px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            background: var(--panel-bg);
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .side-text {
+            flex: 1;
+            display: block;
+            padding: 20px 16px;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            line-height: 1.65;
+            text-align: left;
+            overflow-y: auto;
+        }
+
+        .side-text p {
+            margin: 0 0 1em 0;
+        }
+
+        .side-text p:last-child {
+            margin-bottom: 0;
+        }
+
+        .side-phase {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+        }
+
+        .phase-canvas-wrap {
+            flex: 1;
+            min-height: 0;
+            background: #000;
+            position: relative;
+        }
+
+        #fourierCanvas {
+            display: block;
+            position: absolute;
+            top: 0; left: 0;
+        }
+
+        .phase-controls {
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            padding: 8px;
+            border-top: 1px solid var(--border);
+        }
+
+        .phase-ctrl-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .phase-label {
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            white-space: nowrap;
+            width: 34px;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 640px) {
+            body {
+                height: auto;
+                min-height: 100vh;
+                overflow-y: auto;
+            }
+            .app-wrap {
+                flex-direction: column;
+                flex: none;
+            }
+            .left-col {
+                max-width: none;
+                flex: none;
+            }
+            .ca-container {
+                height: 380px;
+            }
+            .side-panel {
+                width: 100%;
+                height: 480px;
+                flex-shrink: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>RCA: Reflective Cellular Automata</h1>
+
+    <div class="app-wrap">
+
+        <div class="left-col">
+            <div class="ca-container">
+                <div id="wrapper" class="canvas-wrapper">
+                    <canvas id="caCanvas"></canvas>
+                </div>
+                <div class="input-editor" id="inputEditor"></div>
+                <div id="visualizer" class="visualizer"></div>
+            </div>
+
+            <div class="controls">
+                <div class="control-row">
+                    <button id="btnPlay" class="primary">Play</button>
+                    <button id="btnStep">Step</button>
+                    <button id="btnRandomize">Randomize</button>
+                    <button id="btnConserve" style="background:var(--cell-on);color:var(--bg)">Energy: conserved</button>
+                </div>
+                <div class="control-row" style="align-items:center;">
+                    <span style="color:var(--text-muted);font-size:0.75em;white-space:nowrap;flex:none;">Fuzzy AND:</span>
+                    <select id="logicType">
+                        <option value="sharp_lukasiewicz">Sharp Łukasiewicz</option>
+                        <option value="nilpotent">Nilpotent</option>
+                        <option value="dual_nilpotent">Dual Nilpotent</option>
+                        <option value="interference">Interference</option>
+                    </select>
+                    <button id="btnVis" style="flex:none;padding:8px 12px;">Visualization</button>
+                </div>
+                <div class="control-row">
+                    <button id="btnSound">Sound</button>
+                    <select id="noteMode">
+                        <option value="pentatonic">Pentatonic</option>
+                        <option value="harmonic">Harmonic series</option>
+                        <option value="diatonic">Diatonic</option>
+                        <option value="fifths">Stacked fifths</option>
+                        <option value="windchimes">Wind chimes</option>
+                    </select>
+                </div>
+                <canvas id="waveCanvas" style="width:100%;height:56px;background:#000;border-radius:4px;border:1px solid var(--border);display:block;"></canvas>
+            </div>
+        </div>
+
+        <div class="side-panel" id="sidePanel">
+                <div class="side-text" id="sideText">
+                    <p>Elementary Cellular Automata (ECA) assign each cell a binary state updated by a fixed 3-cell neighborhood rule. There are 256 such rules; see <a href="https://en.wikipedia.org/wiki/Elementary_cellular_automaton" target="_blank" style="color:var(--cell-on)">Wikipedia</a> or <a href="https://mathworld.wolfram.com/ElementaryCellularAutomaton.html" target="_blank" style="color:var(--cell-on)">MathWorld</a> for a full survey.</p>
+                    <p>Fuzzy automata extend ECA by allowing continuous values on [0, 1] instead of strict binary states, producing smoother, gradient-like dynamics with the same neighborhood logic.</p>
+                    <p>This simulator goes further: cell values act as both states and rule weights. The neighborhood sum indexes into the grid to retrieve the weight applied at that position, so the grid encodes the configuration and its own transition logic at once. There is no separate rule table.</p>
+                </div>
+                <div class="side-phase" id="sidePhase">
+                    <div class="phase-canvas-wrap" id="phaseCanvasWrap">
+                        <canvas id="fourierCanvas"></canvas>
+                    </div>
+                    <div class="phase-controls">
+                        <div class="phase-ctrl-row">
+                            <span class="phase-label">Mode</span>
+                            <select id="phaseMode">
+                                <option value="fourier">Fourier Phase</option>
+                                <option value="entropy_time">Variance</option>
+                                <option value="pca">PCA</option>
+                            </select>
+                        </div>
+                        <div id="phaseDesc" style="color:var(--text-muted);font-size:0.68rem;line-height:1.45;padding:2px 0 0 0;"></div>
+                        <div class="phase-ctrl-row">
+                            <span class="phase-label">Trace</span>
+                            <input type="range" id="traceLen" min="1" max="600" value="100">
+                            <span id="traceLenVal" style="color:var(--text-muted);font-size:0.7rem;width:26px;text-align:right;flex-shrink:0;">100</span>
+                            <button id="btnLines" style="flex:none;padding:6px 8px;font-size:0.7rem;">Lines</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    <script>
+        const COLS = 8;
+        let ROWS = 8;
+        const GRAY = [0, 1, 3, 2, 6, 7, 5, 4];
+
+        const canvas = document.getElementById('caCanvas');
+        const ctx = canvas.getContext('2d');
+        const wrapper = document.getElementById('wrapper');
+        const logicType = document.getElementById('logicType');
+        const btnPlay = document.getElementById('btnPlay');
+        const btnStep = document.getElementById('btnStep');
+        const btnRandomize = document.getElementById('btnRandomize');
+        const inputEditor = document.getElementById('inputEditor');
+        const visualizerEl = document.getElementById('visualizer');
+
+        let history = [];
+        let isPlaying = false;
+        let playInterval = null;
+        let conserveEnergy = true;
+        let dragColIndex = -1;
+
+        const barFills = [];
+        const textInputs = [];
+
+        for (let i = 0; i < COLS; i++) {
+            const colDiv = document.createElement('div');
+            colDiv.className = 'input-col';
+            const barArea = document.createElement('div');
+            barArea.className = 'bar-area';
+            const barFill = document.createElement('div');
+            barFill.className = 'bar-fill';
+            barFills.push(barFill);
+            const valInput = document.createElement('input');
+            valInput.className = 'val-input';
+            valInput.readOnly = true;
+            textInputs.push(valInput);
+
+            barArea.addEventListener('mousedown', (e) => { dragColIndex = i; handleMouse(e); });
+            barArea.appendChild(barFill);
+            colDiv.appendChild(barArea);
+            colDiv.appendChild(valInput);
+            inputEditor.appendChild(colDiv);
+        }
+
+        window.addEventListener('mousemove', handleMouse);
+        window.addEventListener('mouseup', () => dragColIndex = -1);
+
+        function handleMouse(e) {
+            if (dragColIndex === -1) return;
+            const rect = inputEditor.children[dragColIndex].querySelector('.bar-area').getBoundingClientRect();
+            let val = 1.0 - ((e.clientY - rect.top) / rect.height);
+            val = Math.max(0, Math.min(1, val));
+            history[history.length - 1][GRAY[dragColIndex]] = val;
+            syncUI();
+            draw();
+        }
+
+        function updateRuleDisplay() {
+            const rule = history[history.length - 1];
+            let html = '';
+            for (let i = 0; i < 8; i++) {
+                const p = GRAY[i];
+                html += `<div class="rule-col" style="opacity: ${(0.1 + rule[p] * 0.9).toFixed(3)}">
+                    <div class="neighborhood">
+                        <div class="mini-cell ${(p >> 2) & 1 ? 'active' : ''}"></div>
+                        <div class="mini-cell ${(p >> 1) & 1 ? 'active' : ''}"></div>
+                        <div class="mini-cell ${p & 1 ? 'active' : ''}"></div>
+                    </div>
+                </div>`;
+            }
+            visualizerEl.innerHTML = html;
+        }
+
+        // The state row IS the rule: rule[p] is the output for neighborhood pattern p (0–7).
+        // Each MATCH(a,b,c) directly measures how well all three cell values simultaneously
+        // satisfy their required state — a single symmetric 3-variable formula, no nesting.
+        function nextCellValue(L, C, R, rule) {
+            const logic = logicType.value;
+            let MATCH;
+            switch (logic) {
+                case 'nilpotent':
+                    MATCH = (a, b, c) => (a + b + c > 2) ? Math.min(a, b, c) : 0; break;
+                case 'sharp_lukasiewicz':
+                    MATCH = (a, b, c) => Math.pow(Math.max(0, a + b + c - 2), 0.5); break;
+                case 'dual_nilpotent':
+                    MATCH = (a, b, c) => (a + b + c > 2.2) ? Math.min(a, b, c) : 0; break;
+                case 'interference':
+                    MATCH = (a, b, c) => Math.pow(Math.max(0, Math.sqrt(a) + Math.sqrt(b) + Math.sqrt(c) - 2), 2); break;
+            }
+            let out = 0;
+            for (let p = 0; p < 8; p++) {
+                const a = (p & 4) ? L : 1 - L;
+                const b = (p & 2) ? C : 1 - C;
+                const c = (p & 1) ? R : 1 - R;
+                out += MATCH(a, b, c) * rule[p];
+            }
+            return Math.min(1, out);
+        }
+
+        function step() {
+            const rule = history[history.length - 1];
+            let next = new Array(COLS).fill(0);
+            for (let i = 0; i < COLS; i++) {
+                const p  = GRAY[i];
+                const pL = GRAY[(i - 1 + COLS) % COLS];
+                const pR = GRAY[(i + 1) % COLS];
+                next[p] = nextCellValue(rule[pL], rule[p], rule[pR], rule);
+            }
+            if (conserveEnergy) {
+                const E = rule.reduce((a, b) => a + b, 0);
+                const Enext = next.reduce((a, b) => a + b, 0);
+                if (Enext > 1e-10) {
+                    const scale = E / Enext;
+                    next = next.map(v => Math.min(1, v * scale));
+                    const deficit = E - next.reduce((a, b) => a + b, 0);
+                    if (deficit > 1e-10) {
+                        const headroom = next.map(v => 1 - v);
+                        const totalHeadroom = headroom.reduce((a, b) => a + b, 0);
+                        if (totalHeadroom > 1e-10)
+                            next = next.map((v, i) => v + deficit * headroom[i] / totalHeadroom);
+                    }
+                }
+            }
+            history.push(next);
+            if (history.length > ROWS) history.shift();
+            syncUI();
+            draw();
+        }
+
+        const waveCanvas = document.getElementById('waveCanvas');
+        const waveCtx = waveCanvas.getContext('2d');
+
+        function drawWaveform() {
+            const w = waveCanvas.width;
+            const h = waveCanvas.height;
+            const latest = history[history.length - 1];
+
+            waveCtx.fillStyle = '#000';
+            waveCtx.fillRect(0, 0, w, h);
+            waveCtx.strokeStyle = '#1e293b';
+            waveCtx.lineWidth = 1;
+            waveCtx.beginPath();
+            waveCtx.moveTo(0, h / 2);
+            waveCtx.lineTo(w, h / 2);
+            waveCtx.stroke();
+
+            // 2 cycles of the fundamental (110 Hz)
+            const duration = 2 / 110;
+            waveCtx.strokeStyle = '#38bdf8';
+            waveCtx.lineWidth = 1.5;
+            waveCtx.beginPath();
+            for (let x = 0; x < w; x++) {
+                const t = (x / w) * duration;
+                let y = 0;
+                for (let i = 0; i < COLS; i++)
+                    y += Math.pow(latest[GRAY[i]], 4) * Math.sin(2 * Math.PI * NOTE_FREQS[i] * t);
+                y /= COLS;
+                const py = h / 2 - y * h * 0.45;
+                if (x === 0) waveCtx.moveTo(x, py);
+                else waveCtx.lineTo(x, py);
+            }
+            waveCtx.stroke();
+        }
+
+        function syncUI() {
+            const latest = history[history.length - 1];
+            for (let i = 0; i < COLS; i++) {
+                barFills[i].style.height = `${latest[GRAY[i]] * 100}%`;
+                textInputs[i].value = latest[GRAY[i]].toFixed(2);
+            }
+            updateRuleDisplay();
+            updateAudio();
+            drawWaveform();
+            if (phaseVisible) {
+                const prev = history.length >= 2 ? history[history.length - 2] : null;
+                phaseTrace.push(computePoint(latest, prev));
+                if (phaseTrace.length > traceLenValue) phaseTrace.shift();
+                drawPhase();
+            }
+        }
+
+        function draw() {
+            const cellW = canvas.width / COLS;
+            const cellH = canvas.height / ROWS;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            history.forEach((row, r) => {
+                for (let pos = 0; pos < COLS; pos++) {
+                    const val = row[GRAY[pos]];
+                    ctx.fillStyle = `rgb(${15 + val * 41}, ${23 + val * 166}, ${42 + val * 206})`;
+                    ctx.fillRect(pos * cellW, r * cellH, cellW, cellH);
+                    ctx.strokeStyle = '#1e293b';
+                    ctx.strokeRect(pos * cellW, r * cellH, cellW, cellH);
+                }
+            });
+        }
+
+        function updateLayout() {
+            const rect = wrapper.getBoundingClientRect();
+            const cellDim = rect.width / COLS;
+            ROWS = Math.floor(rect.height / cellDim);
+            canvas.width = rect.width;
+            canvas.height = ROWS * cellDim;
+            waveCanvas.width = waveCanvas.offsetWidth;
+            waveCanvas.height = waveCanvas.offsetHeight;
+            if (phaseVisible) sizeFourierCanvas();
+            while (history.length < ROWS) history.unshift(new Array(COLS).fill(0));
+            if (history.length > ROWS) history = history.slice(-ROWS);
+            draw();
+        }
+
+        btnPlay.onclick = () => {
+            isPlaying = !isPlaying;
+            btnPlay.innerText = isPlaying ? "Pause" : "Play";
+            btnPlay.className = isPlaying ? "" : "primary";
+            if (isPlaying) playInterval = setInterval(step, 100);
+            else clearInterval(playInterval);
+        };
+
+        btnStep.onclick = () => { if (!isPlaying) step(); };
+
+        const btnConserve = document.getElementById('btnConserve');
+        btnConserve.onclick = () => {
+            conserveEnergy = !conserveEnergy;
+            btnConserve.innerText = conserveEnergy ? 'Energy: conserved' : 'Energy: free';
+            btnConserve.style.background = conserveEnergy ? 'var(--cell-on)' : '';
+            btnConserve.style.color = conserveEnergy ? 'var(--bg)' : '';
+        };
+
+        btnRandomize.onclick = () => {
+            history[history.length - 1] = Array.from({length: COLS}, () => Math.random());
+            phaseTrace.length = 0;
+            pcaBuffer.length = 0;
+            syncUI(); draw();
+        };
+
+        // ── Audio ──────────────────────────────────────────────────────────
+        function getNoteFreqs(mode) {
+            switch (mode) {
+                case 'harmonic':
+                    return [1,2,3,4,5,6,7,8].map(n => 110 * n);
+                case 'pentatonic':
+                    return [130.81, 164.81, 196, 261.63, 329.63, 392, 523.25, 659.26];
+                case 'diatonic':
+                    return [130.81, 146.83, 164.81, 174.61, 196, 220, 246.94, 261.63];
+                case 'fifths': {
+                    let f = 110;
+                    const arr = [f];
+                    for (let i = 1; i < 8; i++) { f = f * 1.5; while (f > 440) f /= 2; arr.push(f); }
+                    return arr.sort((a, b) => a - b);
+                }
+                case 'windchimes':
+                    // C maj pentatonic tuned one octave up, with a high shimmer note
+                    return [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.51];
+            }
+        }
+
+        let NOTE_FREQS = getNoteFreqs('pentatonic');
+        let audioCtx = null;
+        let masterGain = null;
+        const noteGains = [];
+        const oscillators = [];
+        let isMuted = true;
+
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new AudioContext();
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = 0;
+            masterGain.connect(audioCtx.destination);
+            for (let i = 0; i < COLS; i++) {
+                const osc = audioCtx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.value = NOTE_FREQS[i];
+                const g = audioCtx.createGain();
+                g.gain.value = 0;
+                osc.connect(g);
+                g.connect(masterGain);
+                osc.start();
+                oscillators.push(osc);
+                noteGains.push(g);
+            }
+        }
+
+        const noteMode = document.getElementById('noteMode');
+        noteMode.onchange = () => {
+            NOTE_FREQS = getNoteFreqs(noteMode.value);
+            for (let i = 0; i < oscillators.length; i++)
+                oscillators[i].frequency.setTargetAtTime(NOTE_FREQS[i], audioCtx ? audioCtx.currentTime : 0, 0.05);
+            drawWaveform();
+        };
+
+        function updateAudio() {
+            if (!audioCtx || isMuted) return;
+            const latest = history[history.length - 1];
+            const t = audioCtx.currentTime;
+            for (let i = 0; i < COLS; i++)
+                noteGains[i].gain.setTargetAtTime(Math.pow(latest[GRAY[i]], 4) * 0.2, t, 0.05);
+        }
+
+        const btnSound = document.getElementById('btnSound');
+        btnSound.onclick = () => {
+            initAudio();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            isMuted = !isMuted;
+            const t = audioCtx.currentTime;
+            if (isMuted) {
+                masterGain.gain.setTargetAtTime(0, t, 0.05);
+                btnSound.style.background = '';
+                btnSound.style.color = '';
+            } else {
+                masterGain.gain.setTargetAtTime(1, t, 0.05);
+                updateAudio();
+                btnSound.style.background = 'var(--cell-on)';
+                btnSound.style.color = 'var(--bg)';
+            }
+        };
+
+        // ── Phase space ────────────────────────────────────────────────────
+        let phaseVisible = false;
+        let vizMode = 'fourier';
+        const pcaBuffer = [];
+        let traceLenValue = 100;
+        let showLines = true;
+        const phaseTrace = [];
+
+        const fourierCanvas = document.getElementById('fourierCanvas');
+        const fourierCtx = fourierCanvas.getContext('2d');
+
+        function sizeFourierCanvas() {
+            const wrap = document.getElementById('phaseCanvasWrap');
+            fourierCanvas.width  = wrap.offsetWidth;
+            fourierCanvas.height = wrap.offsetHeight;
+        }
+
+        function computeFk(state, k) {
+            let re = 0, im = 0;
+            for (let i = 0; i < COLS; i++) {
+                const angle = 2 * Math.PI * k * i / COLS;
+                re += state[GRAY[i]] * Math.cos(angle);
+                im -= state[GRAY[i]] * Math.sin(angle);
+            }
+            return { re, im };
+        }
+
+        function powerIterate(A, iters = 50) {
+            let v = Array(8).fill(0); v[0] = 1;
+            for (let k = 0; k < iters; k++) {
+                const w = A.map(row => row.reduce((s, aij, j) => s + aij * v[j], 0));
+                const norm = Math.sqrt(w.reduce((s, x) => s + x * x, 0));
+                if (norm < 1e-12) break;
+                v = w.map(x => x / norm);
+            }
+            if (v[0] < 0) v = v.map(x => -x);
+            return v;
+        }
+
+        function computePoint(state, prevState) {
+            switch (vizMode) {
+                case 'fourier': {
+                    const { re, im } = computeFk(state, 1);
+                    return { x: re, y: im };
+                }
+                case 'entropy_time': {
+                    const mean = state.reduce((s, v) => s + v, 0) / COLS;
+                    const sigma = Math.sqrt(state.reduce((s, v) => s + (v - mean) * (v - mean), 0) / COLS);
+                    let tStd = 0;
+                    if (prevState) {
+                        const diffs = state.map((v, i) => v - prevState[i]);
+                        const meanDiff = diffs.reduce((s, v) => s + v, 0) / COLS;
+                        tStd = Math.sqrt(diffs.reduce((s, v) => s + (v - meanDiff) * (v - meanDiff), 0) / COLS);
+                    }
+                    return { x: tStd, y: sigma };
+                }
+                case 'pca': {
+                    pcaBuffer.push([...state]);
+                    if (pcaBuffer.length > 200) pcaBuffer.shift();
+                    if (pcaBuffer.length < 4) return { x: 0, y: 0 };
+                    const n = pcaBuffer.length;
+                    const mean = Array(8).fill(0);
+                    for (const s of pcaBuffer) for (let i = 0; i < 8; i++) mean[i] += s[i] / n;
+                    const cov = Array.from({length: 8}, () => Array(8).fill(0));
+                    for (const s of pcaBuffer) {
+                        const d = s.map((v, i) => v - mean[i]);
+                        for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) cov[i][j] += d[i] * d[j] / n;
+                    }
+                    const pc1 = powerIterate(cov);
+                    const lam1 = pc1.reduce((s, vi, i) => s + vi * cov[i].reduce((t, aij, j) => t + aij * pc1[j], 0), 0);
+                    const cov2 = cov.map((row, i) => row.map((v, j) => v - lam1 * pc1[i] * pc1[j]));
+                    let pc2 = powerIterate(cov2);
+                    const dot12 = pc2.reduce((s, v, i) => s + v * pc1[i], 0);
+                    pc2 = pc2.map((v, i) => v - dot12 * pc1[i]);
+                    const norm2 = Math.sqrt(pc2.reduce((s, v) => s + v * v, 0));
+                    if (norm2 > 1e-10) pc2 = pc2.map(v => v / norm2);
+                    if (pc2[0] < 0) pc2 = pc2.map(v => -v);
+                    const d = state.map((v, i) => v - mean[i]);
+                    return { x: d.reduce((s, v, i) => s + v * pc1[i], 0), y: d.reduce((s, v, i) => s + v * pc2[i], 0) };
+                }
+            }
+        }
+
+        function getAxisLabels() {
+            switch (vizMode) {
+                case 'fourier':        return { x: 'Re(F₁)', y: 'Im(F₁)' };
+                case 'entropy_time':   return { x: 'σₜ',      y: 'σ'       };
+                case 'pca':            return { x: 'PC₁',    y: 'PC₂'    };
+            }
+        }
+
+        function getDesc() {
+            const f = 'color:#64748b';
+            switch (vizMode) {
+                case 'fourier':      return `<span style="${f}">F₁ = Σⱼ vⱼ · exp(−2πij/N), k=1</span><br>Orbit = repeating wave; fixed point = static spatial pattern.`;
+                case 'entropy_time': return `<span style="${f}">σ = std of cell values,  σₜ = std of (vᵢ(t) − vᵢ(t−1))</span><br>Origin = frozen uniform state; right = fast-changing; up = spread-out values.`;
+                case 'pca':          return `<span style="${f}">PC₁,₂ = top eigenvectors of Cov(v₁,…,vₙ)</span><br>Full 8D state as a point in 2D — loops and clusters reveal attractors.`;
+            }
+        }
+
+        function drawPhase() {
+            const w = fourierCanvas.width, h = fourierCanvas.height;
+            if (!w || !h) return;
+            fourierCtx.fillStyle = '#000';
+            fourierCtx.fillRect(0, 0, w, h);
+
+            const pad = 28;
+            const n = phaseTrace.length;
+            const plotW = w - 2 * pad, plotH = h - 2 * pad;
+
+            // ── Phase-space modes (fourier, entropy_time, pca) ────────────────
+            const { x: xLabel, y: yLabel } = getAxisLabels();
+            fourierCtx.font = '9px "Courier New", monospace';
+            fourierCtx.fillStyle = '#475569';
+            fourierCtx.textAlign = 'center';
+            fourierCtx.fillText(xLabel, w / 2, h - 4);
+            fourierCtx.save();
+            fourierCtx.translate(9, h / 2);
+            fourierCtx.rotate(-Math.PI / 2);
+            fourierCtx.fillText(yLabel, 0, 0);
+            fourierCtx.restore();
+
+            if (n === 0) return;
+
+            let minX, maxX, minY, maxY;
+            if (vizMode === 'entropy_time') {
+                minX = 0; maxX = 1; minY = 0; maxY = 0.5;
+            } else {
+                minX = Infinity; maxX = -Infinity; minY = Infinity; maxY = -Infinity;
+                for (const pt of phaseTrace) {
+                    if (pt.x < minX) minX = pt.x; if (pt.x > maxX) maxX = pt.x;
+                    if (pt.y < minY) minY = pt.y; if (pt.y > maxY) maxY = pt.y;
+                }
+                const half = Math.max(Math.abs(minX), Math.abs(maxX), Math.abs(minY), Math.abs(maxY), 1e-3) * 1.25;
+                minX = -half; maxX = half; minY = -half; maxY = half;
+            }
+
+            const toSX = x => pad + (x - minX) / (maxX - minX) * plotW;
+            const toSY = y => h - pad - (y - minY) / (maxY - minY) * plotH;
+
+            fourierCtx.strokeStyle = '#162032';
+            fourierCtx.lineWidth = 1;
+            fourierCtx.beginPath();
+            fourierCtx.moveTo(toSX(0), pad); fourierCtx.lineTo(toSX(0), h - pad);
+            fourierCtx.moveTo(pad, toSY(0)); fourierCtx.lineTo(w - pad, toSY(0));
+            fourierCtx.stroke();
+
+            fourierCtx.globalCompositeOperation = 'lighter';
+
+            if (showLines && n > 1) {
+                fourierCtx.lineWidth = 1;
+                for (let i = 1; i < n; i++) {
+                    fourierCtx.strokeStyle = `rgba(56,189,248,${(i / n) * 0.55})`;
+                    fourierCtx.beginPath();
+                    fourierCtx.moveTo(toSX(phaseTrace[i-1].x), toSY(phaseTrace[i-1].y));
+                    fourierCtx.lineTo(toSX(phaseTrace[i].x),   toSY(phaseTrace[i].y));
+                    fourierCtx.stroke();
+                }
+            }
+
+            for (let i = 0; i < n - 1; i++) {
+                fourierCtx.fillStyle = `rgba(56,189,248,${(i / n) * 0.9})`;
+                fourierCtx.beginPath();
+                fourierCtx.arc(toSX(phaseTrace[i].x), toSY(phaseTrace[i].y), 1.5, 0, 2 * Math.PI);
+                fourierCtx.fill();
+            }
+
+            const cur = phaseTrace[n - 1];
+            const cx2 = toSX(cur.x), cy2 = toSY(cur.y);
+            const grd = fourierCtx.createRadialGradient(cx2, cy2, 0, cx2, cy2, 14);
+            grd.addColorStop(0, 'rgba(56,189,248,0.8)');
+            grd.addColorStop(1, 'rgba(56,189,248,0)');
+            fourierCtx.fillStyle = grd;
+            fourierCtx.beginPath(); fourierCtx.arc(cx2, cy2, 14, 0, 2 * Math.PI); fourierCtx.fill();
+            fourierCtx.fillStyle = '#fff';
+            fourierCtx.beginPath(); fourierCtx.arc(cx2, cy2, 3, 0, 2 * Math.PI); fourierCtx.fill();
+
+            fourierCtx.globalCompositeOperation = 'source-over';
+        }
+
+        // ── Visualization toggle ───────────────────────────────────────────
+        const btnVis = document.getElementById('btnVis');
+        btnVis.onclick = () => {
+            phaseVisible = !phaseVisible;
+            document.getElementById('sideText').style.display  = phaseVisible ? 'none' : '';
+            document.getElementById('sidePhase').style.display = phaseVisible ? 'flex' : 'none';
+
+            btnVis.style.background = phaseVisible ? 'var(--cell-on)' : '';
+            btnVis.style.color      = phaseVisible ? 'var(--bg)'     : '';
+            if (phaseVisible) {
+                document.getElementById('phaseDesc').innerHTML = getDesc();
+                requestAnimationFrame(() => { sizeFourierCanvas(); drawPhase(); });
+            }
+            if (window.innerWidth <= 640)
+                document.getElementById('sidePanel').scrollIntoView({ behavior: 'smooth' });
+        };
+
+        const phaseModeEl = document.getElementById('phaseMode');
+        phaseModeEl.onchange = () => {
+            vizMode = phaseModeEl.value;
+            phaseTrace.length = 0;
+            pcaBuffer.length = 0;
+            document.getElementById('phaseDesc').innerHTML = getDesc();
+            drawPhase();
+        };
+
+        const traceLenEl    = document.getElementById('traceLen');
+        const traceLenValEl = document.getElementById('traceLenVal');
+        traceLenEl.oninput = () => {
+            traceLenValue = parseInt(traceLenEl.value);
+            traceLenValEl.textContent = traceLenValue;
+            while (phaseTrace.length > traceLenValue) phaseTrace.shift();
+            drawPhase();
+        };
+
+        const btnLines = document.getElementById('btnLines');
+        btnLines.style.background = 'var(--cell-on)';
+        btnLines.style.color      = 'var(--bg)';
+        btnLines.onclick = () => {
+            showLines = !showLines;
+
+            btnLines.style.background = showLines ? 'var(--cell-on)' : '';
+            btnLines.style.color      = showLines ? 'var(--bg)'     : '';
+            drawPhase();
+        };
+
+        window.addEventListener('resize', updateLayout);
+        history = [Array.from({length: COLS}, () => Math.random())];
+        updateLayout();
+        syncUI();
+    </script>
+</body>
+</html>
