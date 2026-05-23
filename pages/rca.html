@@ -280,6 +280,42 @@
             flex-shrink: 0;
         }
 
+        .side-fractal {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+        }
+
+        .fractal-canvas-wrap {
+            flex: 1;
+            min-height: 0;
+            background: #000;
+            position: relative;
+        }
+
+        .fractal-controls {
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            padding: 8px;
+            border-top: 1px solid var(--border);
+        }
+
+        .fractal-ctrl-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .fractal-label {
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            white-space: nowrap;
+            width: 34px;
+            flex-shrink: 0;
+        }
+
         @media (max-width: 640px) {
             .app-wrap {
                 flex-direction: column;
@@ -338,7 +374,11 @@
                         <option value="dual_nilpotent">Dual Nilpotent</option>
                         <option value="interference">Interference</option>
                     </select>
-                    <button id="btnVis" style="flex:none;padding:8px 12px;">Visualization</button>
+                    <select id="visMode" style="flex:none;padding:8px 12px;">
+                        <option value="desc">Description</option>
+                        <option value="phase">Phase space</option>
+                        <option value="fractal">Basin landscape</option>
+                    </select>
                 </div>
                 <div class="control-row">
                     <button id="btnSound">Sound</button>
@@ -399,6 +439,45 @@
                             <input type="range" id="traceLen" min="1" max="600" value="100">
                             <span id="traceLenVal" style="color:var(--text-muted);font-size:0.7rem;width:26px;text-align:right;flex-shrink:0;">100</span>
                             <button id="btnLines" style="flex:none;padding:6px 8px;font-size:0.7rem;">Lines</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="side-fractal" id="sideFractal">
+                    <div class="fractal-canvas-wrap" id="fractalCanvasWrap"></div>
+                    <div class="fractal-controls">
+                        <div class="fractal-ctrl-row">
+                            <span class="fractal-label">X cell</span>
+                            <select id="fractalAxisI">
+                                <option value="0" selected>Cell 0</option>
+                                <option value="1">Cell 1</option>
+                                <option value="2">Cell 2</option>
+                                <option value="3">Cell 3</option>
+                                <option value="4">Cell 4</option>
+                                <option value="5">Cell 5</option>
+                                <option value="6">Cell 6</option>
+                                <option value="7">Cell 7</option>
+                            </select>
+                            <span class="fractal-label" style="width:auto;">Y cell</span>
+                            <select id="fractalAxisJ">
+                                <option value="0">Cell 0</option>
+                                <option value="1" selected>Cell 1</option>
+                                <option value="2">Cell 2</option>
+                                <option value="3">Cell 3</option>
+                                <option value="4">Cell 4</option>
+                                <option value="5">Cell 5</option>
+                                <option value="6">Cell 6</option>
+                                <option value="7">Cell 7</option>
+                            </select>
+                        </div>
+                        <div class="fractal-ctrl-row">
+                            <span class="fractal-label">Iters</span>
+                            <input type="range" id="fractalIter" min="20" max="400" step="10" value="50">
+                            <span id="fractalIterVal" style="color:var(--text-muted);font-size:0.7rem;width:30px;text-align:right;flex-shrink:0;">50</span>
+                        </div>
+                        <div class="fractal-ctrl-row">
+                            <span class="fractal-label">Cycle</span>
+                            <input type="range" id="fractalCycle" min="1" max="100" step="1" value="20">
+                            <span id="fractalCycleVal" style="color:var(--text-muted);font-size:0.7rem;width:30px;text-align:right;flex-shrink:0;">20</span>
                         </div>
                     </div>
                 </div>
@@ -578,7 +657,8 @@
             updateRuleDisplay();
             updateAudio();
             drawWaveform();
-            if (phaseVisible) {
+            if (fractalShader) fractalShader.state = [...history[history.length - 1]];
+            if (currentVisMode === 'phase') {
                 const prev = history.length >= 2 ? history[history.length - 2] : null;
                 phaseTrace.push(computePoint(latest, prev));
                 if (phaseTrace.length > traceLenValue) phaseTrace.shift();
@@ -609,7 +689,8 @@
             canvas.height = ROWS * cellDim;
             waveCanvas.width = waveCanvas.offsetWidth;
             waveCanvas.height = waveCanvas.offsetHeight;
-            if (phaseVisible) sizeFourierCanvas();
+            if (currentVisMode === 'phase') sizeFourierCanvas();
+            if (currentVisMode === 'fractal' && fractalShader) fractalShader.onResize();
             while (history.length < ROWS) history.unshift(new Array(COLS).fill(0));
             if (history.length > ROWS) history = history.slice(-ROWS);
             draw();
@@ -631,6 +712,7 @@
             btnConserve.innerText = conserveEnergy ? 'Energy: conserved' : 'Energy: free';
             btnConserve.style.background = conserveEnergy ? 'var(--cell-on)' : '';
             btnConserve.style.color = conserveEnergy ? 'var(--bg)' : '';
+            if (fractalShader) fractalShader.conserveEnergy = conserveEnergy ? 1 : 0;
         };
 
         btnRandomize.onclick = () => {
@@ -723,7 +805,7 @@
         };
 
         // ── Phase space ────────────────────────────────────────────────────
-        let phaseVisible = false;
+        let currentVisMode = 'desc'; // 'desc' | 'phase' | 'fractal'
         let vizMode = 'fourier';
         const pcaBuffer = [];
         let traceLenValue = 100;
@@ -902,21 +984,74 @@
             fourierCtx.globalCompositeOperation = 'source-over';
         }
 
-        // ── Visualization toggle ───────────────────────────────────────────
-        const btnVis = document.getElementById('btnVis');
-        btnVis.onclick = () => {
-            phaseVisible = !phaseVisible;
-            document.getElementById('sideText').style.display  = phaseVisible ? 'none' : '';
-            document.getElementById('sidePhase').style.display = phaseVisible ? 'flex' : 'none';
+        // ── Fractal shader ─────────────────────────────────────────────────
+        let fractalShader = null;
+        let fractalAxisI = 0, fractalAxisJ = 1;
+        let fractalMaxIter = 50, fractalMaxCycleLen = 20;
 
-            btnVis.style.background = phaseVisible ? 'var(--cell-on)' : '';
-            btnVis.style.color      = phaseVisible ? 'var(--bg)'     : '';
-            if (phaseVisible) {
+        function getLogicTypeInt() {
+            const m = {sharp_lukasiewicz: 0, nilpotent: 1, dual_nilpotent: 2, interference: 3};
+            return m[logicType.value] ?? 0;
+        }
+
+        logicType.addEventListener('change', () => {
+            if (fractalShader) fractalShader.logicType = getLogicTypeInt();
+        });
+
+        // ── Visualization toggle ───────────────────────────────────────────
+        const visModeEl = document.getElementById('visMode');
+
+        function setVisMode(mode) {
+            currentVisMode = mode;
+            visModeEl.value = mode;
+            document.getElementById('sideText').style.display    = mode === 'desc'    ? '' : 'none';
+            document.getElementById('sidePhase').style.display   = mode === 'phase'   ? 'flex' : 'none';
+            document.getElementById('sideFractal').style.display = mode === 'fractal' ? 'flex' : 'none';
+
+            if (mode === 'phase') {
                 document.getElementById('phaseDesc').innerHTML = getDesc();
                 requestAnimationFrame(() => { sizeFourierCanvas(); drawPhase(); });
             }
+            if (mode === 'fractal') {
+                if (!fractalShader) {
+                    fractalShader = new RCAFractalShader(document.getElementById('fractalCanvasWrap'), {
+                        logicType: getLogicTypeInt(),
+                        conserveEnergy: conserveEnergy ? 1 : 0,
+                        axisI: fractalAxisI, axisJ: fractalAxisJ,
+                        maxIter: fractalMaxIter, maxCycleLen: fractalMaxCycleLen,
+                    });
+                    fractalShader.state = [...history[history.length - 1]];
+                } else {
+                    fractalShader.resume();
+                }
+                requestAnimationFrame(() => fractalShader.onResize());
+            } else {
+                if (fractalShader) fractalShader.pause();
+            }
             if (window.innerWidth <= 640)
                 document.getElementById('sidePanel').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        visModeEl.onchange = () => setVisMode(visModeEl.value);
+
+        // Fractal panel controls
+        document.getElementById('fractalAxisI').onchange = function() {
+            fractalAxisI = parseInt(this.value);
+            if (fractalShader) fractalShader.axisI = fractalAxisI;
+        };
+        document.getElementById('fractalAxisJ').onchange = function() {
+            fractalAxisJ = parseInt(this.value);
+            if (fractalShader) fractalShader.axisJ = fractalAxisJ;
+        };
+        document.getElementById('fractalIter').oninput = function() {
+            fractalMaxIter = parseInt(this.value);
+            document.getElementById('fractalIterVal').textContent = fractalMaxIter;
+            if (fractalShader) fractalShader.maxIter = fractalMaxIter;
+        };
+        document.getElementById('fractalCycle').oninput = function() {
+            fractalMaxCycleLen = parseInt(this.value);
+            document.getElementById('fractalCycleVal').textContent = fractalMaxCycleLen;
+            if (fractalShader) fractalShader.maxCycleLen = fractalMaxCycleLen;
         };
 
         const phaseModeEl = document.getElementById('phaseMode');
@@ -956,7 +1091,7 @@
                 l: logicType.value,
                 c: conserveEnergy ? 1 : 0,
                 n: noteMode.value,
-                v: phaseVisible ? 1 : 0
+                vm: currentVisMode
             }));
         }
 
@@ -976,15 +1111,8 @@
                     noteMode.value = s.n;
                     NOTE_FREQS = getNoteFreqs(s.n);
                 }
-                if (s.v && !phaseVisible) {
-                    phaseVisible = true;
-                    document.getElementById('sideText').style.display = 'none';
-                    document.getElementById('sidePhase').style.display = 'flex';
-                    btnVis.style.background = 'var(--cell-on)';
-                    btnVis.style.color = 'var(--bg)';
-                    document.getElementById('phaseDesc').innerHTML = getDesc();
-                    requestAnimationFrame(() => { sizeFourierCanvas(); drawPhase(); });
-                }
+                if (s.vm) setVisMode(s.vm);
+                else if (s.v) setVisMode('phase');
             } catch (e) {}
         }
 
@@ -1007,6 +1135,281 @@
             const hash = window.location.hash.slice(1);
             if (hash) { applyState(hash); syncUI(); draw(); }
         });
+
+        // ── RCA Fractal Shader ─────────────────────────────────────────────
+        class RCAFractalShader {
+            constructor(screenEl, {logicType=0, conserveEnergy=1, axisI=0, axisJ=1, maxIter=50, maxCycleLen=20} = {}) {
+                this.screenEl = screenEl;
+                this.canvas = document.createElement('canvas');
+                this.canvas.style.cssText = 'display:block;position:absolute;top:0;left:0;';
+                this.gl = this.canvas.getContext('webgl2', {antialias: false});
+                if (!this.gl) { console.error('WebGL2 not supported'); return; }
+                screenEl.appendChild(this.canvas);
+
+                this.logicType = logicType;
+                this.conserveEnergy = conserveEnergy;
+                this.axisI = axisI; this.axisJ = axisJ;
+                this.maxIter = maxIter; this.maxCycleLen = maxCycleLen;
+                this.state = new Array(8).fill(0.5);
+                this.zoom = 1.0; this.offset = {x: 0.5, y: 0.5};
+                this.isPanning = false; this.lastPanPos = {x: 0, y: 0};
+                this.isRunning = false; this.ul = {};
+                this._run = this._run.bind(this);
+                this._initShader(); this._setupQuad(); this._cacheUniforms(); this._attachEvents();
+                this.onResize(); this.isRunning = true; requestAnimationFrame(this._run);
+            }
+
+            _initShader() {
+                const gl = this.gl;
+                const vert = `#version 300 es
+                    in vec2 a_position;
+                    void main() { gl_Position = vec4(a_position, 0.0, 1.0); }`;
+
+                const frag = `#version 300 es
+                    precision highp float;
+                    precision highp int;
+                    uniform vec2 u_res;
+                    uniform float u_zoom;
+                    uniform vec2 u_off;
+                    uniform int u_axisI;
+                    uniform int u_axisJ;
+                    uniform vec4 u_stateA;
+                    uniform vec4 u_stateB;
+                    uniform int u_cycleStart;
+                    uniform int u_maxCycleLen;
+                    uniform int u_logicType;
+                    uniform int u_conserve;
+                    out vec4 fragColor;
+
+                    int gv(int i) {
+                        if (i==0) return 0; if (i==1) return 1; if (i==2) return 3; if (i==3) return 2;
+                        if (i==4) return 6; if (i==5) return 7; if (i==6) return 5; return 4;
+                    }
+
+                    float getv(vec4 a, vec4 b, int i) {
+                        if (i==0) return a.x; if (i==1) return a.y; if (i==2) return a.z; if (i==3) return a.w;
+                        if (i==4) return b.x; if (i==5) return b.y; if (i==6) return b.z; return b.w;
+                    }
+
+                    void setv(inout vec4 a, inout vec4 b, int i, float v) {
+                        if (i==0) a.x=v; else if (i==1) a.y=v; else if (i==2) a.z=v; else if (i==3) a.w=v;
+                        else if (i==4) b.x=v; else if (i==5) b.y=v; else if (i==6) b.z=v; else b.w=v;
+                    }
+
+                    vec3 hsv2rgb(vec3 c) {
+                        vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
+                        vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+                        return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+                    }
+
+                    float mfn(float a, float b, float c) {
+                        if (u_logicType == 1) return (a+b+c > 2.0) ? min(min(a,b),c) : 0.0;
+                        if (u_logicType == 2) return (a+b+c > 2.2) ? min(min(a,b),c) : 0.0;
+                        if (u_logicType == 3) { float s=sqrt(a)+sqrt(b)+sqrt(c)-2.0; return s>0.0?s*s:0.0; }
+                        return sqrt(max(0.0, a+b+c-2.0));
+                    }
+
+                    float nextcv(float L, float C, float R, vec4 sa, vec4 sb) {
+                        float o = 0.0;
+                        for (int p = 0; p < 8; p++) {
+                            float a = ((p & 4) != 0) ? L : 1.0-L;
+                            float b = ((p & 2) != 0) ? C : 1.0-C;
+                            float c = ((p & 1) != 0) ? R : 1.0-R;
+                            o += mfn(a,b,c) * getv(sa,sb,p);
+                        }
+                        return min(1.0, o);
+                    }
+
+                    void rcaStep(inout vec4 sa, inout vec4 sb) {
+                        vec4 na = vec4(0.0), nb = vec4(0.0);
+                        for (int i = 0; i < 8; i++) {
+                            int p=gv(i), pL=gv((i+7)%8), pR=gv((i+1)%8);
+                            setv(na,nb,p, nextcv(getv(sa,sb,pL), getv(sa,sb,p), getv(sa,sb,pR), sa,sb));
+                        }
+                        if (u_conserve == 1) {
+                            float E  = sa.x+sa.y+sa.z+sa.w+sb.x+sb.y+sb.z+sb.w;
+                            float En = na.x+na.y+na.z+na.w+nb.x+nb.y+nb.z+nb.w;
+                            if (En > 1e-10) {
+                                float sc = E / En;
+                                na = min(vec4(1.0), na*sc); nb = min(vec4(1.0), nb*sc);
+                                float s2 = na.x+na.y+na.z+na.w+nb.x+nb.y+nb.z+nb.w;
+                                float def = E - s2;
+                                if (def > 1e-10) {
+                                    vec4 hrA=vec4(1.0)-na, hrB=vec4(1.0)-nb;
+                                    float th = hrA.x+hrA.y+hrA.z+hrA.w+hrB.x+hrB.y+hrB.z+hrB.w;
+                                    if (th > 1e-10) { na += def*hrA/th; nb += def*hrB/th; }
+                                }
+                            }
+                        }
+                        sa = na; sb = nb;
+                    }
+
+                    float smx(vec4 a, vec4 b) {
+                        return max(max(max(a.x,a.y),max(a.z,a.w)), max(max(b.x,b.y),max(b.z,b.w)));
+                    }
+
+                    float smn(vec4 a, vec4 b) {
+                        return min(min(min(a.x,a.y),min(a.z,a.w)), min(min(b.x,b.y),min(b.z,b.w)));
+                    }
+
+                    bool isUniform(vec4 a, vec4 b) {
+                        return smx(a,b) < 0.005 || smn(a,b) > 0.995;
+                    }
+
+                    float sdiff(vec4 aA, vec4 aB, vec4 bA, vec4 bB) {
+                        vec4 dA=abs(aA-bA), dB=abs(aB-bB);
+                        return max(max(max(dA.x,dA.y),max(dA.z,dA.w)), max(max(dB.x,dB.y),max(dB.z,dB.w)));
+                    }
+
+                    void main() {
+                        vec2 uv = (gl_FragCoord.xy - 0.5*u_res) / u_res.y / u_zoom + u_off;
+                        if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
+                            fragColor = vec4(0.05, 0.07, 0.1, 1.0); return;
+                        }
+
+                        vec4 sa = u_stateA, sb = u_stateB;
+                        setv(sa,sb, gv(u_axisI), uv.x);
+                        setv(sa,sb, gv(u_axisJ), uv.y);
+
+                        vec4 refA = sa, refB = sb;
+                        int foundAt = -1;
+                        bool isFixed = false;
+
+                        // Phase 1: warm-up for u_cycleStart steps, then save reference.
+                        // Phase 2: detection window for u_maxCycleLen steps.
+                        int totalIter = u_cycleStart + u_maxCycleLen;
+                        const int MAX_C = 400;
+                        vec4 prevA = sa, prevB = sb;
+                        for (int i = 0; i < MAX_C; i++) {
+                            if (i >= totalIter) break;
+                            prevA = sa; prevB = sb;
+                            rcaStep(sa, sb);
+                            if (isUniform(sa,sb)) { foundAt = i; isFixed = true; break; }
+                            if (i == u_cycleStart) { refA = sa; refB = sb; }
+                            if (i > u_cycleStart && sdiff(sa,sb,prevA,prevB) < 0.015) {
+                                foundAt = i; isFixed = true; break;
+                            }
+                            if (i > u_cycleStart && sdiff(sa,sb,refA,refB) < 0.015) {
+                                foundAt = i; break;
+                            }
+                        }
+
+                        if (foundAt < 0) { fragColor = vec4(0.0,0.0,0.0,1.0); return; }
+
+                        float t;
+                        if (isFixed) {
+                            t = 1.0 - float(foundAt) / float(totalIter);
+                        } else {
+                            t = 1.0 - float(foundAt - u_cycleStart) / float(u_maxCycleLen);
+                        }
+                        t = t * 0.85 + 0.15;
+                        vec3 col = isFixed ? hsv2rgb(vec3(0.58, 0.85, t)) : hsv2rgb(vec3(0.0, 0.9, t));
+                        fragColor = vec4(col, 1.0);
+                    }`;
+
+                const vs = gl.createShader(gl.VERTEX_SHADER);
+                gl.shaderSource(vs, vert); gl.compileShader(vs);
+                if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) console.error('VS:', gl.getShaderInfoLog(vs));
+                const fs = gl.createShader(gl.FRAGMENT_SHADER);
+                gl.shaderSource(fs, frag); gl.compileShader(fs);
+                if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) console.error('FS:', gl.getShaderInfoLog(fs));
+                this.glProgram = gl.createProgram();
+                gl.attachShader(this.glProgram, vs); gl.attachShader(this.glProgram, fs);
+                gl.linkProgram(this.glProgram);
+                if (!gl.getProgramParameter(this.glProgram, gl.LINK_STATUS)) console.error('Link:', gl.getProgramInfoLog(this.glProgram));
+                gl.useProgram(this.glProgram);
+            }
+
+            _setupQuad() {
+                const gl = this.gl;
+                const pos = new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]);
+                const buf = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+                gl.bufferData(gl.ARRAY_BUFFER, pos, gl.STATIC_DRAW);
+                const loc = gl.getAttribLocation(this.glProgram, 'a_position');
+                gl.enableVertexAttribArray(loc);
+                gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+            }
+
+            _cacheUniforms() {
+                const gl = this.gl, p = this.glProgram;
+                this.ul = {
+                    res: gl.getUniformLocation(p,'u_res'), zoom: gl.getUniformLocation(p,'u_zoom'),
+                    off: gl.getUniformLocation(p,'u_off'), axisI: gl.getUniformLocation(p,'u_axisI'),
+                    axisJ: gl.getUniformLocation(p,'u_axisJ'), stateA: gl.getUniformLocation(p,'u_stateA'),
+                    stateB: gl.getUniformLocation(p,'u_stateB'), cycleStart: gl.getUniformLocation(p,'u_cycleStart'),
+                    maxCycleLen: gl.getUniformLocation(p,'u_maxCycleLen'),
+                    logicType: gl.getUniformLocation(p,'u_logicType'), conserve: gl.getUniformLocation(p,'u_conserve'),
+                };
+            }
+
+            _setUniforms() {
+                const gl = this.gl, u = this.ul;
+                gl.useProgram(this.glProgram);
+                gl.uniform2f(u.res, this.canvas.width, this.canvas.height);
+                gl.uniform1f(u.zoom, this.zoom);
+                gl.uniform2f(u.off, this.offset.x, this.offset.y);
+                gl.uniform1i(u.axisI, this.axisI);
+                gl.uniform1i(u.axisJ, this.axisJ);
+                const s = this.state;
+                gl.uniform4f(u.stateA, s[0], s[1], s[2], s[3]);
+                gl.uniform4f(u.stateB, s[4], s[5], s[6], s[7]);
+                gl.uniform1i(u.cycleStart, Math.max(0, this.maxIter - this.maxCycleLen));
+                gl.uniform1i(u.maxCycleLen, this.maxCycleLen);
+                gl.uniform1i(u.logicType, this.logicType);
+                gl.uniform1i(u.conserve, this.conserveEnergy);
+            }
+
+            _run() {
+                if (!this.isRunning) return;
+                this._setUniforms();
+                this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
+                requestAnimationFrame(this._run);
+            }
+
+            onResize() {
+                const rect = this.screenEl.getBoundingClientRect();
+                if (!rect.width || !rect.height) return;
+                this.canvas.width = rect.width; this.canvas.height = rect.height;
+                this.gl.viewport(0, 0, rect.width, rect.height);
+            }
+
+            pause() { this.isRunning = false; }
+
+            resume() {
+                if (!this.isRunning) { this.isRunning = true; requestAnimationFrame(this._run); }
+            }
+
+            _attachEvents() {
+                const c = this.canvas;
+                c.addEventListener('mousedown', e => { this.isPanning = true; this.lastPanPos = {x: e.clientX, y: e.clientY}; });
+                c.addEventListener('mouseup', () => this.isPanning = false);
+                c.addEventListener('mouseleave', () => this.isPanning = false);
+                c.addEventListener('mousemove', e => {
+                    if (!this.isPanning) return;
+                    const dx = e.clientX - this.lastPanPos.x, dy = e.clientY - this.lastPanPos.y;
+                    this.offset.x -= dx / this.canvas.height / this.zoom;
+                    this.offset.y += dy / this.canvas.height / this.zoom;
+                    this.lastPanPos = {x: e.clientX, y: e.clientY};
+                });
+                c.addEventListener('wheel', e => {
+                    e.preventDefault();
+                    const f = e.deltaY < 0 ? 1.25 : 0.8;
+                    const r = c.getBoundingClientRect();
+                    const mx = e.clientX - r.left, my = c.height - (e.clientY - r.top);
+                    const cx = (mx - 0.5*c.width) / c.height / this.zoom + this.offset.x;
+                    const cy = (my - 0.5*c.height) / c.height / this.zoom + this.offset.y;
+                    this.zoom *= f;
+                    this.offset.x = cx - (mx - 0.5*c.width) / c.height / this.zoom;
+                    this.offset.y = cy - (my - 0.5*c.height) / c.height / this.zoom;
+                }, {passive: false});
+            }
+
+            unload() {
+                this.isRunning = false;
+                if (this.screenEl.contains(this.canvas)) this.screenEl.removeChild(this.canvas);
+            }
+        }
 
         window.addEventListener('resize', updateLayout);
         history = [Array.from({length: COLS}, () => Math.random())];
