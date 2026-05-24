@@ -522,13 +522,13 @@
                         </div>
                         <div class="fractal-ctrl-row">
                             <span class="fractal-label">Iters</span>
-                            <input type="range" id="fractalIter" min="20" max="400" step="10" value="50">
-                            <span id="fractalIterVal" style="color:var(--text-muted);font-size:0.7rem;width:30px;text-align:right;flex-shrink:0;">50</span>
+                            <input type="range" id="fractalIter" min="20" max="400" step="10" value="80">
+                            <span id="fractalIterVal" style="color:var(--text-muted);font-size:0.7rem;width:30px;text-align:right;flex-shrink:0;">80</span>
                         </div>
                         <div class="fractal-ctrl-row">
                             <span class="fractal-label">Cycle</span>
-                            <input type="range" id="fractalCycle" min="1" max="50" step="1" value="20">
-                            <span id="fractalCycleVal" style="color:var(--text-muted);font-size:0.7rem;width:30px;text-align:right;flex-shrink:0;">20</span>
+                            <input type="range" id="fractalCycle" min="1" max="50" step="1" value="40">
+                            <span id="fractalCycleVal" style="color:var(--text-muted);font-size:0.7rem;width:30px;text-align:right;flex-shrink:0;">40</span>
                         </div>
                         <div style="color:var(--text-muted);font-size:0.67rem;line-height:1.5;padding:6px 2px 2px;">
                             Each pixel's color shows what attractor the simulation reaches when the X and Y cells start at those coordinates. <span style="color:#38bdf8;">Blue</span> = settles to a fixed point (brighter = converges faster); <span style="color:#f43f5e;">red</span> = enters a repeating cycle (brighter = longer cycle); black = no convergence within the iteration budget. The dot marks the current simulation state — drag it to jump there. <b style="color:var(--text-main);font-weight:normal;">Iters</b> sets total steps per pixel; <b style="color:var(--text-main);font-weight:normal;">Cycle</b> sets the detection window (warm-up = Iters − Cycle).
@@ -1041,7 +1041,7 @@
         // ── Fractal shader ─────────────────────────────────────────────────
         let fractalShader = null;
         let fractalAxisI = 0, fractalAxisJ = 1;
-        let fractalMaxIter = 50, fractalMaxCycleLen = 20;
+        let fractalMaxIter = 80, fractalMaxCycleLen = 40;
 
         function getLogicTypeInt() {
             const m = {sharp_lukasiewicz: 0, nilpotent: 1, dual_nilpotent: 2, interference: 3};
