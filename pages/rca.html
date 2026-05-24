@@ -316,6 +316,55 @@
             flex-shrink: 0;
         }
 
+        .fractal-point {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #fff;
+            border: 2px solid #fff;
+            transform: translate(-50%, -50%);
+            cursor: grab;
+            z-index: 10;
+            box-shadow: 0 0 6px rgba(255,255,255,0.45);
+        }
+
+        .fractal-point:active { cursor: grabbing; }
+
+        .fractal-reset {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            z-index: 10;
+            background: rgba(15, 23, 42, 0.8);
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            font-family: inherit;
+            cursor: pointer;
+            flex: none;
+        }
+
+        .fractal-reset:hover {
+            background: rgba(51, 65, 85, 0.95);
+            color: var(--text-main);
+        }
+
+        .fractal-point-label {
+            position: absolute;
+            font-size: 0.6rem;
+            color: #fff;
+            background: rgba(0, 0, 0, 0.65);
+            padding: 1px 5px;
+            border-radius: 3px;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 11;
+            transform: translate(8px, 8px);
+        }
+
         @media (max-width: 640px) {
             .app-wrap {
                 flex-direction: column;
@@ -377,7 +426,7 @@
                     <select id="visMode" style="flex:none;padding:8px 12px;">
                         <option value="desc">Description</option>
                         <option value="phase">Phase space</option>
-                        <option value="fractal">Basin landscape</option>
+                        <option value="fractal">Fractal</option>
                     </select>
                 </div>
                 <div class="control-row">
@@ -407,6 +456,7 @@
                         <a href="#eyJyIjpbMC45NjkzMTQ2ODUyNTYzODUzLDAuNzYzNDYzNjA0ODg1NTEsMC40OTAxMzYyNDc5MDM5ODg3LDAuMTc0NDg4ODQ2Mzg1MTAwMzIsMC45NjkzMTQ2ODUyNTYzODUzLDAuMjEwMjI5MTYwNDkwOTY2OCwwLjk2OTMxNDY4NTI1NjM4NTMsMC4wNTI0NDM3NDcxNDYyNTc1NTRdLCJsIjoic2hhcnBfbHVrYXNpZXdpY3oiLCJjIjoxLCJuIjoicGVudGF0b25pYyIsInYiOjF9" style="color:var(--cell-on)">medium cycle 2</a>
                         <a href="#eyJyIjpbMC44NTQ2NzE2MDEyMDQ0Mjk5LDAuMTgyNzQ0ODEyNzMzNTQxMiwwLjA1NzI2OTcxODcwMzg1MDYxNCwwLjM5Nzk4NDQwNzIyMTEwMTIsMC42NDk0OTQzMjYwMjcxMjQ5LDEsMSwwLjk3OTI2NTAxOTM4MjcwNzRdLCJsIjoic2hhcnBfbHVrYXNpZXdpY3oiLCJjIjoxLCJuIjoicGVudGF0b25pYyIsInYiOjF9" style="color:var(--cell-on)">medium cycle 3</a>
                         <a href="#eyJyIjpbMC41NzUxOTk4NzY2MzA2OTIzLDEsMC4wMTk5MTA0MzkyNjI5ODk2NjcsMC4wMTk5MTA0MzkyNjI5ODk2NjcsMC4zMzc1MjQwNDIwNDQyMDI0NCwwLjQxNzg2OTUwOTIzMDQwMDEsMC4wMTk5MTA0MzkyNjI5ODk2NjcsMC4wMTk5MTA0MzkyNjI5ODk2NjddLCJsIjoic2hhcnBfbHVrYXNpZXdpY3oiLCJjIjoxLCJuIjoicGVudGF0b25pYyIsInYiOjF9" style="color:var(--cell-on)">long cycle</a>
+                        <a href="#eyJyIjpbMC4yMDE1MzUxMTYzMjcxMTIxLDAuMjA5MTM1NjA5NDI4NTE2OCwwLjY4NDk1MjIzODYyODY4MDgsMC4xNzUyNzIxOTA4NTEwOTA4LDAuMjA3MTAwODU0OTQ1MzQ5MTYsMC4xODgzMTQ2NzMwMjk1MDIyNSwwLjE0Mjc0Njg5NDExOTg5NTEsMC42NjQ4MzgwNDg5MzY5ODY4XSwibCI6InNoYXJwX2x1a2FzaWV3aWN6IiwiYyI6MSwibiI6InBlbnRhdG9uaWMiLCJ2bSI6ImZyYWN0YWwifQ==" style="color:var(--cell-on)">tight cycle</a>
                     </p>
                     <p>
                         <a href="#eyJyIjpbMC44MjQyMzY3MDg3ODI5MjEsMCwwLjEyNDI4Nzc4NDg3MjU2NDk2LDAuMTE4OTIzNTg4MjQ4NDg4NDksMC42MjI1MDYxMzEwNDMyMzI5LDAuMTU5NjE1NzAwNjUxNTIyMTQsMC42ODM0MTI0MDM0MjA1MTk4LDAuMjM4NTUyODAxODM1MTQ0MjddLCJsIjoibmlscG90ZW50IiwiYyI6MSwibiI6InBlbnRhdG9uaWMiLCJ2IjoxfQ==" style="color:var(--cell-on)">long cycle</a>
@@ -415,8 +465,9 @@
                         <a href="#eyJyIjpbMC4xMTA1MDI3MDMyMTc5MjEyLDEsMC41MTUxNDk4NzkwNDQ3OTI3LDEsMC4xMTA1MDI3MDMyMTc5MjEyLDAuMTEwNTAyNzAzMjE3OTIxMiwwLjM0NzQ1NDYyNDQ4ODM3OTU1LDAuMTEwNTAyNzAzMjE3OTIxMl0sImwiOiJkdWFsX25pbHBvdGVudCIsImMiOjEsIm4iOiJwZW50YXRvbmljIiwidiI6MX0=" style="color:var(--cell-on)">tiny cycle</a>
                     </p>
                     <p>
-                        <a href="#eyJyIjpbMC40MzQ1NzIzODE3OTU2MTIxNCwwLjI4ODQ0NTU5OTgyOTQ0MTg1LDAuMjQ1MzQ0Mzg1MzU4MzMyNiwwLjMxMzUyMjM1OTg4NTUxNDUsMC42OTk5MjE5NTU0NzE2ODI4LDEsMC4zODIzNzY2NDEyNTYyNjc4LDAuODU5MDEyOTQ4MjUxODcxXSwibCI6ImludGVyZmVyZW5jZSIsImMiOjEsIm4iOiJwZW50YXRvbmljIiwidiI6MX0=" style="color:var(--cell-on)">chaotic attractor 1</a>
-                        <a href="#eyJyIjpbMC45MjIxODg2MzUzMjcxNTY3LDAuNjI2NTU1OTA4NDYxODIxMywwLjMyMDE3MTQ2ODI4MTMxODYsMC40OTAzMjA1MTIyMTU2ODkwNiwxLDEsMC42MTI0ODA1NjM2OTc5MzQ3LDAuNzgxMTA2MTEzMzg0MDcwN10sImwiOiJpbnRlcmZlcmVuY2UiLCJjIjoxLCJuIjoicGVudGF0b25pYyIsInYiOjF9" style="color:var(--cell-on)">chaotic attractor 2</a>
+                        <a href="#eyJyIjpbMC41NzA3OTk1MDQ1MTA4Mzc3LDAuNTEyMzAwMDQ4NjEwMDgxMiwwLjQzODExNjAzMDQxNTc3MTgsMC4xNzU5MDM5MjI1MTk2MjYyOCwwLjQyMTQ0NjE2MTM4MjM3ODQ1LDAuMTg5MjUzMTA1NzUyOTA2ODgsMC41ODkwNDgzNzQ4MTQ5MzkxLDAuNTUyMTAxODcxMTY0MTcyNF0sImwiOiJpbnRlcmZlcmVuY2UiLCJjIjoxLCJuIjoicGVudGF0b25pYyIsInZtIjoicGhhc2UifQ==" style="color:var(--cell-on)">chaotic attractor 1</a>
+                        <a href="#eyJyIjpbMC40MzQ1NzIzODE3OTU2MTIxNCwwLjI4ODQ0NTU5OTgyOTQ0MTg1LDAuMjQ1MzQ0Mzg1MzU4MzMyNiwwLjMxMzUyMjM1OTg4NTUxNDUsMC42OTk5MjE5NTU0NzE2ODI4LDEsMC4zODIzNzY2NDEyNTYyNjc4LDAuODU5MDEyOTQ4MjUxODcxXSwibCI6ImludGVyZmVyZW5jZSIsImMiOjEsIm4iOiJwZW50YXRvbmljIiwidiI6MX0=" style="color:var(--cell-on)">chaotic attractor 2</a>
+                        <a href="#eyJyIjpbMC45MjIxODg2MzUzMjcxNTY3LDAuNjI2NTU1OTA4NDYxODIxMywwLjMyMDE3MTQ2ODI4MTMxODYsMC40OTAzMjA1MTIyMTU2ODkwNiwxLDEsMC42MTI0ODA1NjM2OTc5MzQ3LDAuNzgxMTA2MTEzMzg0MDcwN10sImwiOiJpbnRlcmZlcmVuY2UiLCJjIjoxLCJuIjoicGVudGF0b25pYyIsInYiOjF9" style="color:var(--cell-on)">chaotic attractor 3</a>
                     </p>
                     <p style="margin-top:auto;padding-top:1em;border-top:1px solid var(--border);"><a href="https://karlo-babic.github.io" target="_blank" style="color:var(--cell-on)">Karlo Babi&#263;</a></p>
                 </div>
@@ -476,8 +527,11 @@
                         </div>
                         <div class="fractal-ctrl-row">
                             <span class="fractal-label">Cycle</span>
-                            <input type="range" id="fractalCycle" min="1" max="100" step="1" value="20">
+                            <input type="range" id="fractalCycle" min="1" max="50" step="1" value="20">
                             <span id="fractalCycleVal" style="color:var(--text-muted);font-size:0.7rem;width:30px;text-align:right;flex-shrink:0;">20</span>
+                        </div>
+                        <div style="color:var(--text-muted);font-size:0.67rem;line-height:1.5;padding:6px 2px 2px;">
+                            Each pixel's color shows what attractor the simulation reaches when the X and Y cells start at those coordinates. <span style="color:#38bdf8;">Blue</span> = settles to a fixed point (brighter = converges faster); <span style="color:#f43f5e;">red</span> = enters a repeating cycle (brighter = longer cycle); black = no convergence within the iteration budget. The dot marks the current simulation state — drag it to jump there. <b style="color:var(--text-main);font-weight:normal;">Iters</b> sets total steps per pixel; <b style="color:var(--text-main);font-weight:normal;">Cycle</b> sets the detection window (warm-up = Iters − Cycle).
                         </div>
                     </div>
                 </div>
@@ -1021,6 +1075,73 @@
                         maxIter: fractalMaxIter, maxCycleLen: fractalMaxCycleLen,
                     });
                     fractalShader.state = [...history[history.length - 1]];
+                    fractalShader.onPointDrag = (uvX, uvY) => {
+                        history[history.length - 1][GRAY[fractalAxisI]] = Math.max(0, Math.min(1, uvX));
+                        history[history.length - 1][GRAY[fractalAxisJ]] = Math.max(0, Math.min(1, uvY));
+                        syncUI();
+                        draw();
+                    };
+                    fractalShader.onComputeColor = (uvX, uvY) => {
+                        const maxCycleLen = fractalMaxCycleLen;
+                        const cycleStart  = Math.max(0, fractalMaxIter - maxCycleLen);
+                        const totalIter   = cycleStart + maxCycleLen;
+
+                        let s = [...history[history.length - 1]];
+                        s[GRAY[fractalAxisI]] = Math.max(0, Math.min(1, uvX));
+                        s[GRAY[fractalAxisJ]] = Math.max(0, Math.min(1, uvY));
+
+                        const doStep = cur => {
+                            const next = new Array(8).fill(0);
+                            for (let i = 0; i < 8; i++) {
+                                const p = GRAY[i], pL = GRAY[(i + 7) % 8], pR = GRAY[(i + 1) % 8];
+                                next[p] = nextCellValue(cur[pL], cur[p], cur[pR], cur);
+                            }
+                            if (conserveEnergy) {
+                                const E = cur.reduce((a, b) => a + b, 0);
+                                const En = next.reduce((a, b) => a + b, 0);
+                                if (En > 1e-10) {
+                                    const sc = E / En;
+                                    for (let i = 0; i < 8; i++) next[i] = Math.min(1, next[i] * sc);
+                                    const deficit = E - next.reduce((a, b) => a + b, 0);
+                                    if (deficit > 1e-10) {
+                                        const hr = next.map(v => 1 - v), th = hr.reduce((a, b) => a + b, 0);
+                                        if (th > 1e-10) for (let i = 0; i < 8; i++) next[i] += deficit * hr[i] / th;
+                                    }
+                                }
+                            }
+                            return next;
+                        };
+
+                        const isUniform = st => Math.max(...st) < 0.005 || Math.min(...st) > 0.995;
+                        const sdiff = (a, b) => Math.max(...a.map((v, i) => Math.abs(v - b[i])));
+
+                        let ref = null, foundAt = -1, isFixed = false, settleAt = totalIter;
+                        for (let i = 0; i < totalIter; i++) {
+                            const prev = [...s];
+                            s = doStep(s);
+                            if (isUniform(s)) { foundAt = i; isFixed = true; break; }
+                            if (settleAt === totalIter && sdiff(s, prev) < 0.003) settleAt = i;
+                            if (i === cycleStart) ref = [...s];
+                            if (i > cycleStart && sdiff(s, ref) < 0.015) {
+                                foundAt = i; isFixed = (i === cycleStart + 1); break;
+                            }
+                        }
+
+                        if (foundAt < 0) return 'rgb(0,0,0)';
+
+                        let t;
+                        if (isFixed && foundAt < cycleStart) t = 1 - foundAt / totalIter;
+                        else if (isFixed) t = 1 - settleAt / totalIter;
+                        else t = (foundAt - cycleStart) / maxCycleLen;
+                        t = Math.max(0, Math.min(1, t)) * 0.85 + 0.15;
+
+                        const hsv2rgb = (h, sv, v) => {
+                            const f = n => { const k = (n + h * 6) % 6; return v - v * sv * Math.max(0, Math.min(k, 4 - k, 1)); };
+                            return [f(5), f(3), f(1)].map(x => Math.round(x * 255));
+                        };
+                        const [r, g, b] = isFixed ? hsv2rgb(0.58, 0.85, t) : hsv2rgb(0.0, 0.9, t);
+                        return `rgb(${r},${g},${b})`;
+                    };
                 } else {
                     fractalShader.resume();
                 }
@@ -1046,6 +1167,14 @@
         document.getElementById('fractalIter').oninput = function() {
             fractalMaxIter = parseInt(this.value);
             document.getElementById('fractalIterVal').textContent = fractalMaxIter;
+            const cycleEl = document.getElementById('fractalCycle');
+            cycleEl.max = fractalMaxIter;
+            if (fractalMaxCycleLen > fractalMaxIter) {
+                fractalMaxCycleLen = fractalMaxIter;
+                cycleEl.value = fractalMaxCycleLen;
+                document.getElementById('fractalCycleVal').textContent = fractalMaxCycleLen;
+                if (fractalShader) fractalShader.maxCycleLen = fractalMaxCycleLen;
+            }
             if (fractalShader) fractalShader.maxIter = fractalMaxIter;
         };
         document.getElementById('fractalCycle').oninput = function() {
@@ -1100,7 +1229,7 @@
                 const s = JSON.parse(atob(encoded));
                 if (Array.isArray(s.r) && s.r.length === 8)
                     history[history.length - 1] = s.r.map(Number);
-                if (s.l) logicType.value = s.l;
+                if (s.l) { logicType.value = s.l; if (fractalShader) fractalShader.logicType = getLogicTypeInt(); }
                 if ('c' in s) {
                     conserveEnergy = !!s.c;
                     btnConserve.innerText = conserveEnergy ? 'Energy: conserved' : 'Energy: free';
@@ -1155,7 +1284,7 @@
                 this.isPanning = false; this.lastPanPos = {x: 0, y: 0};
                 this.isRunning = false; this.ul = {};
                 this._run = this._run.bind(this);
-                this._initShader(); this._setupQuad(); this._cacheUniforms(); this._attachEvents();
+                this._initShader(); this._setupQuad(); this._cacheUniforms(); this._attachEvents(); this._createPointElements();
                 this.onResize(); this.isRunning = true; requestAnimationFrame(this._run);
             }
 
@@ -1275,9 +1404,8 @@
                         int foundAt = -1;
                         bool isFixed = false;
 
-                        // Phase 1: warm-up for u_cycleStart steps, then save reference.
-                        // Phase 2: detection window for u_maxCycleLen steps.
                         int totalIter = u_cycleStart + u_maxCycleLen;
+                        int settleAt = totalIter;
                         const int MAX_C = 400;
                         vec4 prevA = sa, prevB = sb;
                         for (int i = 0; i < MAX_C; i++) {
@@ -1285,24 +1413,26 @@
                             prevA = sa; prevB = sb;
                             rcaStep(sa, sb);
                             if (isUniform(sa,sb)) { foundAt = i; isFixed = true; break; }
+                            if (settleAt == totalIter && sdiff(sa,sb,prevA,prevB) < 0.003) settleAt = i;
                             if (i == u_cycleStart) { refA = sa; refB = sb; }
-                            if (i > u_cycleStart && sdiff(sa,sb,prevA,prevB) < 0.015) {
-                                foundAt = i; isFixed = true; break;
-                            }
                             if (i > u_cycleStart && sdiff(sa,sb,refA,refB) < 0.015) {
-                                foundAt = i; break;
+                                foundAt = i;
+                                isFixed = (i == u_cycleStart + 1);
+                                break;
                             }
                         }
 
                         if (foundAt < 0) { fragColor = vec4(0.0,0.0,0.0,1.0); return; }
 
                         float t;
-                        if (isFixed) {
+                        if (isFixed && foundAt < u_cycleStart) {
                             t = 1.0 - float(foundAt) / float(totalIter);
+                        } else if (isFixed) {
+                            t = 1.0 - float(settleAt) / float(totalIter);
                         } else {
-                            t = 1.0 - float(foundAt - u_cycleStart) / float(u_maxCycleLen);
+                            t = float(foundAt - u_cycleStart) / float(u_maxCycleLen);
                         }
-                        t = t * 0.85 + 0.15;
+                        t = clamp(t, 0.0, 1.0) * 0.85 + 0.15;
                         vec3 col = isFixed ? hsv2rgb(vec3(0.58, 0.85, t)) : hsv2rgb(vec3(0.0, 0.9, t));
                         fragColor = vec4(col, 1.0);
                     }`;
@@ -1364,7 +1494,73 @@
                 if (!this.isRunning) return;
                 this._setUniforms();
                 this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
+                this._updatePoint();
                 requestAnimationFrame(this._run);
+            }
+
+            _gv(i) { return [0,1,3,2,6,7,5,4][i]; }
+
+            _createPointElements() {
+                this.onPointDrag = null;
+                this.onComputeColor = null;
+
+                this.pointEl = document.createElement('div');
+                this.pointEl.className = 'fractal-point';
+                this.screenEl.appendChild(this.pointEl);
+
+                this.labelEl = document.createElement('div');
+                this.labelEl.className = 'fractal-point-label';
+                this.screenEl.appendChild(this.labelEl);
+
+                const onDrag = e => {
+                    const r = this.canvas.getBoundingClientRect();
+                    const mx = e.clientX - r.left;
+                    const my = e.clientY - r.top;
+                    const w = this.canvas.width, h = this.canvas.height;
+                    const uvX = (mx - 0.5 * w) / h / this.zoom + this.offset.x;
+                    const uvY = (0.5 * h - my) / h / this.zoom + this.offset.y;
+                    if (this.onPointDrag) this.onPointDrag(uvX, uvY);
+                };
+
+                const endDrag = () => {
+                    window.removeEventListener('mousemove', onDrag);
+                    window.removeEventListener('mouseup', endDrag);
+                };
+
+                this.pointEl.addEventListener('mousedown', e => {
+                    e.stopPropagation();
+                    window.addEventListener('mousemove', onDrag);
+                    window.addEventListener('mouseup', endDrag);
+                });
+
+                this.resetBtn = document.createElement('button');
+                this.resetBtn.className = 'fractal-reset';
+                this.resetBtn.textContent = 'Reset view';
+                this.resetBtn.addEventListener('click', e => {
+                    e.stopPropagation();
+                    this.zoom = 1.0;
+                    this.offset = {x: 0.5, y: 0.5};
+                });
+                this.screenEl.appendChild(this.resetBtn);
+            }
+
+            _updatePoint() {
+                if (!this.pointEl || !this.canvas.width) return;
+                const uvX = this.state[this._gv(this.axisI)];
+                const uvY = this.state[this._gv(this.axisJ)];
+                const w = this.canvas.width, h = this.canvas.height;
+                const px = (uvX - this.offset.x) * h * this.zoom + 0.5 * w;
+                const py = 0.5 * h - (uvY - this.offset.y) * h * this.zoom;
+                this.pointEl.style.left = `${px}px`;
+                this.pointEl.style.top  = `${py}px`;
+                this.labelEl.style.left = `${px}px`;
+                this.labelEl.style.top  = `${py}px`;
+                this.labelEl.textContent = `${uvX.toFixed(2)}, ${uvY.toFixed(2)}`;
+                const inView = px > -6 && px < w + 6 && py > -6 && py < h + 6;
+                this.pointEl.style.display = inView ? '' : 'none';
+                this.labelEl.style.display  = inView ? '' : 'none';
+                if (inView && this.onComputeColor)
+                    this.pointEl.style.background = this.onComputeColor(uvX, uvY);
             }
 
             onResize() {
