@@ -448,7 +448,7 @@
                 <div class="side-text" id="sideText">
                     <p>Elementary Cellular Automata (ECA) assign each cell a binary state updated by a fixed 3-cell neighborhood rule. There are 256 such rules; see <a href="https://en.wikipedia.org/wiki/Elementary_cellular_automaton" target="_blank" style="color:var(--cell-on)">Wikipedia</a> or <a href="https://mathworld.wolfram.com/ElementaryCellularAutomaton.html" target="_blank" style="color:var(--cell-on)">MathWorld</a> for a full survey.</p>
                     <p>Fuzzy automata extend ECA by allowing continuous values on [0, 1] instead of strict binary states, producing smoother, gradient-like dynamics with the same neighborhood logic.</p>
-                    <p>This simulator goes further: cell values act as both states and rule weights. The neighborhood sum indexes into the grid to retrieve the weight applied at that position, so the grid encodes the configuration and its own transition logic at once. There is no separate rule table.</p>
+                    <p>This simulator goes further: the grid encodes both state and its own transition rules (there is no separate rule table). Each cell value serves simultaneously as a state and as the output weight for a neighborhood pattern, so the automaton rewrites itself as it evolves.</p>
                     <p>Some attractors I found:</p>
                     <p>
                         <a href="#eyJyIjpbMC42MjU2MjUxOTc3Njg0Mzc2LDAuMDMyNTA2NTI5MTA2NjY2ODQsMC45NTQ3NjA5NzY1MDYzMDY2LDAuMjc2MjU4NjEwMTc2NzU0NDYsMC4xNDc3Nzg2MjMxODkyNTYyLDAuNjY5MTgwMjYyMjU1NjM3NiwxLDFdLCJsIjoic2hhcnBfbHVrYXNpZXdpY3oiLCJjIjoxLCJuIjoicGVudGF0b25pYyIsInYiOjF9" style="color:var(--cell-on)">short cycle</a>
@@ -469,7 +469,7 @@
                         <a href="#eyJyIjpbMC40MzQ1NzIzODE3OTU2MTIxNCwwLjI4ODQ0NTU5OTgyOTQ0MTg1LDAuMjQ1MzQ0Mzg1MzU4MzMyNiwwLjMxMzUyMjM1OTg4NTUxNDUsMC42OTk5MjE5NTU0NzE2ODI4LDEsMC4zODIzNzY2NDEyNTYyNjc4LDAuODU5MDEyOTQ4MjUxODcxXSwibCI6ImludGVyZmVyZW5jZSIsImMiOjEsIm4iOiJwZW50YXRvbmljIiwidiI6MX0=" style="color:var(--cell-on)">chaotic attractor 2</a>
                         <a href="#eyJyIjpbMC45MjIxODg2MzUzMjcxNTY3LDAuNjI2NTU1OTA4NDYxODIxMywwLjMyMDE3MTQ2ODI4MTMxODYsMC40OTAzMjA1MTIyMTU2ODkwNiwxLDEsMC42MTI0ODA1NjM2OTc5MzQ3LDAuNzgxMTA2MTEzMzg0MDcwN10sImwiOiJpbnRlcmZlcmVuY2UiLCJjIjoxLCJuIjoicGVudGF0b25pYyIsInYiOjF9" style="color:var(--cell-on)">chaotic attractor 3</a>
                     </p>
-                    <p style="margin-top:auto;padding-top:1em;border-top:1px solid var(--border);"><a href="https://karlo-babic.github.io" target="_blank" style="color:var(--cell-on)">Karlo Babi&#263;</a></p>
+                    <p style="margin-top:auto;padding-top:1em;border-top:1px solid var(--border);text-align:center;"><a href="https://karlo-babic.github.io" target="_blank" style="color:var(--cell-on)">Karlo Babi&#263;</a></p>
                 </div>
                 <div class="side-phase" id="sidePhase">
                     <div class="phase-canvas-wrap" id="phaseCanvasWrap">
