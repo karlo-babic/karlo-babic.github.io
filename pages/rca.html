@@ -413,21 +413,23 @@
                     <button id="btnPlay" class="primary">Play</button>
                     <button id="btnStep">Step</button>
                     <button id="btnRandomize">Randomize</button>
-                    <button id="btnConserve" style="background:var(--cell-on);color:var(--bg)">Energy: conserved</button>
-                </div>
-                <div class="control-row" style="align-items:center;">
-                    <span style="color:var(--text-muted);font-size:0.75em;white-space:nowrap;flex:none;">Fuzzy:</span>
-                    <select id="logicType">
-                        <option value="sharp_lukasiewicz">Sharp Łukasiewicz</option>
-                        <option value="nilpotent">Nilpotent</option>
-                        <option value="dual_nilpotent">Dual Nilpotent</option>
-                        <option value="interference">Interference</option>
-                    </select>
                     <select id="visMode" style="flex:none;padding:8px 12px;">
                         <option value="desc">Description</option>
                         <option value="phase">Phase space</option>
                         <option value="fractal">Fractal</option>
                     </select>
+                </div>
+                <div class="control-row" style="align-items:center;">
+                    <span style="color:var(--text-muted);font-size:0.75em;white-space:nowrap;flex:none;">Fuzzy:</span>
+                    <select id="logicType">
+                        <option value="lukasiewicz">Łukasiewicz</option>
+                        <option value="sharp_lukasiewicz">Sharp Łukasiewicz</option>
+                        <option value="nilpotent">Nilpotent</option>
+                        <option value="dual_nilpotent">Dual Nilpotent</option>
+                        <option value="interference">Interference</option>
+                    </select>
+                    <button id="btnClamp" style="flex:none;padding:6px 10px;font-size:0.78em;background:var(--cell-on);color:var(--bg)">Clamp</button>
+                    <button id="btnConserve" style="flex:none;padding:6px 10px;font-size:0.78em;background:var(--cell-on);color:var(--bg)">Conserve</button>
                 </div>
                 <div class="control-row">
                     <button id="btnSound">Sound</button>
@@ -450,7 +452,7 @@
                     <p>Fuzzy automata extend ECA by allowing continuous values on [0, 1] instead of strict binary states, producing smoother, gradient-like dynamics with the same neighborhood logic.</p>
                     <p>This simulator (Reflective Cellular Automata) goes further: the grid encodes both state and its own transition rules (there is no separate rule table). Each cell value serves simultaneously as a state and as the output weight for a neighborhood pattern, so the automaton rewrites itself as it evolves.</p>
                      <p style="margin-top:auto;padding-top:1em;border-top:1px solid var(--border);">Concretely: the grid has 8 cells in a ring, each holding a value in [0, 1]. On each step, a cell's new value is computed as a weighted sum over all 8 possible binary neighborhood patterns (000 to 111). For each pattern, a fuzzy match function measures how well the actual left-center-right values fit that pattern. The match score is multiplied by the cell whose index corresponds to that pattern, and the 8 products are summed and clamped to [0, 1]. The pattern-to-cell mapping uses a Gray code ordering so adjacent patterns differ by exactly one bit.</p>
-                    <p>The fuzzy match can be switched using the Fuzzy selector. Sharp Lukasiewicz gives a smooth square-root blend. Nilpotent and Dual Nilpotent apply a hard threshold before taking the minimum. Interference squares a sum of square roots, which produces amplitude-like cancellation effects.</p>
+                    <p>The fuzzy match can be switched using the Fuzzy selector. Łukasiewicz uses max(0, a+b+c−2) — the standard t-norm, requiring the sum to exceed 2 with a hard zero floor. Sharp Łukasiewicz softens that with a square root. Nilpotent and Dual Nilpotent apply a hard threshold before taking the minimum. Interference squares a sum of square roots, which produces amplitude-like cancellation effects.</p>
                     <p>When energy conservation is on, the total sum of all cell values is rescaled after each step to match the previous total, which keeps the overall activation from drifting to zero or saturating to one.</p>
                      <p style="margin-top:auto;padding-top:1em;border-top:1px solid var(--border);">Some attractors I found:</p>
                     <p>
@@ -559,6 +561,7 @@
         let history = [];
         let isPlaying = false;
         let playInterval = null;
+        let clampValues = true;
         let conserveEnergy = true;
         let dragColIndex = -1;
 
@@ -621,14 +624,16 @@
             const logic = logicType.value;
             let MATCH;
             switch (logic) {
+                case 'lukasiewicz':
+                    MATCH = (a, b, c) => Math.max(0, a + b + c - 2); break;
                 case 'nilpotent':
-                    MATCH = (a, b, c) => (a + b + c > 2) ? Math.min(a, b, c) : 0; break;
+                    MATCH = (a, b, c) => (a + b + c > 2) ? Math.max(0, Math.min(a, b, c)) : 0; break;
                 case 'sharp_lukasiewicz':
                     MATCH = (a, b, c) => Math.pow(Math.max(0, a + b + c - 2), 0.5); break;
                 case 'dual_nilpotent':
-                    MATCH = (a, b, c) => (a + b + c > 2.2) ? Math.min(a, b, c) : 0; break;
+                    MATCH = (a, b, c) => (a + b + c > 2.2) ? Math.max(0, Math.min(a, b, c)) : 0; break;
                 case 'interference':
-                    MATCH = (a, b, c) => Math.pow(Math.max(0, Math.sqrt(a) + Math.sqrt(b) + Math.sqrt(c) - 2), 2); break;
+                    MATCH = (a, b, c) => Math.pow(Math.max(0, Math.sqrt(Math.max(0,a)) + Math.sqrt(Math.max(0,b)) + Math.sqrt(Math.max(0,c)) - 2), 2); break;
             }
             let out = 0;
             for (let p = 0; p < 8; p++) {
@@ -637,7 +642,7 @@
                 const c = (p & 1) ? R : 1 - R;
                 out += MATCH(a, b, c) * rule[p];
             }
-            return Math.min(1, out);
+            return clampValues ? Math.min(1, out) : out;
         }
 
         function step() {
@@ -653,14 +658,18 @@
                 const E = rule.reduce((a, b) => a + b, 0);
                 const Enext = next.reduce((a, b) => a + b, 0);
                 if (Enext > 1e-10) {
-                    const scale = E / Enext;
-                    next = next.map(v => Math.min(1, v * scale));
-                    const deficit = E - next.reduce((a, b) => a + b, 0);
-                    if (deficit > 1e-10) {
-                        const headroom = next.map(v => 1 - v);
-                        const totalHeadroom = headroom.reduce((a, b) => a + b, 0);
-                        if (totalHeadroom > 1e-10)
-                            next = next.map((v, i) => v + deficit * headroom[i] / totalHeadroom);
+                    if (clampValues) {
+                        const scale = E / Enext;
+                        next = next.map(v => Math.min(1, v * scale));
+                        const deficit = E - next.reduce((a, b) => a + b, 0);
+                        if (deficit > 1e-10) {
+                            const headroom = next.map(v => 1 - v);
+                            const totalHeadroom = headroom.reduce((a, b) => a + b, 0);
+                            if (totalHeadroom > 1e-10)
+                                next = next.map((v, i) => v + deficit * headroom[i] / totalHeadroom);
+                        }
+                    } else {
+                        next = next.map(v => v * E / Enext);
                     }
                 }
             }
@@ -708,8 +717,10 @@
         function syncUI() {
             const latest = history[history.length - 1];
             for (let i = 0; i < COLS; i++) {
-                barFills[i].style.height = `${latest[GRAY[i]] * 100}%`;
-                textInputs[i].value = latest[GRAY[i]].toFixed(2);
+                const v = latest[GRAY[i]];
+                barFills[i].style.height = `${Math.min(1, v) * 100}%`;
+                barFills[i].style.background = v > 1 ? 'var(--highlight)' : '';
+                textInputs[i].value = v.toFixed(2);
             }
             updateRuleDisplay();
             updateAudio();
@@ -727,13 +738,20 @@
             const cellW = canvas.width / COLS;
             const cellH = canvas.height / ROWS;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            history.forEach((row, r) => {
+            history.forEach((row, rowIdx) => {
                 for (let pos = 0; pos < COLS; pos++) {
                     const val = row[GRAY[pos]];
-                    ctx.fillStyle = `rgb(${15 + val * 41}, ${23 + val * 166}, ${42 + val * 206})`;
-                    ctx.fillRect(pos * cellW, r * cellH, cellW, cellH);
+                    let cr, cg, cb;
+                    if (val <= 1) {
+                        cr = 15 + val * 41; cg = 23 + val * 166; cb = 42 + val * 206;
+                    } else {
+                        const e = Math.min(1, val - 1);
+                        cr = 56 + e * 199; cg = 189 * (1 - e); cb = 248 * (1 - e);
+                    }
+                    ctx.fillStyle = `rgb(${Math.round(cr)},${Math.round(cg)},${Math.round(cb)})`;
+                    ctx.fillRect(pos * cellW, rowIdx * cellH, cellW, cellH);
                     ctx.strokeStyle = '#1e293b';
-                    ctx.strokeRect(pos * cellW, r * cellH, cellW, cellH);
+                    ctx.strokeRect(pos * cellW, rowIdx * cellH, cellW, cellH);
                 }
             });
         }
@@ -763,13 +781,25 @@
 
         btnStep.onclick = () => { if (!isPlaying) step(); };
 
+        function getShaderEnergyMode() {
+            if (!clampValues) return conserveEnergy ? 3 : 2;
+            return conserveEnergy ? 1 : 0;
+        }
+
+        const btnClamp = document.getElementById('btnClamp');
+        btnClamp.onclick = () => {
+            clampValues = !clampValues;
+            btnClamp.style.background = clampValues ? 'var(--cell-on)' : '';
+            btnClamp.style.color = clampValues ? 'var(--bg)' : '';
+            if (fractalShader) fractalShader.energyMode = getShaderEnergyMode();
+        };
+
         const btnConserve = document.getElementById('btnConserve');
         btnConserve.onclick = () => {
             conserveEnergy = !conserveEnergy;
-            btnConserve.innerText = conserveEnergy ? 'Energy: conserved' : 'Energy: free';
             btnConserve.style.background = conserveEnergy ? 'var(--cell-on)' : '';
             btnConserve.style.color = conserveEnergy ? 'var(--bg)' : '';
-            if (fractalShader) fractalShader.conserveEnergy = conserveEnergy ? 1 : 0;
+            if (fractalShader) fractalShader.energyMode = getShaderEnergyMode();
         };
 
         btnRandomize.onclick = () => {
@@ -1047,7 +1077,7 @@
         let fractalMaxIter = 80, fractalMaxCycleLen = 40;
 
         function getLogicTypeInt() {
-            const m = {sharp_lukasiewicz: 0, nilpotent: 1, dual_nilpotent: 2, interference: 3};
+            const m = {lukasiewicz: 0, sharp_lukasiewicz: 1, nilpotent: 2, dual_nilpotent: 3, interference: 4};
             return m[logicType.value] ?? 0;
         }
 
@@ -1073,7 +1103,7 @@
                 if (!fractalShader) {
                     fractalShader = new RCAFractalShader(document.getElementById('fractalCanvasWrap'), {
                         logicType: getLogicTypeInt(),
-                        conserveEnergy: conserveEnergy ? 1 : 0,
+                        energyMode: getShaderEnergyMode(),
                         axisI: fractalAxisI, axisJ: fractalAxisJ,
                         maxIter: fractalMaxIter, maxCycleLen: fractalMaxCycleLen,
                     });
@@ -1103,19 +1133,24 @@
                                 const E = cur.reduce((a, b) => a + b, 0);
                                 const En = next.reduce((a, b) => a + b, 0);
                                 if (En > 1e-10) {
-                                    const sc = E / En;
-                                    for (let i = 0; i < 8; i++) next[i] = Math.min(1, next[i] * sc);
-                                    const deficit = E - next.reduce((a, b) => a + b, 0);
-                                    if (deficit > 1e-10) {
-                                        const hr = next.map(v => 1 - v), th = hr.reduce((a, b) => a + b, 0);
-                                        if (th > 1e-10) for (let i = 0; i < 8; i++) next[i] += deficit * hr[i] / th;
+                                    if (clampValues) {
+                                        const sc = E / En;
+                                        for (let i = 0; i < 8; i++) next[i] = Math.min(1, next[i] * sc);
+                                        const deficit = E - next.reduce((a, b) => a + b, 0);
+                                        if (deficit > 1e-10) {
+                                            const hr = next.map(v => 1 - v), th = hr.reduce((a, b) => a + b, 0);
+                                            if (th > 1e-10) for (let i = 0; i < 8; i++) next[i] += deficit * hr[i] / th;
+                                        }
+                                    } else {
+                                        const sc = E / En;
+                                        for (let i = 0; i < 8; i++) next[i] *= sc;
                                     }
                                 }
                             }
                             return next;
                         };
 
-                        const isUniform = st => Math.max(...st) < 0.005 || Math.min(...st) > 0.995;
+                        const isUniform = st => Math.max(...st) < 0.005;
                         const sdiff = (a, b) => Math.max(...a.map((v, i) => Math.abs(v - b[i])));
 
                         let ref = null, foundAt = -1, isFixed = false, settleAt = totalIter;
@@ -1221,7 +1256,8 @@
             return btoa(JSON.stringify({
                 r: [...rule],
                 l: logicType.value,
-                c: conserveEnergy ? 1 : 0,
+                cl: clampValues ? 1 : 0,
+                cv: conserveEnergy ? 1 : 0,
                 n: noteMode.value,
                 vm: currentVisMode
             }));
@@ -1233,9 +1269,15 @@
                 if (Array.isArray(s.r) && s.r.length === 8)
                     history[history.length - 1] = s.r.map(Number);
                 if (s.l) { logicType.value = s.l; if (fractalShader) fractalShader.logicType = getLogicTypeInt(); }
-                if ('c' in s) {
+                clampValues = 'cl' in s ? !!s.cl : true;
+                btnClamp.style.background = clampValues ? 'var(--cell-on)' : '';
+                btnClamp.style.color = clampValues ? 'var(--bg)' : '';
+                if ('cv' in s) {
+                    conserveEnergy = !!s.cv;
+                    btnConserve.style.background = conserveEnergy ? 'var(--cell-on)' : '';
+                    btnConserve.style.color = conserveEnergy ? 'var(--bg)' : '';
+                } else if ('c' in s) {
                     conserveEnergy = !!s.c;
-                    btnConserve.innerText = conserveEnergy ? 'Energy: conserved' : 'Energy: free';
                     btnConserve.style.background = conserveEnergy ? 'var(--cell-on)' : '';
                     btnConserve.style.color = conserveEnergy ? 'var(--bg)' : '';
                 }
@@ -1243,6 +1285,7 @@
                     noteMode.value = s.n;
                     NOTE_FREQS = getNoteFreqs(s.n);
                 }
+                if (fractalShader) fractalShader.energyMode = getShaderEnergyMode();
                 if (s.vm) setVisMode(s.vm);
                 else if (s.v) setVisMode('phase');
             } catch (e) {}
@@ -1270,7 +1313,7 @@
 
         // ── RCA Fractal Shader ─────────────────────────────────────────────
         class RCAFractalShader {
-            constructor(screenEl, {logicType=0, conserveEnergy=1, axisI=0, axisJ=1, maxIter=50, maxCycleLen=20} = {}) {
+            constructor(screenEl, {logicType=0, energyMode=1, axisI=0, axisJ=1, maxIter=50, maxCycleLen=20} = {}) {
                 this.screenEl = screenEl;
                 this.canvas = document.createElement('canvas');
                 this.canvas.style.cssText = 'display:block;position:absolute;top:0;left:0;';
@@ -1279,7 +1322,7 @@
                 screenEl.appendChild(this.canvas);
 
                 this.logicType = logicType;
-                this.conserveEnergy = conserveEnergy;
+                this.energyMode = energyMode;
                 this.axisI = axisI; this.axisJ = axisJ;
                 this.maxIter = maxIter; this.maxCycleLen = maxCycleLen;
                 this.state = new Array(8).fill(0.5);
@@ -1310,7 +1353,7 @@
                     uniform int u_cycleStart;
                     uniform int u_maxCycleLen;
                     uniform int u_logicType;
-                    uniform int u_conserve;
+                    uniform int u_energyMode;
                     out vec4 fragColor;
 
                     int gv(int i) {
@@ -1335,9 +1378,10 @@
                     }
 
                     float mfn(float a, float b, float c) {
-                        if (u_logicType == 1) return (a+b+c > 2.0) ? min(min(a,b),c) : 0.0;
-                        if (u_logicType == 2) return (a+b+c > 2.2) ? min(min(a,b),c) : 0.0;
-                        if (u_logicType == 3) { float s=sqrt(a)+sqrt(b)+sqrt(c)-2.0; return s>0.0?s*s:0.0; }
+                        if (u_logicType == 0) return max(0.0, a+b+c-2.0);
+                        if (u_logicType == 2) return (a+b+c > 2.0) ? max(0.0, min(min(a,b),c)) : 0.0;
+                        if (u_logicType == 3) return (a+b+c > 2.2) ? max(0.0, min(min(a,b),c)) : 0.0;
+                        if (u_logicType == 4) { float s=sqrt(max(0.0,a))+sqrt(max(0.0,b))+sqrt(max(0.0,c))-2.0; return s>0.0?s*s:0.0; }
                         return sqrt(max(0.0, a+b+c-2.0));
                     }
 
@@ -1349,7 +1393,7 @@
                             float c = ((p & 1) != 0) ? R : 1.0-R;
                             o += mfn(a,b,c) * getv(sa,sb,p);
                         }
-                        return min(1.0, o);
+                        return (u_energyMode >= 2) ? o : min(1.0, o);
                     }
 
                     void rcaStep(inout vec4 sa, inout vec4 sb) {
@@ -1358,19 +1402,21 @@
                             int p=gv(i), pL=gv((i+7)%8), pR=gv((i+1)%8);
                             setv(na,nb,p, nextcv(getv(sa,sb,pL), getv(sa,sb,p), getv(sa,sb,pR), sa,sb));
                         }
-                        if (u_conserve == 1) {
+                        if (u_energyMode == 1 || u_energyMode == 3) {
                             float E  = sa.x+sa.y+sa.z+sa.w+sb.x+sb.y+sb.z+sb.w;
                             float En = na.x+na.y+na.z+na.w+nb.x+nb.y+nb.z+nb.w;
                             if (En > 1e-10) {
                                 float sc = E / En;
-                                na = min(vec4(1.0), na*sc); nb = min(vec4(1.0), nb*sc);
-                                float s2 = na.x+na.y+na.z+na.w+nb.x+nb.y+nb.z+nb.w;
-                                float def = E - s2;
-                                if (def > 1e-10) {
-                                    vec4 hrA=vec4(1.0)-na, hrB=vec4(1.0)-nb;
-                                    float th = hrA.x+hrA.y+hrA.z+hrA.w+hrB.x+hrB.y+hrB.z+hrB.w;
-                                    if (th > 1e-10) { na += def*hrA/th; nb += def*hrB/th; }
-                                }
+                                if (u_energyMode == 1) {
+                                    na = min(vec4(1.0), na*sc); nb = min(vec4(1.0), nb*sc);
+                                    float s2 = na.x+na.y+na.z+na.w+nb.x+nb.y+nb.z+nb.w;
+                                    float def = E - s2;
+                                    if (def > 1e-10) {
+                                        vec4 hrA=vec4(1.0)-na, hrB=vec4(1.0)-nb;
+                                        float th = hrA.x+hrA.y+hrA.z+hrA.w+hrB.x+hrB.y+hrB.z+hrB.w;
+                                        if (th > 1e-10) { na += def*hrA/th; nb += def*hrB/th; }
+                                    }
+                                } else { na *= sc; nb *= sc; }
                             }
                         }
                         sa = na; sb = nb;
@@ -1385,7 +1431,7 @@
                     }
 
                     bool isUniform(vec4 a, vec4 b) {
-                        return smx(a,b) < 0.005 || smn(a,b) > 0.995;
+                        return smx(a,b) < 0.005;
                     }
 
                     float sdiff(vec4 aA, vec4 aB, vec4 bA, vec4 bB) {
@@ -1472,7 +1518,7 @@
                     axisJ: gl.getUniformLocation(p,'u_axisJ'), stateA: gl.getUniformLocation(p,'u_stateA'),
                     stateB: gl.getUniformLocation(p,'u_stateB'), cycleStart: gl.getUniformLocation(p,'u_cycleStart'),
                     maxCycleLen: gl.getUniformLocation(p,'u_maxCycleLen'),
-                    logicType: gl.getUniformLocation(p,'u_logicType'), conserve: gl.getUniformLocation(p,'u_conserve'),
+                    logicType: gl.getUniformLocation(p,'u_logicType'), energyMode: gl.getUniformLocation(p,'u_energyMode'),
                 };
             }
 
@@ -1490,7 +1536,7 @@
                 gl.uniform1i(u.cycleStart, Math.max(0, this.maxIter - this.maxCycleLen));
                 gl.uniform1i(u.maxCycleLen, this.maxCycleLen);
                 gl.uniform1i(u.logicType, this.logicType);
-                gl.uniform1i(u.conserve, this.conserveEnergy);
+                gl.uniform1i(u.energyMode, this.energyMode);
             }
 
             _run() {
