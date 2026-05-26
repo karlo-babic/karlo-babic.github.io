@@ -429,7 +429,11 @@
                         <option value="interference">Interference</option>
                     </select>
                     <button id="btnClamp" style="flex:none;padding:6px 10px;font-size:0.78em;background:var(--cell-on);color:var(--bg)">Clamp</button>
-                    <button id="btnConserve" style="flex:none;padding:6px 10px;font-size:0.78em;background:var(--cell-on);color:var(--bg)">Conserve</button>
+                    <select id="btnConserve" style="flex:none;padding:6px 10px;font-size:0.78em;">
+                        <option value="none">No conserve</option>
+                        <option value="global_renorm" selected>Renorm</option>
+                        <option value="local_flux">Flux</option>
+                    </select>
                 </div>
                 <div class="control-row">
                     <button id="btnSound">Sound</button>
@@ -454,7 +458,7 @@
                      <p style="margin-top:auto;padding-top:1em;border-top:1px solid var(--border);">Concretely: the grid has 8 cells in a ring, each holding a value in [0, 1]. On each step, a cell's new value is computed as a weighted sum over all 8 possible binary neighborhood patterns (000 to 111). For each pattern, a fuzzy match function measures how well the actual left-center-right values fit that pattern. The match score is multiplied by the cell whose index corresponds to that pattern, and the 8 products are summed and clamped to [0, 1]. The pattern-to-cell mapping uses a Gray code ordering so adjacent patterns differ by exactly one bit.</p>
                     <p>The fuzzy match can be switched using the Fuzzy selector. Łukasiewicz uses max(0, a+b+c−2) — the standard t-norm, requiring the sum to exceed 2 with a hard zero floor. Sharp Łukasiewicz softens that with a square root. Nilpotent and Dual Nilpotent apply a hard threshold before taking the minimum. Interference squares a sum of square roots, which produces amplitude-like cancellation effects.</p>
                     <p>When energy conservation is on, the total sum of all cell values is rescaled after each step to match the previous total, which keeps the overall activation from drifting to zero or saturating to one.</p>
-                     <p style="margin-top:auto;padding-top:1em;border-top:1px solid var(--border);">Some attractors I found:</p>
+                     <p style="margin-top:auto;padding-top:1em;border-top:1px solid var(--border);">Some attractors I found (outdated / broken):</p>
                     <p>
                         <a href="#eyJyIjpbMC42MjU2MjUxOTc3Njg0Mzc2LDAuMDMyNTA2NTI5MTA2NjY2ODQsMC45NTQ3NjA5NzY1MDYzMDY2LDAuMjc2MjU4NjEwMTc2NzU0NDYsMC4xNDc3Nzg2MjMxODkyNTYyLDAuNjY5MTgwMjYyMjU1NjM3NiwxLDFdLCJsIjoic2hhcnBfbHVrYXNpZXdpY3oiLCJjIjoxLCJuIjoicGVudGF0b25pYyIsInYiOjF9" style="color:var(--cell-on)">short cycle</a>
                         <a href="#eyJyIjpbMSwwLjczNjQ0ODYyMTk3ODI3MDksMC42OTE4MjM4NDY3ODc4MDEzLDAuMzUyMjI5OTcyMTg2NDc2ODQsMC45MDM1ODExMTY1MDExNSwwLjI5MjQ2OTU3ODI2Nzg5MDEsMC42NjQ3MTYwMzMxMzQ3MzA2LDAuNjYzNzEzMzY1MTgzMzAwN10sImwiOiJzaGFycF9sdWthc2lld2ljeiIsImMiOjEsIm4iOiJwZW50YXRvbmljIiwidiI6MX0=" style="color:var(--cell-on)">medium cycle 1</a>
@@ -562,7 +566,7 @@
         let isPlaying = false;
         let playInterval = null;
         let clampValues = true;
-        let conserveEnergy = true;
+        let conservationMode = 'global_renorm'; // 'none' | 'global_renorm' | 'local_flux'
         let dragColIndex = -1;
 
         const barFills = [];
@@ -642,11 +646,10 @@
                 const c = (p & 1) ? R : 1 - R;
                 out += MATCH(a, b, c) * rule[p];
             }
-            return clampValues ? Math.min(1, out) : out;
+            return out;
         }
 
-        function step() {
-            const rule = history[history.length - 1];
+        function computeUnconstrainedNext(rule) {
             let next = new Array(COLS).fill(0);
             for (let i = 0; i < COLS; i++) {
                 const p  = GRAY[i];
@@ -654,24 +657,89 @@
                 const pR = GRAY[(i + 1) % COLS];
                 next[p] = nextCellValue(rule[pL], rule[p], rule[pR], rule);
             }
-            if (conserveEnergy) {
-                const E = rule.reduce((a, b) => a + b, 0);
-                const Enext = next.reduce((a, b) => a + b, 0);
-                if (Enext > 1e-10) {
-                    if (clampValues) {
-                        const scale = E / Enext;
-                        next = next.map(v => Math.min(1, v * scale));
-                        const deficit = E - next.reduce((a, b) => a + b, 0);
-                        if (deficit > 1e-10) {
-                            const headroom = next.map(v => 1 - v);
-                            const totalHeadroom = headroom.reduce((a, b) => a + b, 0);
-                            if (totalHeadroom > 1e-10)
-                                next = next.map((v, i) => v + deficit * headroom[i] / totalHeadroom);
-                        }
-                    } else {
-                        next = next.map(v => v * E / Enext);
-                    }
+            return next;
+        }
+
+        function computeLocalFluxNext(rule) {
+            let next = new Array(COLS).fill(0);
+            for (let i = 0; i < COLS; i++) {
+                const p  = GRAY[i];
+                const iL = (i - 1 + COLS) % COLS;
+                const iR = (i + 1) % COLS;
+                const pL = GRAY[iL];
+                const pR = GRAY[iR];
+                const mass = rule[p];
+                const sL = Math.max(0, nextCellValue(
+                    rule[GRAY[(iL - 1 + COLS) % COLS]],
+                    rule[pL],
+                    rule[GRAY[(iL + 1) % COLS]],
+                    rule
+                ));
+                const sC = Math.max(0, nextCellValue(
+                    rule[pL],
+                    rule[p],
+                    rule[pR],
+                    rule
+                ));
+                const sR = Math.max(0, nextCellValue(
+                    rule[GRAY[(iR - 1 + COLS) % COLS]],
+                    rule[pR],
+                    rule[GRAY[(iR + 1) % COLS]],
+                    rule
+                ));
+                const total = sL + sC + sR;
+                if (total <= 1e-12) {
+                    next[p] += mass;
+                } else {
+                    next[pL] += mass * sL / total;
+                    next[p]  += mass * sC / total;
+                    next[pR] += mass * sR / total;
                 }
+            }
+            return next;
+        }
+
+        function applyClamp(next) {
+            return next.map(v => Math.min(1, Math.max(0, v)));
+        }
+
+        function applyGlobalRenorm(rule, next) {
+            const E = rule.reduce((a, b) => a + b, 0);
+            const Enext = next.reduce((a, b) => a + b, 0);
+            if (Enext <= 1e-10) return next;
+            if (clampValues) {
+                const scale = E / Enext;
+                next = next.map(v => Math.min(1, v * scale));
+                const deficit = E - next.reduce((a, b) => a + b, 0);
+                if (deficit > 1e-10) {
+                    const headroom = next.map(v => 1 - v);
+                    const totalHeadroom = headroom.reduce((a, b) => a + b, 0);
+                    if (totalHeadroom > 1e-10)
+                        next = next.map((v, i) => v + deficit * headroom[i] / totalHeadroom);
+                }
+            } else {
+                next = next.map(v => v * E / Enext);
+            }
+            return next;
+        }
+
+        function step() {
+            const rule = history[history.length - 1];
+            let next;
+            switch (conservationMode) {
+                case 'local_flux':
+                    next = computeLocalFluxNext(rule);
+                    if (clampValues) next = applyClamp(next);
+                    break;
+                case 'global_renorm':
+                    next = computeUnconstrainedNext(rule);
+                    next = applyGlobalRenorm(rule, next);
+                    break;
+                case 'none':
+                default:
+                    next = computeUnconstrainedNext(rule);
+                    if (clampValues) next = applyClamp(next);
+                    break;
             }
             history.push(next);
             if (history.length > ROWS) history.shift();
@@ -782,8 +850,11 @@
         btnStep.onclick = () => { if (!isPlaying) step(); };
 
         function getShaderEnergyMode() {
-            if (!clampValues) return conserveEnergy ? 3 : 2;
-            return conserveEnergy ? 1 : 0;
+            switch (conservationMode) {
+                case 'global_renorm': return clampValues ? 1 : 3;
+                case 'local_flux':    return clampValues ? 4 : 5;
+                default:              return clampValues ? 0 : 2;
+            }
         }
 
         const btnClamp = document.getElementById('btnClamp');
@@ -795,10 +866,14 @@
         };
 
         const btnConserve = document.getElementById('btnConserve');
-        btnConserve.onclick = () => {
-            conserveEnergy = !conserveEnergy;
-            btnConserve.style.background = conserveEnergy ? 'var(--cell-on)' : '';
-            btnConserve.style.color = conserveEnergy ? 'var(--bg)' : '';
+
+        function updateConserveButton() {
+            btnConserve.value = conservationMode;
+            if (fractalShader) fractalShader.energyMode = getShaderEnergyMode();
+        }
+
+        btnConserve.onchange = () => {
+            conservationMode = btnConserve.value;
             if (fractalShader) fractalShader.energyMode = getShaderEnergyMode();
         };
 
@@ -1124,30 +1199,20 @@
                         s[GRAY[fractalAxisJ]] = Math.max(0, Math.min(1, uvY));
 
                         const doStep = cur => {
-                            const next = new Array(8).fill(0);
-                            for (let i = 0; i < 8; i++) {
-                                const p = GRAY[i], pL = GRAY[(i + 7) % 8], pR = GRAY[(i + 1) % 8];
-                                next[p] = nextCellValue(cur[pL], cur[p], cur[pR], cur);
-                            }
-                            if (conserveEnergy) {
-                                const E = cur.reduce((a, b) => a + b, 0);
-                                const En = next.reduce((a, b) => a + b, 0);
-                                if (En > 1e-10) {
-                                    if (clampValues) {
-                                        const sc = E / En;
-                                        for (let i = 0; i < 8; i++) next[i] = Math.min(1, next[i] * sc);
-                                        const deficit = E - next.reduce((a, b) => a + b, 0);
-                                        if (deficit > 1e-10) {
-                                            const hr = next.map(v => 1 - v), th = hr.reduce((a, b) => a + b, 0);
-                                            if (th > 1e-10) for (let i = 0; i < 8; i++) next[i] += deficit * hr[i] / th;
-                                        }
-                                    } else {
-                                        const sc = E / En;
-                                        for (let i = 0; i < 8; i++) next[i] *= sc;
-                                    }
+                            switch (conservationMode) {
+                                case 'local_flux': {
+                                    let n = computeLocalFluxNext(cur);
+                                    return clampValues ? applyClamp(n) : n;
+                                }
+                                case 'global_renorm': {
+                                    let n = computeUnconstrainedNext(cur);
+                                    return applyGlobalRenorm(cur, n);
+                                }
+                                default: {
+                                    let n = computeUnconstrainedNext(cur);
+                                    return clampValues ? applyClamp(n) : n;
                                 }
                             }
-                            return next;
                         };
 
                         const isUniform = st => Math.max(...st) < 0.005;
@@ -1257,7 +1322,7 @@
                 r: [...rule],
                 l: logicType.value,
                 cl: clampValues ? 1 : 0,
-                cv: conserveEnergy ? 1 : 0,
+                cm: conservationMode,
                 n: noteMode.value,
                 vm: currentVisMode
             }));
@@ -1272,14 +1337,15 @@
                 clampValues = 'cl' in s ? !!s.cl : true;
                 btnClamp.style.background = clampValues ? 'var(--cell-on)' : '';
                 btnClamp.style.color = clampValues ? 'var(--bg)' : '';
-                if ('cv' in s) {
-                    conserveEnergy = !!s.cv;
-                    btnConserve.style.background = conserveEnergy ? 'var(--cell-on)' : '';
-                    btnConserve.style.color = conserveEnergy ? 'var(--bg)' : '';
+                if ('cm' in s) {
+                    conservationMode = s.cm;
+                    updateConserveButton();
+                } else if ('cv' in s) {
+                    conservationMode = s.cv ? 'global_renorm' : 'none';
+                    updateConserveButton();
                 } else if ('c' in s) {
-                    conserveEnergy = !!s.c;
-                    btnConserve.style.background = conserveEnergy ? 'var(--cell-on)' : '';
-                    btnConserve.style.color = conserveEnergy ? 'var(--bg)' : '';
+                    conservationMode = s.c ? 'global_renorm' : 'none';
+                    updateConserveButton();
                 }
                 if (s.n) {
                     noteMode.value = s.n;
@@ -1393,10 +1459,37 @@
                             float c = ((p & 1) != 0) ? R : 1.0-R;
                             o += mfn(a,b,c) * getv(sa,sb,p);
                         }
-                        return (u_energyMode >= 2) ? o : min(1.0, o);
+                        return o;
                     }
 
                     void rcaStep(inout vec4 sa, inout vec4 sb) {
+                        if (u_energyMode == 4 || u_energyMode == 5) {
+                            float next[8];
+                            for (int k = 0; k < 8; k++) next[k] = 0.0;
+                            for (int i = 0; i < 8; i++) {
+                                int p  = gv(i);
+                                int pL = gv((i + 7) % 8);
+                                int pR = gv((i + 1) % 8);
+                                float mass = getv(sa, sb, p);
+                                float sL = max(0.0, nextcv(getv(sa,sb,gv((i+6)%8)), getv(sa,sb,pL), getv(sa,sb,p),            sa, sb));
+                                float sC = max(0.0, nextcv(getv(sa,sb,pL),           getv(sa,sb,p),  getv(sa,sb,pR),           sa, sb));
+                                float sR = max(0.0, nextcv(getv(sa,sb,p),            getv(sa,sb,pR), getv(sa,sb,gv((i+2)%8)), sa, sb));
+                                float total = sL + sC + sR;
+                                if (total <= 1e-12) {
+                                    next[p] += mass;
+                                } else {
+                                    next[pL] += mass * sL / total;
+                                    next[p]  += mass * sC / total;
+                                    next[pR] += mass * sR / total;
+                                }
+                            }
+                            for (int k = 0; k < 8; k++) {
+                                float v = (u_energyMode == 4) ? min(1.0, next[k]) : next[k];
+                                setv(sa, sb, k, v);
+                            }
+                            return;
+                        }
+
                         vec4 na = vec4(0.0), nb = vec4(0.0);
                         for (int i = 0; i < 8; i++) {
                             int p=gv(i), pL=gv((i+7)%8), pR=gv((i+1)%8);
@@ -1419,6 +1512,7 @@
                                 } else { na *= sc; nb *= sc; }
                             }
                         }
+                        if (u_energyMode == 0) { na = min(vec4(1.0), na); nb = min(vec4(1.0), nb); }
                         sa = na; sb = nb;
                     }
 
@@ -1660,6 +1754,7 @@
         history = [Array.from({length: COLS}, () => Math.random())];
         const hashState = window.location.hash.slice(1);
         if (hashState) applyState(hashState);
+        updateConserveButton();
         updateLayout();
         syncUI();
     </script>
