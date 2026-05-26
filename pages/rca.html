@@ -984,6 +984,13 @@
             if (topologyMode !== 'q3' && topologyMode !== 'dynamic') {
                 RING =[...RING_CYCLES[parseInt(topologyMode.slice(4))]];
             }
+            const fractalOption = visModeEl.querySelector('option[value="fractal"]');
+            if (topologyMode === 'dynamic') {
+                fractalOption.disabled = true;
+                if (currentVisMode === 'fractal') setVisMode('desc');
+            } else {
+                fractalOption.disabled = false;
+            }
             if (fractalShader) {
                 fractalShader.topoMode = topologyMode === 'q3' ? 1 : 0;
                 if (topologyMode !== 'dynamic') fractalShader.ring = [...RING];
