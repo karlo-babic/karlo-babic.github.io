@@ -419,8 +419,17 @@
                         <option value="fractal">Fractal</option>
                     </select>
                 </div>
-                <div class="control-row" style="align-items:center;">
-                    <span style="color:var(--text-muted);font-size:0.75em;white-space:nowrap;flex:none;">Fuzzy:</span>
+                <div class="control-row">
+                    <select id="topoMode" style="flex:none;">
+                        <option value="ring0">Ring 1</option>
+                        <option value="ring1">Ring 2</option>
+                        <option value="ring2">Ring 3</option>
+                        <option value="ring3">Ring 4</option>
+                        <option value="ring4">Ring 5</option>
+                        <option value="ring5">Ring 6</option>
+                        <option value="q3">Q3</option>
+                        <option value="dynamic">Dynamic</option>
+                    </select>
                     <select id="logicType">
                         <option value="lukasiewicz">Łukasiewicz</option>
                         <option value="sharp_lukasiewicz">Sharp Łukasiewicz</option>
@@ -428,8 +437,8 @@
                         <option value="dual_nilpotent">Dual Nilpotent</option>
                         <option value="interference">Interference</option>
                     </select>
-                    <button id="btnClamp" style="flex:none;padding:6px 10px;font-size:0.78em;background:var(--cell-on);color:var(--bg)">Clamp</button>
-                    <select id="btnConserve" style="flex:none;padding:6px 10px;font-size:0.78em;">
+                    <button id="btnClamp" style="flex:none;background:var(--cell-on);color:var(--bg)">Clamp</button>
+                    <select id="btnConserve" style="flex:none;">
                         <option value="none">No conserve</option>
                         <option value="global_renorm" selected>Renorm</option>
                         <option value="local_flux">Flux</option>
@@ -550,7 +559,15 @@
     <script>
         const COLS = 8;
         let ROWS = 8;
-        const GRAY = [0, 1, 3, 2, 6, 7, 5, 4];
+        const RING_CYCLES = [
+            [0,1,3,2,6,7,5,4],
+            [0,1,3,7,5,4,6,2],
+            [0,1,5,4,6,7,3,2],
+            [0,1,5,7,3,2,6,4],
+            [0,2,3,1,5,7,6,4],
+            [0,2,6,7,3,1,5,4],
+        ];
+        let RING = [...RING_CYCLES[0]];
 
         const canvas = document.getElementById('caCanvas');
         const ctx = canvas.getContext('2d');
@@ -567,6 +584,7 @@
         let playInterval = null;
         let clampValues = true;
         let conservationMode = 'global_renorm'; // 'none' | 'global_renorm' | 'local_flux'
+        let topologyMode = 'ring0'; // 'ring0'-'ring5' | 'q3'
         let dragColIndex = -1;
 
         const barFills = [];
@@ -600,7 +618,7 @@
             const rect = inputEditor.children[dragColIndex].querySelector('.bar-area').getBoundingClientRect();
             let val = 1.0 - ((e.clientY - rect.top) / rect.height);
             val = Math.max(0, Math.min(1, val));
-            history[history.length - 1][GRAY[dragColIndex]] = val;
+            history[history.length - 1][RING[dragColIndex]] = val;
             syncUI();
             draw();
         }
@@ -609,7 +627,7 @@
             const rule = history[history.length - 1];
             let html = '';
             for (let i = 0; i < 8; i++) {
-                const p = GRAY[i];
+                const p = RING[i];
                 html += `<div class="rule-col" style="opacity: ${(0.1 + rule[p] * 0.9).toFixed(3)}">
                     <div class="neighborhood">
                         <div class="mini-cell ${(p >> 2) & 1 ? 'active' : ''}"></div>
@@ -652,27 +670,50 @@
         function computeUnconstrainedNext(rule) {
             let next = new Array(COLS).fill(0);
             for (let i = 0; i < COLS; i++) {
-                const p  = GRAY[i];
-                const pL = GRAY[(i - 1 + COLS) % COLS];
-                const pR = GRAY[(i + 1) % COLS];
-                next[p] = nextCellValue(rule[pL], rule[p], rule[pR], rule);
+                const p = RING[i];
+                if (topologyMode === 'q3') {
+                    next[p] = nextCellValue(rule[p ^ 4], rule[p ^ 2], rule[p ^ 1], rule);
+                } else {
+                    const pL = RING[(i - 1 + COLS) % COLS];
+                    const pR = RING[(i + 1) % COLS];
+                    next[p] = nextCellValue(rule[pL], rule[p], rule[pR], rule);
+                }
             }
             return next;
         }
 
         function computeLocalFluxNext(rule) {
             let next = new Array(COLS).fill(0);
+            if (topologyMode === 'q3') {
+                for (let i = 0; i < COLS; i++) {
+                    const p = RING[i];
+                    const n1 = p ^ 1, n2 = p ^ 2, n4 = p ^ 4;
+                    const mass = rule[p];
+                    const s1 = Math.max(0, nextCellValue(rule[n1^4], rule[n1^2], rule[n1^1], rule));
+                    const s2 = Math.max(0, nextCellValue(rule[n2^4], rule[n2^2], rule[n2^1], rule));
+                    const s4 = Math.max(0, nextCellValue(rule[n4^4], rule[n4^2], rule[n4^1], rule));
+                    const total = s1 + s2 + s4;
+                    if (total <= 1e-12) {
+                        next[p] += mass;
+                    } else {
+                        next[n1] += mass * s1 / total;
+                        next[n2] += mass * s2 / total;
+                        next[n4] += mass * s4 / total;
+                    }
+                }
+                return next;
+            }
             for (let i = 0; i < COLS; i++) {
-                const p  = GRAY[i];
+                const p  = RING[i];
                 const iL = (i - 1 + COLS) % COLS;
                 const iR = (i + 1) % COLS;
-                const pL = GRAY[iL];
-                const pR = GRAY[iR];
+                const pL = RING[iL];
+                const pR = RING[iR];
                 const mass = rule[p];
                 const sL = Math.max(0, nextCellValue(
-                    rule[GRAY[(iL - 1 + COLS) % COLS]],
+                    rule[RING[(iL - 1 + COLS) % COLS]],
                     rule[pL],
-                    rule[GRAY[(iL + 1) % COLS]],
+                    rule[RING[(iL + 1) % COLS]],
                     rule
                 ));
                 const sC = Math.max(0, nextCellValue(
@@ -682,9 +723,9 @@
                     rule
                 ));
                 const sR = Math.max(0, nextCellValue(
-                    rule[GRAY[(iR - 1 + COLS) % COLS]],
+                    rule[RING[(iR - 1 + COLS) % COLS]],
                     rule[pR],
-                    rule[GRAY[(iR + 1) % COLS]],
+                    rule[RING[(iR + 1) % COLS]],
                     rule
                 ));
                 const total = sL + sC + sR;
@@ -697,6 +738,64 @@
                 }
             }
             return next;
+        }
+
+        function computeSimilarityMatrix(state) {
+            const logic = logicType.value;
+            const cost = Array.from({length: 8}, () => new Array(8).fill(0));
+            for (let i = 0; i < 8; i++) {
+                const L = state[RING[(i - 1 + 8) % 8]];
+                const C = state[RING[i]];
+                const R = state[RING[(i + 1) % 8]];
+                for (let q = 0; q < 8; q++) {
+                    const a = (q & 4) ? L : 1 - L;
+                    const b = (q & 2) ? C : 1 - C;
+                    const c = (q & 1) ? R : 1 - R;
+                    let m;
+                    switch (logic) {
+                        case 'lukasiewicz':       m = Math.max(0, a + b + c - 2); break;
+                        case 'nilpotent':         m = (a + b + c > 2) ? Math.max(0, Math.min(a, b, c)) : 0; break;
+                        case 'sharp_lukasiewicz': m = Math.pow(Math.max(0, a + b + c - 2), 0.5); break;
+                        case 'dual_nilpotent':    m = (a + b + c > 2.2) ? Math.max(0, Math.min(a, b, c)) : 0; break;
+                        case 'interference':      { const s = Math.sqrt(Math.max(0,a)) + Math.sqrt(Math.max(0,b)) + Math.sqrt(Math.max(0,c)) - 2; m = s > 0 ? s * s : 0; break; }
+                        default:                  m = 0;
+                    }
+                    cost[i][q] = m;
+                }
+            }
+            return cost;
+        }
+
+        function solveMaxAssignment(cost) {
+            const n = 8;
+            const assigned = new Uint8Array(n);
+            const perm = new Int32Array(n);
+            let bestCost = -1;
+            const bestPerm = new Int32Array(n);
+
+            function search(pos, current) {
+                if (pos === n) {
+                    if (current > bestCost) { bestCost = current; bestPerm.set(perm); }
+                    return;
+                }
+                let bound = current;
+                for (let i = pos; i < n; i++) {
+                    let mx = 0;
+                    for (let p = 0; p < n; p++) if (!assigned[p] && cost[i][p] > mx) mx = cost[i][p];
+                    bound += mx;
+                }
+                if (bound <= bestCost) return;
+                for (let p = 0; p < n; p++) {
+                    if (!assigned[p]) {
+                        assigned[p] = 1; perm[pos] = p;
+                        search(pos + 1, current + cost[pos][p]);
+                        assigned[p] = 0;
+                    }
+                }
+            }
+
+            search(0, 0);
+            return Array.from(bestPerm);
         }
 
         function applyClamp(next) {
@@ -725,6 +824,9 @@
 
         function step() {
             const rule = history[history.length - 1];
+            if (topologyMode === 'dynamic') {
+                RING =solveMaxAssignment(computeSimilarityMatrix(rule));
+            }
             let next;
             switch (conservationMode) {
                 case 'local_flux':
@@ -773,7 +875,7 @@
                 const t = (x / w) * duration;
                 let y = 0;
                 for (let i = 0; i < COLS; i++)
-                    y += Math.pow(latest[GRAY[i]], 4) * Math.sin(2 * Math.PI * NOTE_FREQS[i] * t);
+                    y += Math.pow(latest[RING[i]], 4) * Math.sin(2 * Math.PI * NOTE_FREQS[i] * t);
                 y /= COLS;
                 const py = h / 2 - y * h * 0.45;
                 if (x === 0) waveCtx.moveTo(x, py);
@@ -785,7 +887,7 @@
         function syncUI() {
             const latest = history[history.length - 1];
             for (let i = 0; i < COLS; i++) {
-                const v = latest[GRAY[i]];
+                const v = latest[RING[i]];
                 barFills[i].style.height = `${Math.min(1, v) * 100}%`;
                 barFills[i].style.background = v > 1 ? 'var(--highlight)' : '';
                 textInputs[i].value = v.toFixed(2);
@@ -808,7 +910,7 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             history.forEach((row, rowIdx) => {
                 for (let pos = 0; pos < COLS; pos++) {
-                    const val = row[GRAY[pos]];
+                    const val = row[RING[pos]];
                     let cr, cg, cb;
                     if (val <= 1) {
                         cr = 15 + val * 41; cg = 23 + val * 166; cb = 42 + val * 206;
@@ -875,6 +977,18 @@
         btnConserve.onchange = () => {
             conservationMode = btnConserve.value;
             if (fractalShader) fractalShader.energyMode = getShaderEnergyMode();
+        };
+
+        document.getElementById('topoMode').onchange = function() {
+            topologyMode = this.value;
+            if (topologyMode !== 'q3' && topologyMode !== 'dynamic') {
+                RING =[...RING_CYCLES[parseInt(topologyMode.slice(4))]];
+            }
+            if (fractalShader) {
+                fractalShader.topoMode = topologyMode === 'q3' ? 1 : 0;
+                if (topologyMode !== 'dynamic') fractalShader.ring = [...RING];
+            }
+            syncUI(); draw();
         };
 
         btnRandomize.onclick = () => {
@@ -945,7 +1059,7 @@
             const latest = history[history.length - 1];
             const t = audioCtx.currentTime;
             for (let i = 0; i < COLS; i++)
-                noteGains[i].gain.setTargetAtTime(Math.pow(latest[GRAY[i]], 4) * 0.2, t, 0.05);
+                noteGains[i].gain.setTargetAtTime(Math.pow(latest[RING[i]], 4) * 0.2, t, 0.05);
         }
 
         const btnSound = document.getElementById('btnSound');
@@ -987,8 +1101,8 @@
             let re = 0, im = 0;
             for (let i = 0; i < COLS; i++) {
                 const angle = 2 * Math.PI * k * i / COLS;
-                re += state[GRAY[i]] * Math.cos(angle);
-                im -= state[GRAY[i]] * Math.sin(angle);
+                re += state[RING[i]] * Math.cos(angle);
+                im -= state[RING[i]] * Math.sin(angle);
             }
             return { re, im };
         }
@@ -1179,13 +1293,15 @@
                     fractalShader = new RCAFractalShader(document.getElementById('fractalCanvasWrap'), {
                         logicType: getLogicTypeInt(),
                         energyMode: getShaderEnergyMode(),
+                        topoMode: topologyMode === 'q3' ? 1 : 0,
+                        ring: [...RING],
                         axisI: fractalAxisI, axisJ: fractalAxisJ,
                         maxIter: fractalMaxIter, maxCycleLen: fractalMaxCycleLen,
                     });
                     fractalShader.state = [...history[history.length - 1]];
                     fractalShader.onPointDrag = (uvX, uvY) => {
-                        history[history.length - 1][GRAY[fractalAxisI]] = Math.max(0, Math.min(1, uvX));
-                        history[history.length - 1][GRAY[fractalAxisJ]] = Math.max(0, Math.min(1, uvY));
+                        history[history.length - 1][RING[fractalAxisI]] = Math.max(0, Math.min(1, uvX));
+                        history[history.length - 1][RING[fractalAxisJ]] = Math.max(0, Math.min(1, uvY));
                         syncUI();
                         draw();
                     };
@@ -1195,8 +1311,8 @@
                         const totalIter   = cycleStart + maxCycleLen;
 
                         let s = [...history[history.length - 1]];
-                        s[GRAY[fractalAxisI]] = Math.max(0, Math.min(1, uvX));
-                        s[GRAY[fractalAxisJ]] = Math.max(0, Math.min(1, uvY));
+                        s[RING[fractalAxisI]] = Math.max(0, Math.min(1, uvX));
+                        s[RING[fractalAxisJ]] = Math.max(0, Math.min(1, uvY));
 
                         const doStep = cur => {
                             switch (conservationMode) {
@@ -1323,6 +1439,7 @@
                 l: logicType.value,
                 cl: clampValues ? 1 : 0,
                 cm: conservationMode,
+                t: topologyMode,
                 n: noteMode.value,
                 vm: currentVisMode
             }));
@@ -1346,6 +1463,17 @@
                 } else if ('c' in s) {
                     conservationMode = s.c ? 'global_renorm' : 'none';
                     updateConserveButton();
+                }
+                if (s.t) {
+                    topologyMode = s.t;
+                    document.getElementById('topoMode').value = topologyMode;
+                    if (topologyMode !== 'q3' && topologyMode !== 'dynamic') {
+                        RING =[...RING_CYCLES[parseInt(topologyMode.slice(4))]];
+                    }
+                    if (fractalShader) {
+                        fractalShader.topoMode = topologyMode === 'q3' ? 1 : 0;
+                        if (topologyMode !== 'dynamic') fractalShader.ring = [...RING];
+                    }
                 }
                 if (s.n) {
                     noteMode.value = s.n;
@@ -1379,7 +1507,7 @@
 
         // ── RCA Fractal Shader ─────────────────────────────────────────────
         class RCAFractalShader {
-            constructor(screenEl, {logicType=0, energyMode=1, axisI=0, axisJ=1, maxIter=50, maxCycleLen=20} = {}) {
+            constructor(screenEl, {logicType=0, energyMode=1, topoMode=0, ring=[0,1,3,2,6,7,5,4], axisI=0, axisJ=1, maxIter=50, maxCycleLen=20} = {}) {
                 this.screenEl = screenEl;
                 this.canvas = document.createElement('canvas');
                 this.canvas.style.cssText = 'display:block;position:absolute;top:0;left:0;';
@@ -1389,6 +1517,8 @@
 
                 this.logicType = logicType;
                 this.energyMode = energyMode;
+                this.topoMode = topoMode;
+                this.ring = ring;
                 this.axisI = axisI; this.axisJ = axisJ;
                 this.maxIter = maxIter; this.maxCycleLen = maxCycleLen;
                 this.state = new Array(8).fill(0.5);
@@ -1420,11 +1550,16 @@
                     uniform int u_maxCycleLen;
                     uniform int u_logicType;
                     uniform int u_energyMode;
+                    uniform int u_topoMode;
+                    uniform ivec4 u_ringA;
+                    uniform ivec4 u_ringB;
                     out vec4 fragColor;
 
                     int gv(int i) {
-                        if (i==0) return 0; if (i==1) return 1; if (i==2) return 3; if (i==3) return 2;
-                        if (i==4) return 6; if (i==5) return 7; if (i==6) return 5; return 4;
+                        if (i==0) return u_ringA.x; if (i==1) return u_ringA.y;
+                        if (i==2) return u_ringA.z; if (i==3) return u_ringA.w;
+                        if (i==4) return u_ringB.x; if (i==5) return u_ringB.y;
+                        if (i==6) return u_ringB.z; return u_ringB.w;
                     }
 
                     float getv(vec4 a, vec4 b, int i) {
@@ -1466,21 +1601,34 @@
                         if (u_energyMode == 4 || u_energyMode == 5) {
                             float next[8];
                             for (int k = 0; k < 8; k++) next[k] = 0.0;
-                            for (int i = 0; i < 8; i++) {
-                                int p  = gv(i);
-                                int pL = gv((i + 7) % 8);
-                                int pR = gv((i + 1) % 8);
-                                float mass = getv(sa, sb, p);
-                                float sL = max(0.0, nextcv(getv(sa,sb,gv((i+6)%8)), getv(sa,sb,pL), getv(sa,sb,p),            sa, sb));
-                                float sC = max(0.0, nextcv(getv(sa,sb,pL),           getv(sa,sb,p),  getv(sa,sb,pR),           sa, sb));
-                                float sR = max(0.0, nextcv(getv(sa,sb,p),            getv(sa,sb,pR), getv(sa,sb,gv((i+2)%8)), sa, sb));
-                                float total = sL + sC + sR;
-                                if (total <= 1e-12) {
-                                    next[p] += mass;
-                                } else {
-                                    next[pL] += mass * sL / total;
-                                    next[p]  += mass * sC / total;
-                                    next[pR] += mass * sR / total;
+                            if (u_topoMode == 1) {
+                                for (int p = 0; p < 8; p++) {
+                                    int n1=p^1, n2=p^2, n4=p^4;
+                                    float mass = getv(sa, sb, p);
+                                    float s1 = max(0.0, nextcv(getv(sa,sb,n1^4), getv(sa,sb,n1^2), getv(sa,sb,n1^1), sa, sb));
+                                    float s2 = max(0.0, nextcv(getv(sa,sb,n2^4), getv(sa,sb,n2^2), getv(sa,sb,n2^1), sa, sb));
+                                    float s4 = max(0.0, nextcv(getv(sa,sb,n4^4), getv(sa,sb,n4^2), getv(sa,sb,n4^1), sa, sb));
+                                    float total = s1 + s2 + s4;
+                                    if (total <= 1e-12) { next[p] += mass; }
+                                    else { next[n1] += mass*s1/total; next[n2] += mass*s2/total; next[n4] += mass*s4/total; }
+                                }
+                            } else {
+                                for (int i = 0; i < 8; i++) {
+                                    int p  = gv(i);
+                                    int pL = gv((i + 7) % 8);
+                                    int pR = gv((i + 1) % 8);
+                                    float mass = getv(sa, sb, p);
+                                    float sL = max(0.0, nextcv(getv(sa,sb,gv((i+6)%8)), getv(sa,sb,pL), getv(sa,sb,p),            sa, sb));
+                                    float sC = max(0.0, nextcv(getv(sa,sb,pL),           getv(sa,sb,p),  getv(sa,sb,pR),           sa, sb));
+                                    float sR = max(0.0, nextcv(getv(sa,sb,p),            getv(sa,sb,pR), getv(sa,sb,gv((i+2)%8)), sa, sb));
+                                    float total = sL + sC + sR;
+                                    if (total <= 1e-12) {
+                                        next[p] += mass;
+                                    } else {
+                                        next[pL] += mass * sL / total;
+                                        next[p]  += mass * sC / total;
+                                        next[pR] += mass * sR / total;
+                                    }
                                 }
                             }
                             for (int k = 0; k < 8; k++) {
@@ -1491,9 +1639,15 @@
                         }
 
                         vec4 na = vec4(0.0), nb = vec4(0.0);
-                        for (int i = 0; i < 8; i++) {
-                            int p=gv(i), pL=gv((i+7)%8), pR=gv((i+1)%8);
-                            setv(na,nb,p, nextcv(getv(sa,sb,pL), getv(sa,sb,p), getv(sa,sb,pR), sa,sb));
+                        if (u_topoMode == 1) {
+                            for (int p = 0; p < 8; p++) {
+                                setv(na,nb,p, nextcv(getv(sa,sb,p^4), getv(sa,sb,p^2), getv(sa,sb,p^1), sa,sb));
+                            }
+                        } else {
+                            for (int i = 0; i < 8; i++) {
+                                int p=gv(i), pL=gv((i+7)%8), pR=gv((i+1)%8);
+                                setv(na,nb,p, nextcv(getv(sa,sb,pL), getv(sa,sb,p), getv(sa,sb,pR), sa,sb));
+                            }
                         }
                         if (u_energyMode == 1 || u_energyMode == 3) {
                             float E  = sa.x+sa.y+sa.z+sa.w+sb.x+sb.y+sb.z+sb.w;
@@ -1613,6 +1767,8 @@
                     stateB: gl.getUniformLocation(p,'u_stateB'), cycleStart: gl.getUniformLocation(p,'u_cycleStart'),
                     maxCycleLen: gl.getUniformLocation(p,'u_maxCycleLen'),
                     logicType: gl.getUniformLocation(p,'u_logicType'), energyMode: gl.getUniformLocation(p,'u_energyMode'),
+                    topoMode: gl.getUniformLocation(p,'u_topoMode'),
+                    ringA: gl.getUniformLocation(p,'u_ringA'), ringB: gl.getUniformLocation(p,'u_ringB'),
                 };
             }
 
@@ -1631,17 +1787,44 @@
                 gl.uniform1i(u.maxCycleLen, this.maxCycleLen);
                 gl.uniform1i(u.logicType, this.logicType);
                 gl.uniform1i(u.energyMode, this.energyMode);
+                gl.uniform1i(u.topoMode, this.topoMode);
+                gl.uniform4iv(u.ringA, this.ring.slice(0, 4));
+                gl.uniform4iv(u.ringB, this.ring.slice(4, 8));
+            }
+
+            _isDirty() {
+                const snap = this._snapshot;
+                if (!snap) return true;
+                if (snap.zoom !== this.zoom || snap.offX !== this.offset.x || snap.offY !== this.offset.y) return true;
+                if (snap.axisI !== this.axisI || snap.axisJ !== this.axisJ) return true;
+                if (snap.maxIter !== this.maxIter || snap.maxCycleLen !== this.maxCycleLen) return true;
+                if (snap.logicType !== this.logicType || snap.energyMode !== this.energyMode || snap.topoMode !== this.topoMode) return true;
+                for (let i = 0; i < 8; i++) if (snap.state[i] !== this.state[i] || snap.ring[i] !== this.ring[i]) return true;
+                return false;
+            }
+
+            _saveSnapshot() {
+                this._snapshot = {
+                    zoom: this.zoom, offX: this.offset.x, offY: this.offset.y,
+                    axisI: this.axisI, axisJ: this.axisJ,
+                    maxIter: this.maxIter, maxCycleLen: this.maxCycleLen,
+                    logicType: this.logicType, energyMode: this.energyMode, topoMode: this.topoMode,
+                    state: [...this.state], ring: [...this.ring],
+                };
             }
 
             _run() {
                 if (!this.isRunning) return;
-                this._setUniforms();
-                this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
+                if (this._isDirty()) {
+                    this._setUniforms();
+                    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
+                    this._saveSnapshot();
+                }
                 this._updatePoint();
                 requestAnimationFrame(this._run);
             }
 
-            _gv(i) { return [0,1,3,2,6,7,5,4][i]; }
+            _gv(i) { return this.ring[i]; }
 
             _createPointElements() {
                 this.onPointDrag = null;
@@ -1711,6 +1894,7 @@
                 if (!rect.width || !rect.height) return;
                 this.canvas.width = rect.width; this.canvas.height = rect.height;
                 this.gl.viewport(0, 0, rect.width, rect.height);
+                this._snapshot = null;
             }
 
             pause() { this.isRunning = false; }
