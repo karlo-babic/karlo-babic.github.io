@@ -63,7 +63,8 @@ class EvolTreeProgram {
         this._updateAndRender();
 
         if (this.population.length === 0) {
-            this._initializePopulation();
+            this.stop();
+            return;
         }
 
         this.generation++;
