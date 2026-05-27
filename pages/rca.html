@@ -582,6 +582,7 @@
         const visualizerEl = document.getElementById('visualizer');
 
         let history = [];
+        let historyRings = [];
         let isPlaying = false;
         let playInterval = null;
         let clampValues = true;
@@ -849,7 +850,8 @@
                     break;
             }
             history.push(next);
-            if (history.length > ROWS) history.shift();
+            historyRings.push([...RING]);
+            if (history.length > ROWS) { history.shift(); historyRings.shift(); }
             syncUI();
             draw();
         }
@@ -914,8 +916,9 @@
             const cellH = canvas.height / ROWS;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             history.forEach((row, rowIdx) => {
+                const ring = topologyMode === 'dynamic' ? (historyRings[rowIdx] || RING) : RING;
                 for (let pos = 0; pos < COLS; pos++) {
-                    const val = row[RING[pos]];
+                    const val = row[ring[pos]];
                     let cr, cg, cb;
                     if (val <= 1) {
                         cr = 15 + val * 41; cg = 23 + val * 166; cb = 42 + val * 206;
@@ -941,8 +944,8 @@
             waveCanvas.height = waveCanvas.offsetHeight;
             if (currentVisMode === 'phase') sizeFourierCanvas();
             if (currentVisMode === 'fractal' && fractalShader) fractalShader.onResize();
-            while (history.length < ROWS) history.unshift(new Array(COLS).fill(0));
-            if (history.length > ROWS) history = history.slice(-ROWS);
+            while (history.length < ROWS) { history.unshift(new Array(COLS).fill(0)); historyRings.unshift([...RING]); }
+            if (history.length > ROWS) { history = history.slice(-ROWS); historyRings = historyRings.slice(-ROWS); }
             draw();
         }
 
@@ -1221,7 +1224,12 @@
 
             let minX, maxX, minY, maxY;
             if (vizMode === 'entropy_time') {
-                minX = 0; maxX = 1; minY = 0; maxY = 0.5;
+                minX = 0; minY = 0; maxX = 1; maxY = 0.5;
+                for (const pt of phaseTrace) {
+                    if (pt.x > maxX) maxX = pt.x;
+                    if (pt.y > maxY) maxY = pt.y;
+                }
+                maxX *= 1.1; maxY *= 1.1;
             } else {
                 minX = Infinity; maxX = -Infinity; minY = Infinity; maxY = -Infinity;
                 for (const pt of phaseTrace) {
@@ -1952,6 +1960,7 @@
 
         window.addEventListener('resize', updateLayout);
         history = [Array.from({length: COLS}, () => Math.random())];
+        historyRings = [[...RING]];
         const hashState = window.location.hash.slice(1);
         if (hashState) applyState(hashState);
         updateConserveButton();
