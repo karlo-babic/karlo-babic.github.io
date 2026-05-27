@@ -2067,7 +2067,14 @@
         history = [Array.from({length: COLS}, () => Math.random())];
         historyRings = [[...RING]];
         const hashState = window.location.hash.slice(1);
-        if (hashState) applyState(hashState);
+        if (hashState) {
+            applyState(hashState);
+        } else {
+            document.getElementById('topoMode').value = topologyMode;
+            logicType.value = 'lukasiewicz';
+            noteMode.value = 'pentatonic';
+            visModeEl.value = currentVisMode;
+        }
         updateConserveButton();
         updateLayout();
         syncUI();
