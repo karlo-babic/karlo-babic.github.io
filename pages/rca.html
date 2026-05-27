@@ -169,18 +169,20 @@
         .control-row {
             display: flex;
             gap: 6px;
+            flex-wrap: wrap;
         }
 
         button {
             background: var(--border);
             color: var(--text-main);
             border: none;
-            padding: 8px;
+            padding: 8px 12px;
             border-radius: 4px;
             cursor: pointer;
             font-family: inherit;
             font-size: 0.85em;
-            flex: 1;
+            flex: none;
+            min-width: 0;
         }
 
         button:hover { background: #475569; }
@@ -410,17 +412,17 @@
 
             <div class="controls">
                 <div class="control-row">
-                    <button id="btnPlay" class="primary">Play</button>
-                    <button id="btnStep">Step</button>
-                    <button id="btnRandomize">Randomize</button>
-                    <select id="visMode" style="flex:none;padding:8px 12px;">
+                    <button id="btnPlay" class="primary" title="Play / pause the simulation">Play</button>
+                    <button id="btnStep" title="Advance simulation by one step">Step</button>
+                    <button id="btnRandomize" title="Randomize all cell values">Randomize</button>
+                    <select id="visMode" title="What to show in the right panel">
                         <option value="desc">Description</option>
                         <option value="phase">Phase space</option>
                         <option value="fractal">Fractal</option>
                     </select>
                 </div>
                 <div class="control-row">
-                    <select id="topoMode" style="flex:none;">
+                    <select id="topoMode" title="Topology: how the 8 cells connect as spatial neighbors">
                         <option value="ring0">Ring 1</option>
                         <option value="ring1">Ring 2</option>
                         <option value="ring2">Ring 3</option>
@@ -430,31 +432,30 @@
                         <option value="q3">Q3</option>
                         <option value="dynamic">Dynamic</option>
                     </select>
-                    <select id="logicType">
+                    <select id="logicType" title="Fuzzy match function: how neighborhood patterns are measured">
                         <option value="lukasiewicz">Łukasiewicz</option>
-                        <option value="sharp_lukasiewicz">Sharp Łukasiewicz</option>
-                        <option value="nilpotent">Nilpotent</option>
-                        <option value="dual_nilpotent">Dual Nilpotent</option>
                         <option value="interference">Interference</option>
                         <option value="product">Product</option>
                     </select>
-                    <button id="btnClamp" style="flex:none;background:var(--cell-on);color:var(--bg)">Clamp</button>
-                    <select id="btnConserve" style="flex:none;">
+                    <button id="btnClamp" title="Clamp: restrict cell values to [0, 1]">Clamp</button>
+                    <select id="btnConserve" title="Conservation mode: how total activation is preserved across steps">
                         <option value="none">No conserve</option>
                         <option value="global_renorm" selected>Renorm</option>
-                        <option value="local_flux">Flux</option>
+                        <option value="local_flux">Spatial flux</option>
+                        <option value="rule_flux">Pattern flux</option>
+                        <option value="rule_flux_reverse">Pattern flux (inv)</option>
                     </select>
                 </div>
                 <div class="control-row">
-                    <button id="btnSound">Sound</button>
-                    <select id="noteMode">
+                    <button id="btnSound" title="Toggle audio output">Sound</button>
+                    <select id="noteMode" title="Musical scale used for audio output">
                         <option value="pentatonic">Pentatonic</option>
                         <option value="harmonic">Harmonic series</option>
                         <option value="diatonic">Diatonic</option>
                         <option value="fifths">Stacked fifths</option>
                         <option value="windchimes">Wind chimes</option>
                     </select>
-                    <button id="btnShare" style="flex:none;">Share</button>
+                    <button id="btnShare" title="Copy shareable URL to clipboard">Share</button>
                 </div>
                 <canvas id="waveCanvas" style="width:100%;height:56px;background:#000;border-radius:4px;border:1px solid var(--border);display:block;"></canvas>
             </div>
@@ -466,9 +467,27 @@
                     <p>Elementary Cellular Automata (ECA) assign each cell a binary state updated by a fixed 3-cell neighborhood rule. There are 256 such rules; see <a href="https://en.wikipedia.org/wiki/Elementary_cellular_automaton" target="_blank" style="color:var(--cell-on)">Wikipedia</a> or <a href="https://mathworld.wolfram.com/ElementaryCellularAutomaton.html" target="_blank" style="color:var(--cell-on)">MathWorld</a> for a full survey.</p>
                     <p>Fuzzy automata extend ECA by allowing continuous values on [0, 1] instead of strict binary states, producing smoother, gradient-like dynamics with the same neighborhood logic.</p>
                     <p>This simulator (Reflective Cellular Automata) goes further: the grid encodes both state and its own transition rules (there is no separate rule table). Each cell value serves simultaneously as a state and as the output weight for a neighborhood pattern, so the automaton rewrites itself as it evolves.</p>
-                     <p style="margin-top:auto;padding-top:1em;border-top:1px solid var(--border);">Concretely: the grid has 8 cells in a ring, each holding a value in [0, 1]. On each step, a cell's new value is computed as a weighted sum over all 8 possible binary neighborhood patterns (000 to 111). For each pattern, a fuzzy match function measures how well the actual left-center-right values fit that pattern. The match score is multiplied by the cell whose index corresponds to that pattern, and the 8 products are summed and clamped to [0, 1]. The pattern-to-cell mapping uses a Gray code ordering so adjacent patterns differ by exactly one bit.</p>
-                    <p>The fuzzy match can be switched using the Fuzzy selector. Łukasiewicz uses max(0, a+b+c−2) — the standard t-norm, requiring the sum to exceed 2 with a hard zero floor. Sharp Łukasiewicz softens that with a square root. Nilpotent and Dual Nilpotent apply a hard threshold before taking the minimum. Interference squares a sum of square roots, which produces amplitude-like cancellation effects.</p>
-                    <p>When energy conservation is on, the total sum of all cell values is rescaled after each step to match the previous total, which keeps the overall activation from drifting to zero or saturating to one.</p>
+                     <p style="margin-top:auto;padding-top:1em;border-top:1px solid var(--border);">Concretely: the grid has 8 cells, each holding a value in [0, 1] and simultaneously serving as the output weight for one of the 8 binary neighborhood patterns (000 to 111). On each step, a cell's new value is derived from its local neighborhood via the selected fuzzy match function and topology.</p>
+                    <p>The space selector controls how the 8 cells are connected as spatial neighbors. The cells correspond to the 8 vertices of a 3-bit hypercube (Q3), so adjacency is defined by which vertices share a cube edge.</p>
+                    <ul>
+                        <li><em>Ring 1–6</em>: cells are arranged in a 1D ring following one of six distinct Hamiltonian cycles through Q3; each cell has two neighbors, both differing by exactly one bit, and the ring position determines the spatial left-right order.</li>
+                        <li><em>Q3</em>: uses the full hypercube structure; each cell's neighborhood consists of its three bit-adjacent cells (those differing by exactly one bit), not including the cell itself. This adjacency is uniquely defined by the cube with no arbitrary choice of ordering. Cell positions in the visualization carry no spatial meaning, unlike the ring topologies where position reflects the ring order.</li>
+                        <li><em>Dynamic</em>: each step, cells are reassigned to ring positions so that each cell's immediate neighborhood resembles the pattern that cell encodes, maximizing total alignment across all cells.</li>
+                    </ul>
+                    <p>The fuzzy match function measures how well a cell's neighborhood fits each binary pattern. Selected with the Fuzzy selector.</p>
+                    <ul>
+                        <li><em>Łukasiewicz</em>: max(0, a+b+c−2), the standard t-norm; the sum must exceed 2 with a hard zero floor.</li>
+                        <li><em>Interference</em>: (√a+√b+√c−2)², squaring a sum of amplitudes to produce wave-like cancellation.</li>
+                        <li><em>Product</em>: a·b·c, strict conjunction requiring all three inputs to be simultaneously high.</li>
+                    </ul>
+                    <p>Conservation mode controls how the total activation is preserved across steps.</p>
+                    <ul>
+                        <li><em>No conserve</em>: the standard unconstrained fuzzy ECA update; total activation drifts freely.</li>
+                        <li><em>Renorm</em>: the next state is computed normally, then rescaled globally so its sum matches the previous step. A post-hoc correction, not a structural constraint.</li>
+                        <li><em>Spatial flux</em>: each cell's value is treated as conserved mass flowing between neighboring positions, distributed to adjacent positions (left/self/right for ring topologies; three bit-adjacent cells for Q3) in proportion to their unconstrained next-values. Conservation is exact and local.</li>
+                        <li><em>Pattern flux</em>: as in ECA, each pattern's rule value drives the update; but instead of being summed directly into cells, it is treated as mass and distributed to cells in proportion to how well their neighborhoods match that pattern, normalized so each pattern's total contribution is conserved.</li>
+                        <li><em>Pattern flux (inv)</em>: each cell distributes its mass to pattern entries in proportion to neighborhood match, normalized over all patterns.</li>
+                    </ul>
                      <p style="margin-top:auto;padding-top:1em;border-top:1px solid var(--border);">Some attractors I found (outdated / broken):</p>
                     <p>
                         <a href="#eyJyIjpbMC42MjU2MjUxOTc3Njg0Mzc2LDAuMDMyNTA2NTI5MTA2NjY2ODQsMC45NTQ3NjA5NzY1MDYzMDY2LDAuMjc2MjU4NjEwMTc2NzU0NDYsMC4xNDc3Nzg2MjMxODkyNTYyLDAuNjY5MTgwMjYyMjU1NjM3NiwxLDFdLCJsIjoic2hhcnBfbHVrYXNpZXdpY3oiLCJjIjoxLCJuIjoicGVudGF0b25pYyIsInYiOjF9" style="color:var(--cell-on)">short cycle</a>
@@ -498,7 +517,7 @@
                     <div class="phase-controls">
                         <div class="phase-ctrl-row">
                             <span class="phase-label">Mode</span>
-                            <select id="phaseMode">
+                            <select id="phaseMode" title="Phase space projection method">
                                 <option value="fourier">Fourier Phase</option>
                                 <option value="entropy_time">Variance</option>
                                 <option value="pca">PCA</option>
@@ -509,7 +528,7 @@
                             <span class="phase-label">Trace</span>
                             <input type="range" id="traceLen" min="1" max="600" value="100">
                             <span id="traceLenVal" style="color:var(--text-muted);font-size:0.7rem;width:26px;text-align:right;flex-shrink:0;">100</span>
-                            <button id="btnLines" style="flex:none;padding:6px 8px;font-size:0.7rem;">Lines</button>
+                            <button id="btnLines" style="flex:none;" title="Toggle trace lines in phase space plot">Lines</button>
                         </div>
                     </div>
                 </div>
@@ -518,7 +537,7 @@
                     <div class="fractal-controls">
                         <div class="fractal-ctrl-row">
                             <span class="fractal-label">X cell</span>
-                            <select id="fractalAxisI">
+                            <select id="fractalAxisI" title="Cell used as the X axis in the fractal view">
                                 <option value="0" selected>Cell 0</option>
                                 <option value="1">Cell 1</option>
                                 <option value="2">Cell 2</option>
@@ -529,7 +548,7 @@
                                 <option value="7">Cell 7</option>
                             </select>
                             <span class="fractal-label" style="width:auto;">Y cell</span>
-                            <select id="fractalAxisJ">
+                            <select id="fractalAxisJ" title="Cell used as the Y axis in the fractal view">
                                 <option value="0">Cell 0</option>
                                 <option value="1" selected>Cell 1</option>
                                 <option value="2">Cell 2</option>
@@ -585,8 +604,8 @@
         let historyRings = [];
         let isPlaying = false;
         let playInterval = null;
-        let clampValues = true;
-        let conservationMode = 'global_renorm'; // 'none' | 'global_renorm' | 'local_flux'
+        let clampValues = false;
+        let conservationMode = 'global_renorm'; // 'none' | 'global_renorm' | 'local_flux' | 'rule_flux' | 'rule_flux_reverse'
         let topologyMode = 'ring0'; // 'ring0'-'ring5' | 'q3'
         let dragColIndex = -1;
 
@@ -651,12 +670,6 @@
             switch (logic) {
                 case 'lukasiewicz':
                     MATCH = (a, b, c) => Math.max(0, a + b + c - 2); break;
-                case 'nilpotent':
-                    MATCH = (a, b, c) => (a + b + c > 2) ? Math.max(0, Math.min(a, b, c)) : 0; break;
-                case 'sharp_lukasiewicz':
-                    MATCH = (a, b, c) => Math.pow(Math.max(0, a + b + c - 2), 0.5); break;
-                case 'dual_nilpotent':
-                    MATCH = (a, b, c) => (a + b + c > 2.2) ? Math.max(0, Math.min(a, b, c)) : 0; break;
                 case 'interference':
                     MATCH = (a, b, c) => Math.pow(Math.max(0, Math.sqrt(Math.max(0,a)) + Math.sqrt(Math.max(0,b)) + Math.sqrt(Math.max(0,c)) - 2), 2); break;
                 case 'product':
@@ -745,6 +758,80 @@
             return next;
         }
 
+        function computeRuleFluxReverseNext(rule) {
+            const logic = logicType.value;
+            let MATCH;
+            switch (logic) {
+                case 'lukasiewicz':      MATCH = (a,b,c) => Math.max(0, a+b+c-2); break;
+                case 'interference':     MATCH = (a,b,c) => Math.pow(Math.max(0,Math.sqrt(Math.max(0,a))+Math.sqrt(Math.max(0,b))+Math.sqrt(Math.max(0,c))-2),2); break;
+                case 'product':          MATCH = (a,b,c) => a*b*c; break;
+            }
+            let next = new Array(COLS).fill(0);
+            for (let i = 0; i < COLS; i++) {
+                const p = RING[i];
+                let L, C, R;
+                if (topologyMode === 'q3') {
+                    L = rule[p^4]; C = rule[p^2]; R = rule[p^1];
+                } else {
+                    L = rule[RING[(i-1+COLS)%COLS]]; C = rule[p]; R = rule[RING[(i+1)%COLS]];
+                }
+                const mass = rule[p];
+                const scores = new Array(8);
+                let total = 0;
+                for (let q = 0; q < 8; q++) {
+                    const a = (q&4) ? L : 1-L;
+                    const b = (q&2) ? C : 1-C;
+                    const c = (q&1) ? R : 1-R;
+                    scores[q] = Math.max(0, MATCH(a,b,c));
+                    total += scores[q];
+                }
+                if (total <= 1e-12) { next[p] += mass; }
+                else { for (let q = 0; q < 8; q++) next[q] += mass * scores[q] / total; }
+            }
+            return next;
+        }
+
+        function computeRuleFluxNext(rule) {
+            const logic = logicType.value;
+            let MATCH;
+            switch (logic) {
+                case 'lukasiewicz':      MATCH = (a,b,c) => Math.max(0, a+b+c-2); break;
+                case 'interference':     MATCH = (a,b,c) => Math.pow(Math.max(0,Math.sqrt(Math.max(0,a))+Math.sqrt(Math.max(0,b))+Math.sqrt(Math.max(0,c))-2),2); break;
+                case 'product':          MATCH = (a,b,c) => a*b*c; break;
+            }
+            const scoreMatrix = [];
+            const patternTotals = new Array(8).fill(0);
+            for (let i = 0; i < COLS; i++) {
+                const p = RING[i];
+                let L, C, R;
+                if (topologyMode === 'q3') {
+                    L = rule[p^4]; C = rule[p^2]; R = rule[p^1];
+                } else {
+                    L = rule[RING[(i-1+COLS)%COLS]]; C = rule[p]; R = rule[RING[(i+1)%COLS]];
+                }
+                const row = new Array(8);
+                for (let q = 0; q < 8; q++) {
+                    const a = (q&4) ? L : 1-L;
+                    const b = (q&2) ? C : 1-C;
+                    const c = (q&1) ? R : 1-R;
+                    row[q] = Math.max(0, MATCH(a,b,c));
+                    patternTotals[q] += row[q];
+                }
+                scoreMatrix.push(row);
+            }
+            let next = new Array(COLS).fill(0);
+            for (let q = 0; q < 8; q++) {
+                if (patternTotals[q] <= 1e-12) {
+                    next[q] += rule[q];
+                    continue;
+                }
+                for (let i = 0; i < COLS; i++) {
+                    next[RING[i]] += rule[q] * scoreMatrix[i][q] / patternTotals[q];
+                }
+            }
+            return next;
+        }
+
         function computeSimilarityMatrix(state) {
             const logic = logicType.value;
             const cost = Array.from({length: 8}, () => new Array(8).fill(0));
@@ -759,9 +846,6 @@
                     let m;
                     switch (logic) {
                         case 'lukasiewicz':       m = Math.max(0, a + b + c - 2); break;
-                        case 'nilpotent':         m = (a + b + c > 2) ? Math.max(0, Math.min(a, b, c)) : 0; break;
-                        case 'sharp_lukasiewicz': m = Math.pow(Math.max(0, a + b + c - 2), 0.5); break;
-                        case 'dual_nilpotent':    m = (a + b + c > 2.2) ? Math.max(0, Math.min(a, b, c)) : 0; break;
                         case 'interference':      { const s = Math.sqrt(Math.max(0,a)) + Math.sqrt(Math.max(0,b)) + Math.sqrt(Math.max(0,c)) - 2; m = s > 0 ? s * s : 0; break; }
                         case 'product':           m = a * b * c; break;
                         default:                  m = 0;
@@ -839,6 +923,14 @@
                     next = computeLocalFluxNext(rule);
                     if (clampValues) next = applyClamp(next);
                     break;
+                case 'rule_flux':
+                    next = computeRuleFluxNext(rule);
+                    if (clampValues) next = applyClamp(next);
+                    break;
+                case 'rule_flux_reverse':
+                    next = computeRuleFluxReverseNext(rule);
+                    if (clampValues) next = applyClamp(next);
+                    break;
                 case 'global_renorm':
                     next = computeUnconstrainedNext(rule);
                     next = applyGlobalRenorm(rule, next);
@@ -875,6 +967,7 @@
 
             // 2 cycles of the fundamental (110 Hz)
             const duration = 2 / 110;
+            const waveMax = Math.max(...latest);
             waveCtx.strokeStyle = '#38bdf8';
             waveCtx.lineWidth = 1.5;
             waveCtx.beginPath();
@@ -882,9 +975,9 @@
                 const t = (x / w) * duration;
                 let y = 0;
                 for (let i = 0; i < COLS; i++)
-                    y += Math.pow(latest[RING[i]], 4) * Math.sin(2 * Math.PI * NOTE_FREQS[i] * t);
+                    y += Math.pow(waveMax > 1e-10 ? latest[RING[i]] / waveMax : 0, 4) * Math.sin(2 * Math.PI * NOTE_FREQS[i] * t);
                 y /= COLS;
-                const py = h / 2 - y * h * 0.45;
+                const py = h / 2 - y * h * 0.9;
                 if (x === 0) waveCtx.moveTo(x, py);
                 else waveCtx.lineTo(x, py);
             }
@@ -985,6 +1078,10 @@
         btnConserve.onchange = () => {
             conservationMode = btnConserve.value;
             if (fractalShader) fractalShader.energyMode = getShaderEnergyMode();
+            const fractalOption = visModeEl.querySelector('option[value="fractal"]');
+            const noFractal = conservationMode === 'rule_flux' || conservationMode === 'rule_flux_reverse';
+            fractalOption.disabled = noFractal;
+            if (noFractal && currentVisMode === 'fractal') setVisMode('desc');
         };
 
         document.getElementById('topoMode').onchange = function() {
@@ -1289,7 +1386,7 @@
         let fractalMaxIter = 80, fractalMaxCycleLen = 40;
 
         function getLogicTypeInt() {
-            const m = {lukasiewicz: 0, sharp_lukasiewicz: 1, nilpotent: 2, dual_nilpotent: 3, interference: 4, product: 5};
+            const m = {lukasiewicz: 0, interference: 4, product: 5};
             return m[logicType.value] ?? 0;
         }
 
@@ -1341,6 +1438,14 @@
                             switch (conservationMode) {
                                 case 'local_flux': {
                                     let n = computeLocalFluxNext(cur);
+                                    return clampValues ? applyClamp(n) : n;
+                                }
+                                case 'rule_flux': {
+                                    let n = computeRuleFluxNext(cur);
+                                    return clampValues ? applyClamp(n) : n;
+                                }
+                                case 'rule_flux_reverse': {
+                                    let n = computeRuleFluxReverseNext(cur);
                                     return clampValues ? applyClamp(n) : n;
                                 }
                                 case 'global_renorm': {
