@@ -917,10 +917,21 @@
         const waveCanvas = document.getElementById('waveCanvas');
         const waveCtx = waveCanvas.getContext('2d');
 
+        function getCellAmplitudes(state) {
+            const max = Math.max(...state);
+            const shouldNorm = max > 1;
+            return Array.from({length: COLS}, (_, i) => {
+                const v = state[RING[i]];
+                const norm = shouldNorm ? (max > 1e-10 ? v / max : 0) : v;
+                return Math.pow(norm, 4);
+            });
+        }
+
         function drawWaveform() {
             const w = waveCanvas.width;
             const h = waveCanvas.height;
             const latest = history[history.length - 1];
+            const amps = getCellAmplitudes(latest);
 
             waveCtx.fillStyle = '#000';
             waveCtx.fillRect(0, 0, w, h);
@@ -933,7 +944,6 @@
 
             // 2 cycles of the fundamental (110 Hz)
             const duration = 2 / 110;
-            const waveMax = Math.max(...latest);
             waveCtx.strokeStyle = '#38bdf8';
             waveCtx.lineWidth = 1.5;
             waveCtx.beginPath();
@@ -941,7 +951,7 @@
                 const t = (x / w) * duration;
                 let y = 0;
                 for (let i = 0; i < COLS; i++)
-                    y += Math.pow(waveMax > 1e-10 ? latest[RING[i]] / waveMax : 0, 4) * Math.sin(2 * Math.PI * NOTE_FREQS[i] * t);
+                    y += amps[i] * Math.sin(2 * Math.PI * NOTE_FREQS[i] * t);
                 y /= COLS;
                 const py = h / 2 - y * h * 0.9;
                 if (x === 0) waveCtx.moveTo(x, py);
@@ -955,7 +965,14 @@
             for (let i = 0; i < COLS; i++) {
                 const v = latest[RING[i]];
                 barFills[i].style.height = `${Math.min(1, v) * 100}%`;
-                barFills[i].style.background = v > 1 ? 'var(--highlight)' : '';
+                let cr, cg, cb;
+                if (v <= 1) {
+                    cr = 15 + v * 41; cg = 23 + v * 166; cb = 42 + v * 206;
+                } else {
+                    const e = Math.min(1, v - 1);
+                    cr = 56 + e * 199; cg = 189 * (1 - e); cb = 248 * (1 - e);
+                }
+                barFills[i].style.background = `rgb(${Math.round(cr)},${Math.round(cg)},${Math.round(cb)})`;
                 textInputs[i].value = v.toFixed(2);
             }
             updateRuleDisplay();
@@ -1140,10 +1157,9 @@
             if (!audioCtx || isMuted) return;
             const latest = history[history.length - 1];
             const t = audioCtx.currentTime;
-            const max = Math.max(...latest);
+            const amps = getCellAmplitudes(latest);
             for (let i = 0; i < COLS; i++) {
-                const norm = max > 1e-10 ? latest[RING[i]] / max : 0;
-                noteGains[i].gain.setTargetAtTime(Math.pow(norm, 4) * 0.2, t, 0.05);
+                noteGains[i].gain.setTargetAtTime(amps[i] * 0.2, t, 0.05);
             }
         }
 
@@ -1557,6 +1573,14 @@
                         fractalShader.topoMode = topologyMode === 'q3' ? 1 : 0;
                         if (topologyMode !== 'dynamic') fractalShader.ring = [...RING];
                     }
+                }
+            },
+            {
+                key: 'ring',
+                encode: () => [...RING],
+                apply(v) {
+                    if (!Array.isArray(v) || v.length !== COLS) return;
+                    if (topologyMode === 'dynamic') RING = v.map(Number);
                 }
             },
             {
