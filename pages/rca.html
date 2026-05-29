@@ -104,6 +104,7 @@
             flex-grow: 1;
             position: relative;
             cursor: ns-resize;
+            background: #000;
         }
 
         .bar-fill {
@@ -188,6 +189,20 @@
         button:hover { background: #475569; }
         .primary { background: var(--highlight) !important; }
         .primary:hover { background: #e11d48 !important; }
+
+        .energy-btns {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            flex: none;
+            align-self: stretch;
+        }
+        .energy-btns button {
+            padding: 0 8px;
+            font-size: 0.72em;
+            line-height: 1;
+            flex: 1;
+        }
 
         select {
             background: var(--border);
@@ -414,7 +429,12 @@
                 <div class="control-row">
                     <button id="btnPlay" class="primary" title="Play / pause the simulation">Play</button>
                     <button id="btnStep" title="Advance simulation by one step">Step</button>
-                    <button id="btnRandomize" title="Randomize all cell values">Randomize</button>
+                    <div class="energy-btns">
+                        <button id="btnEnergyUp" title="Increase total energy (×1.1)">▲</button>
+                        <button id="btnZero" title="Set all cells to zero">0</button>
+                        <button id="btnEnergyDown" title="Decrease total energy (÷1.1)">▼</button>
+                    </div>
+                    <button id="btnRandomize" title="Randomize all cell values">Random</button>
                     <select id="visMode" title="What to show in the right panel">
                         <option value="desc">Description</option>
                         <option value="phase">Phase space</option>
@@ -1094,6 +1114,47 @@
             history[history.length - 1] = Array.from({length: COLS}, () => Math.random());
             phaseTrace.length = 0;
             pcaBuffer.length = 0;
+            syncUI(); draw();
+        };
+
+        const ENERGY_FACTOR = 1.1;
+        const ENERGY_ADD_THRESHOLD = 0.1;
+        const ENERGY_ZERO_THRESHOLD = 0.01;
+
+        function adjustEnergy(increase) {
+            const state = history[history.length - 1];
+            const sum = state.reduce((a, b) => a + b, 0);
+            let next;
+            if (increase) {
+                if (sum < ENERGY_ADD_THRESHOLD) {
+                    next = state.map(v => v + ENERGY_ADD_THRESHOLD / COLS);
+                } else {
+                    next = state.map(v => v * ENERGY_FACTOR);
+                }
+            } else {
+                if (sum < ENERGY_ZERO_THRESHOLD) {
+                    next = new Array(COLS).fill(0);
+                } else {
+                    next = state.map(v => v / ENERGY_FACTOR);
+                }
+            }
+            history[history.length - 1] = next;
+            syncUI(); draw();
+        }
+
+        function makeHoldButton(el, fn) {
+            let timeout = null, interval = null;
+            const stop = () => { clearTimeout(timeout); clearInterval(interval); timeout = null; interval = null; };
+            el.addEventListener('mousedown', e => { e.preventDefault(); fn(); timeout = setTimeout(() => { interval = setInterval(fn, 80); }, 300); });
+            el.addEventListener('mouseup', stop);
+            el.addEventListener('mouseleave', stop);
+        }
+
+        makeHoldButton(document.getElementById('btnEnergyUp'),   () => adjustEnergy(true));
+        makeHoldButton(document.getElementById('btnEnergyDown'), () => adjustEnergy(false));
+
+        document.getElementById('btnZero').onclick = () => {
+            history[history.length - 1] = new Array(COLS).fill(0);
             syncUI(); draw();
         };
 
