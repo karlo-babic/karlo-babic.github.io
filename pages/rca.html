@@ -573,6 +573,16 @@
                             <span id="bifurcModeDesc" style="color:var(--text-muted);font-size:0.68rem;line-height:1.4;flex:1;margin-left:6px;">counts every state visited per trajectory (skip step 0)</span>
                         </div>
                         <div class="bifurc-ctrl-row">
+                            <span class="fractal-label">X axis</span>
+                            <select id="bifurcXAxis">
+                                <option value="std" selected>Std dev σ</option>
+                                <option value="entropy">Entropy H</option>
+                                <option value="range">Range</option>
+                                <option value="skewness">Skewness</option>
+                            </select>
+                            <span id="bifurcXAxisDesc" style="color:var(--text-muted);font-size:0.68rem;line-height:1.4;flex:1;margin-left:6px;">RMS spread of cell values around their mean</span>
+                        </div>
+                        <div class="bifurc-ctrl-row">
                             <span class="fractal-label">Iters</span>
                             <input type="range" id="bifurcIter" min="20" max="400" step="10" value="80">
                             <span id="bifurcIterVal" style="color:var(--text-muted);font-size:0.7rem;width:30px;text-align:right;flex-shrink:0;">80</span>
@@ -1677,18 +1687,19 @@
         let bifurcSnapOffset = null, bifurcSnapZoom = null;  // viewport at last grid reset
         let bifurcMaxIter = 80, bifurcMaxCycleLen = 40;
         let bifurcVisMode = 'visits';
+        let bifurcXAxis = 'std';
         const BIFURC_SIM_MS = 10;  // simulation time budget per frame
 
-        function bifurcToCanvas(std, mean) {
+        function bifurcToCanvas(xv, yv) {
             return {
-                x: (std  - bifurcOffset.x) * bifurcH * bifurcZoom + bifurcW / 2,
-                y: bifurcH / 2 - (mean - bifurcOffset.y) * bifurcH * bifurcZoom
+                x: (xv  - bifurcOffset.x) * bifurcH * bifurcZoom + bifurcW / 2,
+                y: bifurcH / 2 - (yv - bifurcOffset.y) * bifurcH * bifurcZoom
             };
         }
         function bifurcToData(cx, cy) {
             return {
-                std:  (cx - bifurcW / 2) / bifurcH / bifurcZoom + bifurcOffset.x,
-                mean: -(cy - bifurcH / 2) / bifurcH / bifurcZoom + bifurcOffset.y
+                x: (cx - bifurcW / 2) / bifurcH / bifurcZoom + bifurcOffset.x,
+                y: -(cy - bifurcH / 2) / bifurcH / bifurcZoom + bifurcOffset.y
             };
         }
         function stateStats(s) {
@@ -1699,9 +1710,40 @@
             for (let k = 0; k < 8; k++) { const d = s[k] - mean; varSum += d * d; }
             return { mean, std: Math.sqrt(varSum / 8) };
         }
+        function computeXStat(s, xMode) {
+            const n = 8;
+            const mean = s.reduce((a, b) => a + b, 0) / n;
+            if (xMode === 'std') {
+                let v = 0; for (let k = 0; k < n; k++) { const d = s[k] - mean; v += d * d; }
+                return Math.sqrt(v / n);
+            }
+            if (xMode === 'range') {
+                let lo = s[0], hi = s[0];
+                for (let k = 1; k < n; k++) { if (s[k] < lo) lo = s[k]; if (s[k] > hi) hi = s[k]; }
+                return hi - lo;
+            }
+            if (xMode === 'skewness') {
+                let v = 0; for (let k = 0; k < n; k++) { const d = s[k] - mean; v += d * d; }
+                const std = Math.sqrt(v / n);
+                if (std < 1e-10) return 0;
+                let sk = 0; for (let k = 0; k < n; k++) { const d = (s[k] - mean) / std; sk += d * d * d; }
+                return sk / n;
+            }
+            if (xMode === 'entropy') {
+                const total = s.reduce((a, b) => a + Math.abs(b), 0);
+                if (total < 1e-10) return 0;
+                let H = 0;
+                for (let k = 0; k < n; k++) {
+                    const p = Math.abs(s[k]) / total;
+                    if (p > 1e-10) H -= p * Math.log2(p);
+                }
+                return H / 3; // normalize by log2(8)
+            }
+            return 0;
+        }
 
         function bifurcFullKey() {
-            return `${conservationMode}_${clampValues}_${topologyMode}_${logicType.value}_${RING.join(',')}_${bifurcVisMode}`;
+            return `${conservationMode}_${clampValues}_${topologyMode}_${logicType.value}_${RING.join(',')}_${bifurcVisMode}_${bifurcXAxis}`;
         }
 
         function bifurcResetGrid() {
@@ -1743,16 +1785,20 @@
         function bifurcRandomStart() {
             // Half the starts target the visible energy range so panned regions fill in
             if (Math.random() < 0.5 && bifurcH > 0) {
-                const visMeanMin = Math.max(0, bifurcToData(bifurcW / 2, bifurcH).mean);
-                const visMeanMax = Math.max(0, bifurcToData(bifurcW / 2, 0).mean);
-                const visStdMin  = Math.max(0, bifurcToData(0, bifurcH / 2).std);
-                const visStdMax  = Math.max(0, bifurcToData(bifurcW, bifurcH / 2).std);
+                const visMeanMin = Math.max(0, bifurcToData(bifurcW / 2, bifurcH).y);
+                const visMeanMax = Math.max(0, bifurcToData(bifurcW / 2, 0).y);
+                const visXMin    = bifurcToData(0, bifurcH / 2).x;
+                const visXMax    = bifurcToData(bifurcW, bifurcH / 2).x;
                 if (visMeanMax > 0) {
                     const targetMean = visMeanMin + Math.random() * (visMeanMax - visMeanMin);
-                    const stdHi = Math.min(visStdMax, targetMean);
-                    const stdLo = Math.min(visStdMin, stdHi);
-                    const targetStd  = stdLo + Math.random() * (stdHi - stdLo);
-                    return generateEVState(targetMean, targetStd);
+                    if (bifurcXAxis === 'std') {
+                        const stdHi = Math.min(visXMax, targetMean);
+                        const stdLo = Math.min(Math.max(0, visXMin), stdHi);
+                        const targetStd = stdLo + Math.random() * (stdHi - stdLo);
+                        return generateEVState(targetMean, targetStd);
+                    } else {
+                        return generateEVState(targetMean, Math.random() * targetMean);
+                    }
                 }
             }
             switch (Math.floor(Math.random() * 6)) {
@@ -1782,8 +1828,9 @@
         }
 
         function bifurcPlotState(s) {
-            const { mean, std } = stateStats(s);
-            const {x: cx, y: cy} = bifurcToCanvas(std, mean);
+            const mean = s.reduce((a, b) => a + b, 0) / 8;
+            const xv = computeXStat(s, bifurcXAxis);
+            const {x: cx, y: cy} = bifurcToCanvas(xv, mean);
             const bx = Math.round(cx), by = Math.round(cy);
             if (bx >= 0 && bx < bifurcW && by >= 0 && by < bifurcH) {
                 const idx = by * bifurcW + bx;
@@ -1827,8 +1874,9 @@
                 }
                 if (foundAt < 0) continue;
 
-                const { mean, std } = stateStats(s);
-                const {x: cx, y: cy} = bifurcToCanvas(std, mean);
+                const mean = s.reduce((a, b) => a + b, 0) / 8;
+                const xv = computeXStat(s, bifurcXAxis);
+                const {x: cx, y: cy} = bifurcToCanvas(xv, mean);
                 const bx = Math.round(cx), by = Math.round(cy);
                 if (bx >= 0 && bx < bifurcW && by >= 0 && by < bifurcH) {
                     const idx = by * bifurcW + bx;
@@ -1873,11 +1921,13 @@
             bifurcCtx.font = '9px "Courier New", monospace';
             bifurcCtx.fillStyle = '#475569';
             bifurcCtx.textAlign = 'center';
-            bifurcCtx.fillText(`σ  ${tl.std.toFixed(2)} → ${br.std.toFixed(2)}`, bifurcW / 2, bifurcH - 4);
+            const XAXIS_SHORT = {std: 'σ', entropy: 'H', range: 'range', skewness: 'skew'};
+            const xShort = XAXIS_SHORT[bifurcXAxis] || bifurcXAxis;
+            bifurcCtx.fillText(`${xShort}  ${tl.x.toFixed(2)} → ${br.x.toFixed(2)}`, bifurcW / 2, bifurcH - 4);
             bifurcCtx.save();
             bifurcCtx.translate(10, bifurcH / 2);
             bifurcCtx.rotate(-Math.PI / 2);
-            bifurcCtx.fillText(`E  ${Math.max(0, br.mean).toFixed(2)} → ${Math.max(0, tl.mean).toFixed(2)}`, 0, 0);
+            bifurcCtx.fillText(`E  ${Math.max(0, br.y).toFixed(2)} → ${Math.max(0, tl.y).toFixed(2)}`, 0, 0);
             bifurcCtx.restore();
 
             const {x: x0} = bifurcToCanvas(0, 0);
@@ -1890,8 +1940,9 @@
             }
 
             const latest = history[history.length - 1];
-            const { mean: dotMean, std: dotStd } = stateStats(latest);
-            const {x: dotX, y: dotY} = bifurcToCanvas(dotStd, dotMean);
+            const dotMean = latest.reduce((a, b) => a + b, 0) / 8;
+            const dotXv = computeXStat(latest, bifurcXAxis);
+            const {x: dotX, y: dotY} = bifurcToCanvas(dotXv, dotMean);
             if (dotX >= 0 && dotX <= bifurcW && dotY >= 0 && dotY <= bifurcH) {
                 bifurcCtx.beginPath();
                 bifurcCtx.arc(dotX, dotY, 4, 0, 2 * Math.PI);
@@ -1921,7 +1972,7 @@
                 const f = e.deltaY < 0 ? 1.25 : 0.8;
                 const rect = wrap.getBoundingClientRect();
                 const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-                const {std: dX, mean: dY} = bifurcToData(mx, my);
+                const {x: dX, y: dY} = bifurcToData(mx, my);
                 bifurcZoom *= f;
                 bifurcOffset.x = dX - (mx - bifurcW / 2) / bifurcH / bifurcZoom;
                 bifurcOffset.y = dY + (my - bifurcH / 2) / bifurcH / bifurcZoom;
@@ -1944,6 +1995,18 @@
         }
 
         function bifurcStop() { bifurcRunning = false; }
+
+        const BIFURC_XAXIS_DESC = {
+            std:      'RMS spread of cell values around their mean',
+            entropy:  'how evenly energy is spread across cells (0 = concentrated, 1 = uniform)',
+            range:    'max minus min cell value; amplifies outliers',
+            skewness: 'asymmetry — positive if high cells dominate, negative if low',
+        };
+        document.getElementById('bifurcXAxis').onchange = function () {
+            bifurcXAxis = this.value;
+            document.getElementById('bifurcXAxisDesc').textContent = BIFURC_XAXIS_DESC[bifurcXAxis] || '';
+            bifurcReset();
+        };
 
         document.getElementById('bifurcMode').onchange = function () {
             bifurcVisMode = this.value;
