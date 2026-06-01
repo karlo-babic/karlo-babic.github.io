@@ -1580,15 +1580,13 @@
                             s[RING[fractalAxisJ]] = Math.max(0, uvY);
                         }
 
-                        const doStep = simStep;
-
                         const isUniform = st => Math.max(...st) < 0.005;
                         const sdiff = (a, b) => Math.max(...a.map((v, i) => Math.abs(v - b[i])));
 
                         let ref = null, foundAt = -1, isFixed = false, settleAt = totalIter;
                         for (let i = 0; i < totalIter; i++) {
                             const prev = [...s];
-                            s = doStep(s);
+                            s = simStep(s);
                             if (isUniform(s)) { foundAt = i; isFixed = true; break; }
                             if (settleAt === totalIter && sdiff(s, prev) < 0.003) settleAt = i;
                             if (i === cycleStart) ref = [...s];
@@ -1680,8 +1678,6 @@
         let bifurcMaxIter = 80, bifurcMaxCycleLen = 40;
         let bifurcVisMode = 'convergence';
         const BIFURC_SIM_MS = 10;  // simulation time budget per frame
-        const BIFURC_STD_RANGE = 1.5;              // σ axis: 0 to 1.5
-        const BIFURC_MEAN_RANGE = 5.0;             // E axis: 0 to 5.0
 
         function bifurcToCanvas(std, mean) {
             return {
@@ -1694,6 +1690,14 @@
                 std:  (cx - bifurcW / 2) / bifurcH / bifurcZoom + bifurcOffset.x,
                 mean: -(cy - bifurcH / 2) / bifurcH / bifurcZoom + bifurcOffset.y
             };
+        }
+        function stateStats(s) {
+            let sum = 0;
+            for (let k = 0; k < 8; k++) sum += s[k];
+            const mean = sum / 8;
+            let varSum = 0;
+            for (let k = 0; k < 8; k++) { const d = s[k] - mean; varSum += d * d; }
+            return { mean, std: Math.sqrt(varSum / 8) };
         }
 
         function bifurcFullKey() {
@@ -1726,7 +1730,6 @@
                 bifurcCanvas.style.cssText = 'display:block;position:absolute;top:0;left:0;';
                 wrap.appendChild(bifurcCanvas);
                 bifurcCtx = bifurcCanvas.getContext('2d');
-                // Place (std=0, mean=0) at the bottom-left corner
                 bifurcOffset.x = bifurcW / (2 * bifurcH * bifurcZoom);
                 bifurcOffset.y = 1 / (2 * bifurcZoom);
             }
@@ -1752,10 +1755,9 @@
                     return generateEVState(targetMean, targetStd);
                 }
             }
-            // The other half: diverse random starts for broad coverage
             switch (Math.floor(Math.random() * 6)) {
                 case 0: return Array.from({length: COLS}, () => Math.random());
-                case 1: { // sparse: 1–4 cells non-zero, rest zero
+                case 1: {
                     const s = new Array(COLS).fill(0);
                     const k = 1 + Math.floor(Math.random() * 4);
                     Array.from({length: COLS}, (_, i) => i)
@@ -1763,7 +1765,7 @@
                         .forEach(i => { s[i] = Math.random() * 2; });
                     return s;
                 }
-                case 2: { // one dominant cell
+                case 2: {
                     const s = Array.from({length: COLS}, () => Math.random() * 0.1);
                     s[Math.floor(Math.random() * COLS)] = 1 + Math.random();
                     return s;
@@ -1771,7 +1773,7 @@
                 case 3: return Array.from({length: COLS}, () => Math.random() * 2);
                 case 4: return Array.from({length: COLS}, () =>
                     Math.random() > 0.5 ? 0.7 + Math.random() * 0.3 : Math.random() * 0.3);
-                default: { // gradient from 0 to random peak
+                default: {
                     const peak = Math.random() * 2;
                     return Array.from({length: COLS}, (_, i) =>
                         Math.max(0, peak * i / (COLS - 1) + (Math.random() - 0.5) * 0.3));
@@ -1780,12 +1782,8 @@
         }
 
         function bifurcPlotState(s) {
-            let sum = 0;
-            for (let k = 0; k < 8; k++) sum += s[k];
-            const mean = sum / 8;
-            let varSum = 0;
-            for (let k = 0; k < 8; k++) { const d = s[k] - mean; varSum += d * d; }
-            const {x: cx, y: cy} = bifurcToCanvas(Math.sqrt(varSum / 8), mean);
+            const { mean, std } = stateStats(s);
+            const {x: cx, y: cy} = bifurcToCanvas(std, mean);
             const bx = Math.round(cx), by = Math.round(cy);
             if (bx >= 0 && bx < bifurcW && by >= 0 && by < bifurcH) {
                 const idx = by * bifurcW + bx;
@@ -1810,11 +1808,9 @@
                 return;
             }
 
-            // convergence mode
             const maxCycleLen = bifurcMaxCycleLen;
             const cycleStart = Math.max(0, totalIter - maxCycleLen);
-            const deadline2 = deadline; // same budget
-            while (performance.now() < deadline2) {
+            while (performance.now() < deadline) {
                 let s = bifurcRandomStart();
                 let ref = null, foundAt = -1, isFixed = false;
                 for (let i = 0; i < totalIter; i++) {
@@ -1831,12 +1827,8 @@
                 }
                 if (foundAt < 0) continue;
 
-                let sum = 0;
-                for (let k = 0; k < 8; k++) sum += s[k];
-                const mean = sum / 8;
-                let varSum = 0;
-                for (let k = 0; k < 8; k++) { const d = s[k] - mean; varSum += d * d; }
-                const {x: cx, y: cy} = bifurcToCanvas(Math.sqrt(varSum / 8), mean);
+                const { mean, std } = stateStats(s);
+                const {x: cx, y: cy} = bifurcToCanvas(std, mean);
                 const bx = Math.round(cx), by = Math.round(cy);
                 if (bx >= 0 && bx < bifurcW && by >= 0 && by < bifurcH) {
                     const idx = by * bifurcW + bx;
@@ -1877,7 +1869,6 @@
             }
             bifurcCtx.putImageData(img, 0, 0);
 
-            // dynamic axis labels
             const tl = bifurcToData(0, 0), br = bifurcToData(bifurcW, bifurcH);
             bifurcCtx.font = '9px "Courier New", monospace';
             bifurcCtx.fillStyle = '#475569';
@@ -1889,7 +1880,6 @@
             bifurcCtx.fillText(`E  ${Math.max(0, br.mean).toFixed(2)} → ${Math.max(0, tl.mean).toFixed(2)}`, 0, 0);
             bifurcCtx.restore();
 
-            // std=0 axis line
             const {x: x0} = bifurcToCanvas(0, 0);
             if (x0 >= 0 && x0 <= bifurcW) {
                 bifurcCtx.strokeStyle = '#1e293b';
@@ -1899,15 +1889,8 @@
                 bifurcCtx.stroke();
             }
 
-            // current state dot
             const latest = history[history.length - 1];
-            let dotSum = 0;
-            for (let k = 0; k < COLS; k++) dotSum += latest[k];
-            const dotMean = dotSum / COLS;
-            let dotVarSum = 0;
-            for (let k = 0; k < COLS; k++) { const d = latest[k] - dotMean; dotVarSum += d * d; }
-            const dotStd = Math.sqrt(dotVarSum / COLS);
-
+            const { mean: dotMean, std: dotStd } = stateStats(latest);
             const {x: dotX, y: dotY} = bifurcToCanvas(dotStd, dotMean);
             if (dotX >= 0 && dotX <= bifurcW && dotY >= 0 && dotY <= bifurcH) {
                 bifurcCtx.beginPath();
