@@ -369,6 +369,34 @@
             color: var(--text-main);
         }
 
+        .side-bifurc {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+        }
+
+        .bifurc-canvas-wrap {
+            flex: 1;
+            min-height: 0;
+            background: #000;
+            position: relative;
+        }
+
+        .bifurc-controls {
+            flex-shrink: 0;
+            padding: 8px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .bifurc-ctrl-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
         .fractal-point-label {
             position: absolute;
             font-size: 0.6rem;
@@ -439,6 +467,7 @@
                         <option value="desc">Description</option>
                         <option value="phase">Phase space</option>
                         <option value="fractal">Fractal</option>
+                        <option value="bifurc">Bifurcation</option>
                     </select>
                 </div>
                 <div class="control-row">
@@ -532,10 +561,40 @@
                         </div>
                     </div>
                 </div>
+                <div class="side-bifurc" id="sideBifurc">
+                    <div class="bifurc-canvas-wrap" id="bifurcCanvasWrap"></div>
+                    <div class="bifurc-controls">
+                        <div class="bifurc-ctrl-row">
+                            <span class="fractal-label">Mode</span>
+                            <select id="bifurcMode">
+                                <option value="convergence">Convergence</option>
+                                <option value="visits">Visit density</option>
+                            </select>
+                            <span id="bifurcModeDesc" style="color:var(--text-muted);font-size:0.68rem;line-height:1.4;flex:1;margin-left:6px;"><span style="color:#38bdf8;">blue</span> = fixed · <span style="color:#f43f5e;">red</span> = cycle</span>
+                        </div>
+                        <div class="bifurc-ctrl-row">
+                            <span class="fractal-label">Iters</span>
+                            <input type="range" id="bifurcIter" min="20" max="400" step="10" value="80">
+                            <span id="bifurcIterVal" style="color:var(--text-muted);font-size:0.7rem;width:30px;text-align:right;flex-shrink:0;">80</span>
+                        </div>
+                        <div class="bifurc-ctrl-row" id="bifurcCycleRow">
+                            <span class="fractal-label">Cycle</span>
+                            <input type="range" id="bifurcCycle" min="1" max="200" step="1" value="40">
+                            <span id="bifurcCycleVal" style="color:var(--text-muted);font-size:0.7rem;width:30px;text-align:right;flex-shrink:0;">40</span>
+                        </div>
+                    </div>
+                </div>
                 <div class="side-fractal" id="sideFractal">
                     <div class="fractal-canvas-wrap" id="fractalCanvasWrap"></div>
                     <div class="fractal-controls">
                         <div class="fractal-ctrl-row">
+                            <span class="fractal-label">Map</span>
+                            <select id="fractalMapMode" title="What the fractal axes represent">
+                                <option value="cell">Cell pair</option>
+                                <option value="ev">Energy × Variance</option>
+                            </select>
+                        </div>
+                        <div class="fractal-ctrl-row" id="fractalCellRow">
                             <span class="fractal-label">X cell</span>
                             <select id="fractalAxisI" title="Cell used as the X axis in the fractal view">
                                 <option value="0" selected>Cell 0</option>
@@ -569,7 +628,12 @@
                             <input type="range" id="fractalCycle" min="1" max="50" step="1" value="40">
                             <span id="fractalCycleVal" style="color:var(--text-muted);font-size:0.7rem;width:30px;text-align:right;flex-shrink:0;">40</span>
                         </div>
-                        <div style="color:var(--text-muted);font-size:0.67rem;line-height:1.5;padding:6px 2px 2px;">
+                        <div class="fractal-ctrl-row" id="fractalSamplesRow" style="display:none">
+                            <span class="fractal-label">Samples</span>
+                            <input type="range" id="fractalSamples" min="1" max="8" step="1" value="4">
+                            <span id="fractalSamplesVal" style="color:var(--text-muted);font-size:0.7rem;width:30px;text-align:right;flex-shrink:0;">4</span>
+                        </div>
+                        <div id="fractalDesc" style="color:var(--text-muted);font-size:0.67rem;line-height:1.5;padding:6px 2px 2px;">
                             Each pixel's color shows what attractor the simulation reaches when the X and Y cells start at those coordinates. <span style="color:#38bdf8;">Blue</span> = settles to a fixed point (brighter = converges faster); <span style="color:#f43f5e;">red</span> = enters a repeating cycle (brighter = longer cycle); black = no convergence within the iteration budget. The dot marks the current simulation state — drag it to jump there. <b style="color:var(--text-main);font-weight:normal;">Iters</b> sets total steps per pixel; <b style="color:var(--text-main);font-weight:normal;">Cycle</b> sets the detection window (warm-up = Iters − Cycle).
                         </div>
                     </div>
@@ -1426,6 +1490,26 @@
         let fractalShader = null;
         let fractalAxisI = 0, fractalAxisJ = 1;
         let fractalMaxIter = 80, fractalMaxCycleLen = 40;
+        let fractalMapMode = 0; // 0 = cell pair, 1 = energy × variance
+        let fractalNumSamples = 4;
+
+        function generateEVState(targetMean, targetStd) {
+            const vals = Array.from({length: 8}, () => Math.random());
+            const sm = vals.reduce((a, b) => a + b, 0) / 8;
+            const ss = Math.sqrt(vals.reduce((s, v) => s + (v - sm) ** 2, 0) / 8);
+            const scale = ss > 1e-7 ? targetStd / ss : 0;
+            return vals.map(v => targetMean + scale * (v - sm));
+        }
+
+        const updateFractalDesc = () => {
+            const el = document.getElementById('fractalDesc');
+            if (!el) return;
+            if (fractalMapMode === 0) {
+                el.innerHTML = 'Each pixel\'s color shows what attractor the simulation reaches when the X and Y cells start at those coordinates. <span style="color:#38bdf8;">Blue</span> = settles to a fixed point (brighter = converges faster); <span style="color:#f43f5e;">red</span> = enters a repeating cycle (brighter = longer cycle); black = no convergence within the iteration budget. The dot marks the current simulation state — drag it to jump there. <b style="color:var(--text-main);font-weight:normal;">Iters</b> sets total steps per pixel; <b style="color:var(--text-main);font-weight:normal;">Cycle</b> sets the detection window (warm-up = Iters − Cycle).';
+            } else {
+                el.innerHTML = 'Each pixel samples <b style="color:var(--text-main);font-weight:normal;">N</b> random 8-cell states with that (mean energy, std dev) and runs each to convergence. <span style="color:#38bdf8;">Blue</span> = majority fixed point; <span style="color:#f43f5e;">red</span> = majority cycle; black = no convergence. Saturation reflects agreement across samples — desaturated regions are phase boundaries. Drag the dot to jump to a uniform state at that energy level.';
+            }
+        };
 
         // Integer codes must match mfn() in the fragment shader.
         function getLogicTypeInt() {
@@ -1445,13 +1529,22 @@
             visModeEl.value = mode;
             document.getElementById('sideText').style.display    = mode === 'desc'    ? '' : 'none';
             document.getElementById('sidePhase').style.display   = mode === 'phase'   ? 'flex' : 'none';
+            document.getElementById('sideBifurc').style.display  = mode === 'bifurc'  ? 'flex' : 'none';
             document.getElementById('sideFractal').style.display = mode === 'fractal' ? 'flex' : 'none';
 
+            if (mode === 'bifurc') {
+                bifurcStop();
+                requestAnimationFrame(() => { bifurcReset(); bifurcStart(); });
+            } else {
+                bifurcStop();
+            }
             if (mode === 'phase') {
                 document.getElementById('phaseDesc').innerHTML = getDesc();
                 requestAnimationFrame(() => { sizeFourierCanvas(); drawPhase(); });
             }
             if (mode === 'fractal') {
+                document.getElementById('fractalCellRow').style.display = fractalMapMode ? 'none' : '';
+                document.getElementById('fractalSamplesRow').style.display = fractalMapMode ? '' : 'none';
                 if (!fractalShader) {
                     fractalShader = new RCAFractalShader(document.getElementById('fractalCanvasWrap'), {
                         logicType: getLogicTypeInt(),
@@ -1460,11 +1553,19 @@
                         ring: [...RING],
                         axisI: fractalAxisI, axisJ: fractalAxisJ,
                         maxIter: fractalMaxIter, maxCycleLen: fractalMaxCycleLen,
+                        mapMode: fractalMapMode, numSamples: fractalNumSamples,
                     });
                     fractalShader.state = [...history[history.length - 1]];
                     fractalShader.onPointDrag = (uvX, uvY) => {
-                        history[history.length - 1][RING[fractalAxisI]] = Math.max(0, uvX);
-                        history[history.length - 1][RING[fractalAxisJ]] = Math.max(0, uvY);
+                        if (fractalMapMode === 0) {
+                            history[history.length - 1][RING[fractalAxisI]] = Math.max(0, uvX);
+                            history[history.length - 1][RING[fractalAxisJ]] = Math.max(0, uvY);
+                        } else {
+                            history[history.length - 1] = generateEVState(
+                                Math.max(0, uvY),  // mean = Y axis
+                                Math.max(0, uvX)   // std  = X axis
+                            );
+                        }
                         syncUI();
                         draw();
                     };
@@ -1474,8 +1575,10 @@
                         const totalIter   = cycleStart + maxCycleLen;
 
                         let s = [...history[history.length - 1]];
-                        s[RING[fractalAxisI]] = Math.max(0, uvX);
-                        s[RING[fractalAxisJ]] = Math.max(0, uvY);
+                        if (fractalMapMode === 0) {
+                            s[RING[fractalAxisI]] = Math.max(0, uvX);
+                            s[RING[fractalAxisJ]] = Math.max(0, uvY);
+                        }
 
                         const doStep = simStep;
 
@@ -1512,6 +1615,7 @@
                 } else {
                     fractalShader.resume();
                 }
+                updateFractalDesc();
                 requestAnimationFrame(() => fractalShader.onResize());
             } else {
                 if (fractalShader) fractalShader.pause();
@@ -1548,6 +1652,344 @@
             fractalMaxCycleLen = parseInt(this.value);
             document.getElementById('fractalCycleVal').textContent = fractalMaxCycleLen;
             if (fractalShader) fractalShader.maxCycleLen = fractalMaxCycleLen;
+        };
+        document.getElementById('fractalMapMode').onchange = function() {
+            fractalMapMode = this.value === 'ev' ? 1 : 0;
+            document.getElementById('fractalCellRow').style.display = fractalMapMode ? 'none' : '';
+            document.getElementById('fractalSamplesRow').style.display = fractalMapMode ? '' : 'none';
+            if (fractalShader) fractalShader.mapMode = fractalMapMode;
+            updateFractalDesc();
+        };
+        document.getElementById('fractalSamples').oninput = function() {
+            fractalNumSamples = parseInt(this.value);
+            document.getElementById('fractalSamplesVal').textContent = fractalNumSamples;
+            if (fractalShader) fractalShader.numSamples = fractalNumSamples;
+        };
+
+        // ── Bifurcation view ──────────────────────────────────────────────
+        let bifurcCanvas = null, bifurcCtx = null;
+        let bifurcFixed = null, bifurcCycle = null;
+        let bifurcW = 0, bifurcH = 0, bifurcRunning = false;
+        let bifurcLastKey = '';
+        let bifurcOffset = {x: 0.25, y: 1.0};
+        let bifurcZoom = 0.5;
+        let bifurcIsPanning = false, bifurcLastPan = {x: 0, y: 0};
+        let bifurcEventsAttached = false;
+        let bifurcMaxF = 0, bifurcMaxC = 0;
+        let bifurcSnapOffset = null, bifurcSnapZoom = null;  // viewport at last grid reset
+        let bifurcMaxIter = 80, bifurcMaxCycleLen = 40;
+        let bifurcVisMode = 'convergence';
+        const BIFURC_SIM_MS = 10;  // simulation time budget per frame
+        const BIFURC_STD_RANGE = 1.5;              // σ axis: 0 to 1.5
+        const BIFURC_MEAN_RANGE = 5.0;             // E axis: 0 to 5.0
+
+        function bifurcToCanvas(std, mean) {
+            return {
+                x: (std  - bifurcOffset.x) * bifurcH * bifurcZoom + bifurcW / 2,
+                y: bifurcH / 2 - (mean - bifurcOffset.y) * bifurcH * bifurcZoom
+            };
+        }
+        function bifurcToData(cx, cy) {
+            return {
+                std:  (cx - bifurcW / 2) / bifurcH / bifurcZoom + bifurcOffset.x,
+                mean: -(cy - bifurcH / 2) / bifurcH / bifurcZoom + bifurcOffset.y
+            };
+        }
+
+        function bifurcFullKey() {
+            return `${conservationMode}_${clampValues}_${topologyMode}_${logicType.value}_${RING.join(',')}_${bifurcVisMode}`;
+        }
+
+        function bifurcResetGrid() {
+            if (!bifurcW || !bifurcH) return;
+            bifurcFixed = new Float32Array(bifurcW * bifurcH);
+            bifurcCycle = new Float32Array(bifurcW * bifurcH);
+            bifurcMaxF = 0; bifurcMaxC = 0;
+            bifurcSnapOffset = {x: bifurcOffset.x, y: bifurcOffset.y};
+            bifurcSnapZoom = bifurcZoom;
+        }
+
+        function bifurcViewChanged() {
+            return !bifurcSnapOffset ||
+                bifurcOffset.x !== bifurcSnapOffset.x ||
+                bifurcOffset.y !== bifurcSnapOffset.y ||
+                bifurcZoom !== bifurcSnapZoom;
+        }
+
+        function bifurcReset() {
+            const wrap = document.getElementById('bifurcCanvasWrap');
+            bifurcW = wrap.offsetWidth;
+            bifurcH = wrap.offsetHeight;
+            if (!bifurcW || !bifurcH) return;
+            if (!bifurcCanvas) {
+                bifurcCanvas = document.createElement('canvas');
+                bifurcCanvas.style.cssText = 'display:block;position:absolute;top:0;left:0;';
+                wrap.appendChild(bifurcCanvas);
+                bifurcCtx = bifurcCanvas.getContext('2d');
+                // Place (std=0, mean=0) at the bottom-left corner
+                bifurcOffset.x = bifurcW / (2 * bifurcH * bifurcZoom);
+                bifurcOffset.y = 1 / (2 * bifurcZoom);
+            }
+            bifurcCanvas.width = bifurcW;
+            bifurcCanvas.height = bifurcH;
+            bifurcResetGrid();
+            bifurcLastKey = bifurcFullKey();
+            if (!bifurcEventsAttached) { bifurcAttachEvents(); bifurcEventsAttached = true; }
+        }
+
+        function bifurcRandomStart() {
+            // Half the starts target the visible energy range so panned regions fill in
+            if (Math.random() < 0.5 && bifurcH > 0) {
+                const visMeanMin = Math.max(0, bifurcToData(bifurcW / 2, bifurcH).mean);
+                const visMeanMax = Math.max(0, bifurcToData(bifurcW / 2, 0).mean);
+                const visStdMin  = Math.max(0, bifurcToData(0, bifurcH / 2).std);
+                const visStdMax  = Math.max(0, bifurcToData(bifurcW, bifurcH / 2).std);
+                if (visMeanMax > 0) {
+                    const targetMean = visMeanMin + Math.random() * (visMeanMax - visMeanMin);
+                    const stdHi = Math.min(visStdMax, targetMean);
+                    const stdLo = Math.min(visStdMin, stdHi);
+                    const targetStd  = stdLo + Math.random() * (stdHi - stdLo);
+                    return generateEVState(targetMean, targetStd);
+                }
+            }
+            // The other half: diverse random starts for broad coverage
+            switch (Math.floor(Math.random() * 6)) {
+                case 0: return Array.from({length: COLS}, () => Math.random());
+                case 1: { // sparse: 1–4 cells non-zero, rest zero
+                    const s = new Array(COLS).fill(0);
+                    const k = 1 + Math.floor(Math.random() * 4);
+                    Array.from({length: COLS}, (_, i) => i)
+                        .sort(() => Math.random() - 0.5).slice(0, k)
+                        .forEach(i => { s[i] = Math.random() * 2; });
+                    return s;
+                }
+                case 2: { // one dominant cell
+                    const s = Array.from({length: COLS}, () => Math.random() * 0.1);
+                    s[Math.floor(Math.random() * COLS)] = 1 + Math.random();
+                    return s;
+                }
+                case 3: return Array.from({length: COLS}, () => Math.random() * 2);
+                case 4: return Array.from({length: COLS}, () =>
+                    Math.random() > 0.5 ? 0.7 + Math.random() * 0.3 : Math.random() * 0.3);
+                default: { // gradient from 0 to random peak
+                    const peak = Math.random() * 2;
+                    return Array.from({length: COLS}, (_, i) =>
+                        Math.max(0, peak * i / (COLS - 1) + (Math.random() - 0.5) * 0.3));
+                }
+            }
+        }
+
+        function bifurcPlotState(s) {
+            let sum = 0;
+            for (let k = 0; k < 8; k++) sum += s[k];
+            const mean = sum / 8;
+            let varSum = 0;
+            for (let k = 0; k < 8; k++) { const d = s[k] - mean; varSum += d * d; }
+            const {x: cx, y: cy} = bifurcToCanvas(Math.sqrt(varSum / 8), mean);
+            const bx = Math.round(cx), by = Math.round(cy);
+            if (bx >= 0 && bx < bifurcW && by >= 0 && by < bifurcH) {
+                const idx = by * bifurcW + bx;
+                const v = ++bifurcFixed[idx];
+                if (v > bifurcMaxF) bifurcMaxF = v;
+            }
+        }
+
+        function bifurcRunBatch() {
+            const totalIter = bifurcMaxIter;
+            const deadline = performance.now() + BIFURC_SIM_MS;
+
+            if (bifurcVisMode === 'visits') {
+                while (performance.now() < deadline) {
+                    let s = bifurcRandomStart();
+                    for (let i = 0; i < totalIter; i++) {
+                        s = simStep(s);
+                        if (i === 0) continue; // skip first step
+                        bifurcPlotState(s);
+                    }
+                }
+                return;
+            }
+
+            // convergence mode
+            const maxCycleLen = bifurcMaxCycleLen;
+            const cycleStart = Math.max(0, totalIter - maxCycleLen);
+            const deadline2 = deadline; // same budget
+            while (performance.now() < deadline2) {
+                let s = bifurcRandomStart();
+                let ref = null, foundAt = -1, isFixed = false;
+                for (let i = 0; i < totalIter; i++) {
+                    s = simStep(s);
+                    let mx = 0;
+                    for (let k = 0; k < 8; k++) if (s[k] > mx) mx = s[k];
+                    if (mx < 0.005) { foundAt = i; isFixed = true; break; }
+                    if (i === cycleStart) ref = s.slice();
+                    if (i > cycleStart) {
+                        let md = 0;
+                        for (let k = 0; k < 8; k++) { const d = Math.abs(s[k] - ref[k]); if (d > md) md = d; }
+                        if (md < 0.015) { foundAt = i; isFixed = (i === cycleStart + 1); break; }
+                    }
+                }
+                if (foundAt < 0) continue;
+
+                let sum = 0;
+                for (let k = 0; k < 8; k++) sum += s[k];
+                const mean = sum / 8;
+                let varSum = 0;
+                for (let k = 0; k < 8; k++) { const d = s[k] - mean; varSum += d * d; }
+                const {x: cx, y: cy} = bifurcToCanvas(Math.sqrt(varSum / 8), mean);
+                const bx = Math.round(cx), by = Math.round(cy);
+                if (bx >= 0 && bx < bifurcW && by >= 0 && by < bifurcH) {
+                    const idx = by * bifurcW + bx;
+                    if (isFixed) { const v = ++bifurcFixed[idx]; if (v > bifurcMaxF) bifurcMaxF = v; }
+                    else         { const v = ++bifurcCycle[idx]; if (v > bifurcMaxC) bifurcMaxC = v; }
+                }
+            }
+        }
+
+        function bifurcDraw() {
+            if (!bifurcFixed || !bifurcW || !bifurcH) return;
+
+            const sf = bifurcMaxF > 0 ? 1 / Math.log(1 + bifurcMaxF) : 1;
+            const sc = bifurcMaxC > 0 ? 1 / Math.log(1 + bifurcMaxC) : 1;
+
+            const img = bifurcCtx.createImageData(bifurcW, bifurcH);
+            const n = bifurcW * bifurcH;
+            if (bifurcVisMode === 'visits') {
+                // single-channel: dark→orange→white heatmap
+                for (let i = 0; i < n; i++) {
+                    const t = Math.log(1 + bifurcFixed[i]) * sf;
+                    const base = i * 4;
+                    img.data[base]     = Math.min(255, Math.round(t * 255));
+                    img.data[base + 1] = Math.min(255, Math.round(t * 180));
+                    img.data[base + 2] = Math.min(255, Math.round(t * 60));
+                    img.data[base + 3] = 255;
+                }
+            } else {
+                for (let i = 0; i < n; i++) {
+                    const bf = Math.log(1 + bifurcFixed[i]) * sf;
+                    const bc = Math.log(1 + bifurcCycle[i]) * sc;
+                    const base = i * 4;
+                    img.data[base]     = Math.min(255, Math.round(bc * 244 + bf * 56));
+                    img.data[base + 1] = Math.min(255, Math.round(bc * 63  + bf * 189));
+                    img.data[base + 2] = Math.min(255, Math.round(bc * 94  + bf * 248));
+                    img.data[base + 3] = 255;
+                }
+            }
+            bifurcCtx.putImageData(img, 0, 0);
+
+            // dynamic axis labels
+            const tl = bifurcToData(0, 0), br = bifurcToData(bifurcW, bifurcH);
+            bifurcCtx.font = '9px "Courier New", monospace';
+            bifurcCtx.fillStyle = '#475569';
+            bifurcCtx.textAlign = 'center';
+            bifurcCtx.fillText(`σ  ${tl.std.toFixed(2)} → ${br.std.toFixed(2)}`, bifurcW / 2, bifurcH - 4);
+            bifurcCtx.save();
+            bifurcCtx.translate(10, bifurcH / 2);
+            bifurcCtx.rotate(-Math.PI / 2);
+            bifurcCtx.fillText(`E  ${Math.max(0, br.mean).toFixed(2)} → ${Math.max(0, tl.mean).toFixed(2)}`, 0, 0);
+            bifurcCtx.restore();
+
+            // std=0 axis line
+            const {x: x0} = bifurcToCanvas(0, 0);
+            if (x0 >= 0 && x0 <= bifurcW) {
+                bifurcCtx.strokeStyle = '#1e293b';
+                bifurcCtx.lineWidth = 1;
+                bifurcCtx.beginPath();
+                bifurcCtx.moveTo(x0, 0); bifurcCtx.lineTo(x0, bifurcH);
+                bifurcCtx.stroke();
+            }
+
+            // current state dot
+            const latest = history[history.length - 1];
+            let dotSum = 0;
+            for (let k = 0; k < COLS; k++) dotSum += latest[k];
+            const dotMean = dotSum / COLS;
+            let dotVarSum = 0;
+            for (let k = 0; k < COLS; k++) { const d = latest[k] - dotMean; dotVarSum += d * d; }
+            const dotStd = Math.sqrt(dotVarSum / COLS);
+
+            const {x: dotX, y: dotY} = bifurcToCanvas(dotStd, dotMean);
+            if (dotX >= 0 && dotX <= bifurcW && dotY >= 0 && dotY <= bifurcH) {
+                bifurcCtx.beginPath();
+                bifurcCtx.arc(dotX, dotY, 4, 0, 2 * Math.PI);
+                bifurcCtx.fillStyle = 'rgba(255,255,255,0.85)';
+                bifurcCtx.fill();
+            }
+        }
+
+        function bifurcAttachEvents() {
+            const wrap = document.getElementById('bifurcCanvasWrap');
+            wrap.addEventListener('mousedown', e => {
+                bifurcIsPanning = true;
+                bifurcLastPan = {x: e.clientX, y: e.clientY};
+            });
+            wrap.addEventListener('mouseup',    () => bifurcIsPanning = false);
+            wrap.addEventListener('mouseleave', () => bifurcIsPanning = false);
+            wrap.addEventListener('mousemove', e => {
+                if (!bifurcIsPanning || !bifurcH) return;
+                const dx = e.clientX - bifurcLastPan.x;
+                const dy = e.clientY - bifurcLastPan.y;
+                bifurcOffset.x -= dx / bifurcH / bifurcZoom;
+                bifurcOffset.y += dy / bifurcH / bifurcZoom;
+                bifurcLastPan = {x: e.clientX, y: e.clientY};
+            });
+            wrap.addEventListener('wheel', e => {
+                e.preventDefault();
+                const f = e.deltaY < 0 ? 1.25 : 0.8;
+                const rect = wrap.getBoundingClientRect();
+                const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+                const {std: dX, mean: dY} = bifurcToData(mx, my);
+                bifurcZoom *= f;
+                bifurcOffset.x = dX - (mx - bifurcW / 2) / bifurcH / bifurcZoom;
+                bifurcOffset.y = dY + (my - bifurcH / 2) / bifurcH / bifurcZoom;
+            }, {passive: false});
+        }
+
+        function bifurcFrame() {
+            if (!bifurcRunning) return;
+            if (bifurcFullKey() !== bifurcLastKey) bifurcReset();
+            else if (bifurcViewChanged()) bifurcResetGrid();
+            bifurcRunBatch();
+            bifurcDraw();
+            requestAnimationFrame(bifurcFrame);
+        }
+
+        function bifurcStart() {
+            if (bifurcRunning) return;
+            bifurcRunning = true;
+            requestAnimationFrame(bifurcFrame);
+        }
+
+        function bifurcStop() { bifurcRunning = false; }
+
+        document.getElementById('bifurcMode').onchange = function () {
+            bifurcVisMode = this.value;
+            const descEl = document.getElementById('bifurcModeDesc');
+            descEl.innerHTML = bifurcVisMode === 'visits'
+                ? 'counts every state visited per trajectory (skip step 0)'
+                : '<span style="color:#38bdf8;">blue</span> = fixed · <span style="color:#f43f5e;">red</span> = cycle';
+            const cycleRow = document.getElementById('bifurcCycleRow');
+            if (cycleRow) cycleRow.style.display = bifurcVisMode === 'visits' ? 'none' : '';
+            bifurcReset();
+        };
+
+        document.getElementById('bifurcIter').oninput = function () {
+            bifurcMaxIter = parseInt(this.value);
+            document.getElementById('bifurcIterVal').textContent = bifurcMaxIter;
+            const cycleEl = document.getElementById('bifurcCycle');
+            cycleEl.max = bifurcMaxIter;
+            if (bifurcMaxCycleLen > bifurcMaxIter) {
+                bifurcMaxCycleLen = bifurcMaxIter;
+                cycleEl.value = bifurcMaxCycleLen;
+                document.getElementById('bifurcCycleVal').textContent = bifurcMaxCycleLen;
+            }
+            bifurcResetGrid();
+        };
+
+        document.getElementById('bifurcCycle').oninput = function () {
+            bifurcMaxCycleLen = parseInt(this.value);
+            document.getElementById('bifurcCycleVal').textContent = bifurcMaxCycleLen;
+            bifurcResetGrid();
         };
 
         const phaseModeEl = document.getElementById('phaseMode');
@@ -1703,11 +2145,11 @@
 
         // ── RCA Fractal Shader ─────────────────────────────────────────────
         class RCAFractalShader {
-            constructor(screenEl, {logicType=0, energyMode=1, topoMode=0, ring=[0,1,3,2,6,7,5,4], axisI=0, axisJ=1, maxIter=50, maxCycleLen=20} = {}) {
+            constructor(screenEl, {logicType=0, energyMode=1, topoMode=0, ring=[0,1,3,2,6,7,5,4], axisI=0, axisJ=1, maxIter=50, maxCycleLen=20, mapMode=0, numSamples=4} = {}) {
                 this.screenEl = screenEl;
                 this.canvas = document.createElement('canvas');
                 this.canvas.style.cssText = 'display:block;position:absolute;top:0;left:0;';
-                this.gl = this.canvas.getContext('webgl2', {antialias: false});
+                this.gl = this.canvas.getContext('webgl2', {antialias: false, preserveDrawingBuffer: true});
                 if (!this.gl) { console.error('WebGL2 not supported'); return; }
                 screenEl.appendChild(this.canvas);
 
@@ -1717,10 +2159,11 @@
                 this.ring = ring;
                 this.axisI = axisI; this.axisJ = axisJ;
                 this.maxIter = maxIter; this.maxCycleLen = maxCycleLen;
+                this.mapMode = mapMode; this.numSamples = numSamples;
                 this.state = new Array(8).fill(0.5);
                 this.zoom = 1.0; this.offset = {x: 0.5, y: 0.5};
                 this.isPanning = false; this.lastPanPos = {x: 0, y: 0};
-                this.isRunning = false; this.ul = {};
+                this.isRunning = false; this.ul = {}; this._tileRow = 0;
                 this._run = this._run.bind(this);
                 this._initShader(); this._setupQuad(); this._cacheUniforms(); this._attachEvents(); this._createPointElements();
                 this.onResize(); this.isRunning = true; requestAnimationFrame(this._run);
@@ -1749,6 +2192,8 @@
                     uniform int u_topoMode;
                     uniform ivec4 u_ringA;
                     uniform ivec4 u_ringB;
+                    uniform int u_mapMode;
+                    uniform int u_numSamples;
                     out vec4 fragColor;
 
                     int gv(int i) {
@@ -1953,49 +2398,97 @@
                         return max(max(max(dA.x,dA.y),max(dA.z,dA.w)), max(max(dB.x,dB.y),max(dB.z,dB.w)));
                     }
 
-                    void main() {
-                        vec2 uv = (gl_FragCoord.xy - 0.5*u_res) / u_res.y / u_zoom + u_off;
-                        if (uv.x < 0.0 || uv.y < 0.0) { fragColor = vec4(0.05, 0.07, 0.1, 1.0); return; }
-
-                        vec4 sa = u_stateA, sb = u_stateB;
-                        setv(sa,sb, gv(u_axisI), uv.x);
-                        setv(sa,sb, gv(u_axisJ), uv.y);
-
+                    // Returns vec2(t, type): type 0=none, 1=fixed, 2=cycle
+                    vec2 runSim(vec4 sa, vec4 sb) {
                         vec4 refA = sa, refB = sb;
                         int foundAt = -1;
                         bool isFixed = false;
-
                         int totalIter = u_cycleStart + u_maxCycleLen;
                         int settleAt = totalIter;
-                        const int MAX_C = 400;
                         vec4 prevA = sa, prevB = sb;
-                        for (int i = 0; i < MAX_C; i++) {
-                            if (i >= totalIter) break;
+                        for (int i = 0; i < totalIter; i++) {
                             prevA = sa; prevB = sb;
                             rcaStep(sa, sb);
                             if (isUniform(sa,sb)) { foundAt = i; isFixed = true; break; }
                             if (settleAt == totalIter && sdiff(sa,sb,prevA,prevB) < 0.003) settleAt = i;
                             if (i == u_cycleStart) { refA = sa; refB = sb; }
                             if (i > u_cycleStart && sdiff(sa,sb,refA,refB) < 0.015) {
-                                foundAt = i;
-                                isFixed = (i == u_cycleStart + 1);
-                                break;
+                                foundAt = i; isFixed = (i == u_cycleStart + 1); break;
                             }
                         }
-
-                        if (foundAt < 0) { fragColor = vec4(0.0,0.0,0.0,1.0); return; }
-
+                        if (foundAt < 0) return vec2(0.0, 0.0);
                         float t;
-                        if (isFixed && foundAt < u_cycleStart) {
-                            t = 1.0 - float(foundAt) / float(totalIter);
-                        } else if (isFixed) {
-                            t = 1.0 - float(settleAt) / float(totalIter);
-                        } else {
-                            t = float(foundAt - u_cycleStart) / float(u_maxCycleLen);
-                        }
+                        if (isFixed && foundAt < u_cycleStart) t = 1.0 - float(foundAt) / float(totalIter);
+                        else if (isFixed) t = 1.0 - float(settleAt) / float(totalIter);
+                        else t = float(foundAt - u_cycleStart) / float(u_maxCycleLen);
                         t = clamp(t, 0.0, 1.0) * 0.85 + 0.15;
-                        vec3 col = isFixed ? hsv2rgb(vec3(0.58, 0.85, t)) : hsv2rgb(vec3(0.0, 0.9, t));
-                        fragColor = vec4(col, 1.0);
+                        return vec2(t, isFixed ? 1.0 : 2.0);
+                    }
+
+                    uint hashU(uint seed) {
+                        seed ^= seed >> 17u; seed *= 0xbf324c81u;
+                        seed ^= seed >> 11u; seed *= 0x4ba1bb47u;
+                        seed ^= seed >> 16u; return seed;
+                    }
+                    float hashF(uint seed) { return float(hashU(seed)) / 4294967296.0; }
+
+                    void generateEVState(float tMean, float tStd, uint bh, out vec4 sa, out vec4 sb) {
+                        float v[8];
+                        for (int k = 0; k < 8; k++) v[k] = hashF(hashU(bh ^ uint(k + 1)));
+                        float sm = 0.0;
+                        for (int k = 0; k < 8; k++) sm += v[k];
+                        sm /= 8.0;
+                        float ss = 0.0;
+                        for (int k = 0; k < 8; k++) ss += (v[k]-sm)*(v[k]-sm);
+                        ss = sqrt(ss / 8.0);
+                        float sc = ss > 1e-7 ? tStd / ss : 0.0;
+                        for (int k = 0; k < 8; k++) v[k] = tMean + sc*(v[k]-sm);
+                        sa = vec4(v[0],v[1],v[2],v[3]);
+                        sb = vec4(v[4],v[5],v[6],v[7]);
+                    }
+
+                    void main() {
+                        vec2 uv = (gl_FragCoord.xy - 0.5*u_res) / u_res.y / u_zoom + u_off;
+
+                        if (u_mapMode == 0) {
+                            if (uv.x < 0.0 || uv.y < 0.0) { fragColor = vec4(0.05, 0.07, 0.1, 1.0); return; }
+                            vec4 sa = u_stateA, sb = u_stateB;
+                            setv(sa,sb, gv(u_axisI), uv.x);
+                            setv(sa,sb, gv(u_axisJ), uv.y);
+                            vec2 r = runSim(sa, sb);
+                            if (r.y < 0.5) { fragColor = vec4(0.0,0.0,0.0,1.0); return; }
+                            vec3 col = r.y < 1.5 ? hsv2rgb(vec3(0.58, 0.85, r.x)) : hsv2rgb(vec3(0.0, 0.9, r.x));
+                            fragColor = vec4(col, 1.0);
+                        } else {
+                            float tStd = uv.x, tMean = uv.y;
+                            if (tStd < 0.0 || tMean < 0.0) { fragColor = vec4(0.05, 0.07, 0.1, 1.0); return; }
+                            uvec2 pi = uvec2(gl_FragCoord.xy);
+                            uint ph = hashU(pi.x * 2971215073u ^ pi.y * 433494437u);
+                            int nFix = 0, nCyc = 0;
+                            float tFix = 0.0, tCyc = 0.0;
+                            for (int s = 0; s < 8; s++) {
+                                if (s >= u_numSamples) break;
+                                uint sh = hashU(ph ^ uint(s * 13337 + 1));
+                                vec4 sa, sb;
+                                generateEVState(tMean, tStd, sh, sa, sb);
+                                vec2 r = runSim(sa, sb);
+                                if (r.y > 1.5) { nCyc++; tCyc += r.x; }
+                                else if (r.y > 0.5) { nFix++; tFix += r.x; }
+                            }
+                            if (nFix == 0 && nCyc == 0) { fragColor = vec4(0.0,0.0,0.0,1.0); return; }
+                            vec3 col;
+                            float agree;
+                            if (nFix >= nCyc) {
+                                tFix = nFix > 0 ? tFix / float(nFix) : 0.5;
+                                agree = float(nFix) / float(u_numSamples);
+                                col = hsv2rgb(vec3(0.58, mix(0.3, 0.85, agree), tFix));
+                            } else {
+                                tCyc = nCyc > 0 ? tCyc / float(nCyc) : 0.5;
+                                agree = float(nCyc) / float(u_numSamples);
+                                col = hsv2rgb(vec3(0.0, mix(0.3, 0.9, agree), tCyc));
+                            }
+                            fragColor = vec4(col, 1.0);
+                        }
                     }`;
 
                 const vs = gl.createShader(gl.VERTEX_SHADER);
@@ -2033,6 +2526,7 @@
                     logicType: gl.getUniformLocation(p,'u_logicType'), energyMode: gl.getUniformLocation(p,'u_energyMode'),
                     topoMode: gl.getUniformLocation(p,'u_topoMode'),
                     ringA: gl.getUniformLocation(p,'u_ringA'), ringB: gl.getUniformLocation(p,'u_ringB'),
+                    mapMode: gl.getUniformLocation(p,'u_mapMode'), numSamples: gl.getUniformLocation(p,'u_numSamples'),
                 };
             }
 
@@ -2054,16 +2548,22 @@
                 gl.uniform1i(u.topoMode, this.topoMode);
                 gl.uniform4iv(u.ringA, this.ring.slice(0, 4));
                 gl.uniform4iv(u.ringB, this.ring.slice(4, 8));
+                gl.uniform1i(u.mapMode, this.mapMode);
+                gl.uniform1i(u.numSamples, this.numSamples);
             }
 
             _isDirty() {
                 const snap = this._snapshot;
                 if (!snap) return true;
                 if (snap.zoom !== this.zoom || snap.offX !== this.offset.x || snap.offY !== this.offset.y) return true;
-                if (snap.axisI !== this.axisI || snap.axisJ !== this.axisJ) return true;
                 if (snap.maxIter !== this.maxIter || snap.maxCycleLen !== this.maxCycleLen) return true;
                 if (snap.logicType !== this.logicType || snap.energyMode !== this.energyMode || snap.topoMode !== this.topoMode) return true;
-                for (let i = 0; i < 8; i++) if (snap.state[i] !== this.state[i] || snap.ring[i] !== this.ring[i]) return true;
+                if (snap.mapMode !== this.mapMode || snap.numSamples !== this.numSamples) return true;
+                for (let i = 0; i < 8; i++) if (snap.ring[i] !== this.ring[i]) return true;
+                if (this.mapMode === 0) {
+                    if (snap.axisI !== this.axisI || snap.axisJ !== this.axisJ) return true;
+                    for (let i = 0; i < 8; i++) if (snap.state[i] !== this.state[i]) return true;
+                }
                 return false;
             }
 
@@ -2073,17 +2573,26 @@
                     axisI: this.axisI, axisJ: this.axisJ,
                     maxIter: this.maxIter, maxCycleLen: this.maxCycleLen,
                     logicType: this.logicType, energyMode: this.energyMode, topoMode: this.topoMode,
+                    mapMode: this.mapMode, numSamples: this.numSamples,
                     state: [...this.state], ring: [...this.ring],
                 };
             }
 
+            _getStateUV() {
+                if (this.mapMode === 0) {
+                    return { x: this.state[this._gv(this.axisI)], y: this.state[this._gv(this.axisJ)] };
+                }
+                const mean = this.state.reduce((a, b) => a + b, 0) / 8;
+                const variance = this.state.reduce((s, v) => s + (v - mean) * (v - mean), 0) / 8;
+                return { x: Math.sqrt(variance), y: mean };
+            }
+
             _autoFollow() {
-                if (this.isPanning) return;
+                if (this.isPanning || this.mapMode === 1) return;
                 const MARGIN_PX = 30;
                 const w = this.canvas.width, h = this.canvas.height;
                 if (!w || !h) return;
-                const uvX = this.state[this._gv(this.axisI)];
-                const uvY = this.state[this._gv(this.axisJ)];
+                const { x: uvX, y: uvY } = this._getStateUV();
                 const m = MARGIN_PX / h / this.zoom;
                 const halfW = 0.5 * w / h / this.zoom;
                 const halfH = 0.5 / this.zoom;
@@ -2095,9 +2604,26 @@
                 if (!this.isRunning) return;
                 this._autoFollow();
                 if (this._isDirty()) {
-                    this._setUniforms();
-                    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
                     this._saveSnapshot();
+                    this._setUniforms();
+                    if (this.mapMode === 0) {
+                        this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
+                    } else {
+                        const gl = this.gl;
+                        gl.clearColor(0.05, 0.07, 0.1, 1.0);
+                        gl.clear(gl.COLOR_BUFFER_BIT);
+                        this._tileRow = 0;
+                    }
+                }
+                if (this.mapMode === 1 && this._tileRow < this.canvas.height) {
+                    const gl = this.gl;
+                    const TILE_H = 4;
+                    const y = Math.max(0, this.canvas.height - this._tileRow - TILE_H);
+                    gl.enable(gl.SCISSOR_TEST);
+                    gl.scissor(0, y, this.canvas.width, TILE_H);
+                    gl.drawArrays(gl.TRIANGLES, 0, 6);
+                    gl.disable(gl.SCISSOR_TEST);
+                    this._tileRow += TILE_H;
                 }
                 this._updatePoint();
                 requestAnimationFrame(this._run);
@@ -2152,8 +2678,7 @@
 
             _updatePoint() {
                 if (!this.pointEl || !this.canvas.width) return;
-                const uvX = this.state[this._gv(this.axisI)];
-                const uvY = this.state[this._gv(this.axisJ)];
+                const { x: uvX, y: uvY } = this._getStateUV();
                 const w = this.canvas.width, h = this.canvas.height;
                 const px = (uvX - this.offset.x) * h * this.zoom + 0.5 * w;
                 const py = 0.5 * h - (uvY - this.offset.y) * h * this.zoom;
@@ -2161,7 +2686,9 @@
                 this.pointEl.style.top  = `${py}px`;
                 this.labelEl.style.left = `${px}px`;
                 this.labelEl.style.top  = `${py}px`;
-                this.labelEl.textContent = `${uvX.toFixed(2)}, ${uvY.toFixed(2)}`;
+                this.labelEl.textContent = this.mapMode === 0
+                    ? `${uvX.toFixed(2)}, ${uvY.toFixed(2)}`
+                    : `σ=${uvX.toFixed(2)}, E=${uvY.toFixed(2)}`;
                 const inView = px > -6 && px < w + 6 && py > -6 && py < h + 6;
                 this.pointEl.style.display = inView ? '' : 'none';
                 this.labelEl.style.display  = inView ? '' : 'none';
