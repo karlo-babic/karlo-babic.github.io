@@ -567,17 +567,17 @@
                         <div class="bifurc-ctrl-row">
                             <span class="fractal-label">Mode</span>
                             <select id="bifurcMode">
+                                <option value="visits" selected>Visit density</option>
                                 <option value="convergence">Convergence</option>
-                                <option value="visits">Visit density</option>
                             </select>
-                            <span id="bifurcModeDesc" style="color:var(--text-muted);font-size:0.68rem;line-height:1.4;flex:1;margin-left:6px;"><span style="color:#38bdf8;">blue</span> = fixed · <span style="color:#f43f5e;">red</span> = cycle</span>
+                            <span id="bifurcModeDesc" style="color:var(--text-muted);font-size:0.68rem;line-height:1.4;flex:1;margin-left:6px;">counts every state visited per trajectory (skip step 0)</span>
                         </div>
                         <div class="bifurc-ctrl-row">
                             <span class="fractal-label">Iters</span>
                             <input type="range" id="bifurcIter" min="20" max="400" step="10" value="80">
                             <span id="bifurcIterVal" style="color:var(--text-muted);font-size:0.7rem;width:30px;text-align:right;flex-shrink:0;">80</span>
                         </div>
-                        <div class="bifurc-ctrl-row" id="bifurcCycleRow">
+                        <div class="bifurc-ctrl-row" id="bifurcCycleRow" style="display:none;">
                             <span class="fractal-label">Cycle</span>
                             <input type="range" id="bifurcCycle" min="1" max="200" step="1" value="40">
                             <span id="bifurcCycleVal" style="color:var(--text-muted);font-size:0.7rem;width:30px;text-align:right;flex-shrink:0;">40</span>
@@ -1676,7 +1676,7 @@
         let bifurcMaxF = 0, bifurcMaxC = 0;
         let bifurcSnapOffset = null, bifurcSnapZoom = null;  // viewport at last grid reset
         let bifurcMaxIter = 80, bifurcMaxCycleLen = 40;
-        let bifurcVisMode = 'convergence';
+        let bifurcVisMode = 'visits';
         const BIFURC_SIM_MS = 10;  // simulation time budget per frame
 
         function bifurcToCanvas(std, mean) {
