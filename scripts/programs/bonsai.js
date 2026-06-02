@@ -16,7 +16,7 @@ const GROWTH = {
     REP_RADIUS_MULT:  1,        // repulsion acts within KILL_RADIUS * this (px)
     REP_STRENGTH:     1.0,      // how hard tips push each other apart
     MOMENTUM:         0.8,      // fraction of previous growth direction retained each step
-    UPWARD_BIAS:      0.1,      // constant upward pull added to every tip's direction
+    UPWARD_BIAS:      0.02,      // constant upward pull added to every tip's direction
     WIDTH_MIN:        1.0,      // line width at tips (px)
     WIDTH_MAX:        30.0,      // line width at trunk (px)
     WIDTH_EXP:        2.2,      // taper curve exponent: 0.5=sqrt (da Vinci), 1=linear
