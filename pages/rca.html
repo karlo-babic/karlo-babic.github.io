@@ -410,6 +410,42 @@
             transform: translate(8px, 8px);
         }
 
+        .side-1dca {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+        }
+
+        .ca1d-canvas-wrap {
+            flex: 1;
+            min-height: 0;
+            background: #000;
+            position: relative;
+        }
+
+        .ca1d-controls {
+            flex-shrink: 0;
+            padding: 8px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .ca1d-ctrl-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .ca1d-label {
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            white-space: nowrap;
+            width: 34px;
+            flex-shrink: 0;
+        }
+
         @media (max-width: 640px) {
             .app-wrap {
                 flex-direction: column;
@@ -468,6 +504,7 @@
                         <option value="phase">Phase space</option>
                         <option value="fractal">Fractal</option>
                         <option value="bifurc">Bifurcation</option>
+                        <option value="1dca">1D CA</option>
                     </select>
                 </div>
                 <div class="control-row">
@@ -591,6 +628,35 @@
                             <span class="fractal-label">Cycle</span>
                             <input type="range" id="bifurcCycle" min="1" max="200" step="1" value="40">
                             <span id="bifurcCycleVal" style="color:var(--text-muted);font-size:0.7rem;width:30px;text-align:right;flex-shrink:0;">40</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="side-1dca" id="side1dca">
+                    <div class="ca1d-canvas-wrap" id="ca1dCanvasWrap">
+                        <canvas id="ca1dCanvas" style="display:block;position:absolute;top:0;left:0;"></canvas>
+                    </div>
+                    <div class="ca1d-controls">
+                        <div class="ca1d-ctrl-row">
+                            <span class="ca1d-label">Width</span>
+                            <input type="range" id="ca1dWidth" min="16" max="512" step="8" value="64">
+                            <span id="ca1dWidthVal" style="color:var(--text-muted);font-size:0.7rem;width:30px;text-align:right;flex-shrink:0;">64</span>
+                        </div>
+                        <div class="ca1d-ctrl-row">
+                            <span class="ca1d-label">Rows</span>
+                            <input type="range" id="ca1dRowCount" min="16" max="512" step="8" value="64">
+                            <span id="ca1dRowCountVal" style="color:var(--text-muted);font-size:0.7rem;width:30px;text-align:right;flex-shrink:0;">64</span>
+                        </div>
+                        <div class="ca1d-ctrl-row">
+                            <span class="ca1d-label">Init</span>
+                            <select id="ca1dInit">
+                                <option value="center">Single center</option>
+                                <option value="random">Random</option>
+                                <option value="half">Half on</option>
+                            </select>
+                            <button id="ca1dReset" style="flex:none;">Reset</button>
+                        </div>
+                        <div style="color:var(--text-muted);font-size:0.67rem;line-height:1.5;padding:4px 2px 0;">
+                            Time flows downward — each row is one generation of a 1D fuzzy CA evolved from the initial condition. The 8 current cell values act as the rule: <em>rule[p]</em> is the output weight for neighborhood pattern <em>p</em> (000–111), evaluated with the selected fuzzy match function. Columns wrap. Values are normalized per row so contrast is preserved regardless of energy level.
                         </div>
                     </div>
                 </div>
@@ -1073,6 +1139,7 @@
             updateAudio();
             drawWaveform();
             if (fractalShader) fractalShader.state = [...history[history.length - 1]];
+            if (currentVisMode === '1dca') draw1dCA();
             if (currentVisMode === 'phase') {
                 const prev = history.length >= 2 ? history[history.length - 2] : null;
                 phaseTrace.push(computePoint(latest, prev));
@@ -1114,6 +1181,7 @@
             waveCanvas.height = waveCanvas.offsetHeight;
             if (currentVisMode === 'phase') sizeFourierCanvas();
             if (currentVisMode === 'fractal' && fractalShader) fractalShader.onResize();
+            if (currentVisMode === '1dca') { size1dCACanvas(); draw1dCA(); }
             while (history.length < ROWS) { history.unshift(new Array(COLS).fill(0)); historyRings.unshift([...RING]); }
             if (history.length > ROWS) { history = history.slice(-ROWS); historyRings = historyRings.slice(-ROWS); }
             draw();
@@ -1540,6 +1608,7 @@
             document.getElementById('sideText').style.display    = mode === 'desc'    ? '' : 'none';
             document.getElementById('sidePhase').style.display   = mode === 'phase'   ? 'flex' : 'none';
             document.getElementById('sideBifurc').style.display  = mode === 'bifurc'  ? 'flex' : 'none';
+            document.getElementById('side1dca').style.display    = mode === '1dca'    ? 'flex' : 'none';
             document.getElementById('sideFractal').style.display = mode === 'fractal' ? 'flex' : 'none';
 
             if (mode === 'bifurc') {
@@ -1547,6 +1616,9 @@
                 requestAnimationFrame(() => { bifurcReset(); bifurcStart(); });
             } else {
                 bifurcStop();
+            }
+            if (mode === '1dca') {
+                requestAnimationFrame(() => { size1dCACanvas(); draw1dCA(); });
             }
             if (mode === 'phase') {
                 document.getElementById('phaseDesc').innerHTML = getDesc();
@@ -2062,6 +2134,106 @@
             showLines = !showLines;
             setToggleActive(btnLines, showLines);
             drawPhase();
+        };
+
+        // ── 1D CA view ────────────────────────────────────────────────────
+        let ca1dNumCols = 64;
+        let ca1dNumRowCount = 64;
+        let ca1dInitMode = 'center';
+        let ca1dInitRow = null;
+        let ca1dTmpCanvas = null;
+        let ca1dTmpCtx = null;
+        const ca1dEl = document.getElementById('ca1dCanvas');
+        const ca1dCtx = ca1dEl.getContext('2d');
+
+        function buildCa1dInitRow(W) {
+            if (ca1dInitMode === 'random')
+                return Array.from({length: W}, () => Math.random());
+            if (ca1dInitMode === 'half') {
+                const row = new Array(W).fill(0);
+                for (let i = 0; i < Math.floor(W / 2); i++) row[i] = 1;
+                return row;
+            }
+            const row = new Array(W).fill(0);
+            row[Math.floor(W / 2)] = 1;
+            return row;
+        }
+
+        function size1dCACanvas() {
+            const wrap = document.getElementById('ca1dCanvasWrap');
+            if (!wrap) return;
+            ca1dEl.width  = wrap.offsetWidth;
+            ca1dEl.height = wrap.offsetHeight;
+        }
+
+        function draw1dCA() {
+            if (!ca1dEl.width || !ca1dEl.height) return;
+            const rule = history[history.length - 1];
+            const W = ca1dNumCols;
+            const H = ca1dNumRowCount;
+
+            if (!ca1dInitRow || ca1dInitRow.length !== W) ca1dInitRow = buildCa1dInitRow(W);
+            if (!ca1dTmpCanvas || ca1dTmpCanvas.width !== W || ca1dTmpCanvas.height !== H) {
+                ca1dTmpCanvas = document.createElement('canvas');
+                ca1dTmpCanvas.width = W;
+                ca1dTmpCanvas.height = H;
+                ca1dTmpCtx = ca1dTmpCanvas.getContext('2d');
+            }
+            const img = ca1dTmpCtx.createImageData(W, H);
+            const px = img.data;
+            const MATCH = getMatchFn(logicType.value);
+            let row = [...ca1dInitRow];
+
+            for (let r = 0; r < H; r++) {
+                let rowMax = 0;
+                for (let c = 0; c < W; c++) { if (row[c] > rowMax) rowMax = row[c]; }
+                const norm = rowMax > 1e-10 ? 1 / rowMax : 1;
+                for (let c = 0; c < W; c++) {
+                    const val = row[c] * norm;
+                    const cr = 15 + val * 41, cg = 23 + val * 166, cb = 42 + val * 206;
+                    const base = (r * W + c) * 4;
+                    px[base] = Math.round(cr); px[base+1] = Math.round(cg); px[base+2] = Math.round(cb); px[base+3] = 255;
+                }
+                const next = new Array(W).fill(0);
+                for (let c = 0; c < W; c++) {
+                    const L = row[(c - 1 + W) % W], C = row[c], R = row[(c + 1) % W];
+                    let out = 0;
+                    for (let p = 0; p < 8; p++) {
+                        const a = (p & 4) ? L : 1 - L;
+                        const b = (p & 2) ? C : 1 - C;
+                        const rv = (p & 1) ? R : 1 - R;
+                        out += MATCH(a, b, rv) * rule[p];
+                    }
+                    next[c] = out;
+                }
+                row = next;
+            }
+
+            ca1dTmpCtx.putImageData(img, 0, 0);
+            ca1dCtx.imageSmoothingEnabled = false;
+            ca1dCtx.clearRect(0, 0, ca1dEl.width, ca1dEl.height);
+            ca1dCtx.drawImage(ca1dTmpCanvas, 0, 0, ca1dEl.width, ca1dEl.height);
+        }
+
+        document.getElementById('ca1dWidth').oninput = function() {
+            ca1dNumCols = parseInt(this.value);
+            document.getElementById('ca1dWidthVal').textContent = ca1dNumCols;
+            ca1dInitRow = null;
+            if (currentVisMode === '1dca') draw1dCA();
+        };
+        document.getElementById('ca1dRowCount').oninput = function() {
+            ca1dNumRowCount = parseInt(this.value);
+            document.getElementById('ca1dRowCountVal').textContent = ca1dNumRowCount;
+            if (currentVisMode === '1dca') draw1dCA();
+        };
+        document.getElementById('ca1dInit').onchange = function() {
+            ca1dInitMode = this.value;
+            ca1dInitRow = null;
+            if (currentVisMode === '1dca') draw1dCA();
+        };
+        document.getElementById('ca1dReset').onclick = function() {
+            ca1dInitRow = null;
+            if (currentVisMode === '1dca') draw1dCA();
         };
 
         // ── Share / URL state ──────────────────────────────────────────────
