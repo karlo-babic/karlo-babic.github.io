@@ -806,7 +806,7 @@
         function getMatchFn(logicValue) {
             switch (logicValue) {
                 case 'lukasiewicz':  return (a, b, c) => Math.max(0, a + b + c - 2);
-                case 'interference': return (a, b, c) => { const s = Math.sqrt(Math.max(0,a)) + Math.sqrt(Math.max(0,b)) + Math.sqrt(Math.max(0,c)) - 2; return s > 0 ? s * s : 0; };
+                case 'interference': return (a, b, c) => { const s = Math.sqrt(a) + Math.sqrt(b) + Math.sqrt(c) - 2; return s > 0 ? s * s : 0; };
                 case 'product':      return (a, b, c) => a * b * c;
                 default:             return () => 0;
             }
@@ -904,6 +904,7 @@
 
         function computeRuleFluxReverseNext(rule) {
             const MATCH = getMatchFn(logicType.value);
+            const ceiling = Math.max(1, ...rule);
             let next = new Array(COLS).fill(0);
             for (let i = 0; i < COLS; i++) {
                 const p = RING[i];
@@ -917,9 +918,9 @@
                 const scores = new Array(8);
                 let total = 0;
                 for (let q = 0; q < 8; q++) {
-                    const a = (q&4) ? L : 1-L;
-                    const b = (q&2) ? C : 1-C;
-                    const c = (q&1) ? R : 1-R;
+                    const a = (q&4) ? L : ceiling-L;
+                    const b = (q&2) ? C : ceiling-C;
+                    const c = (q&1) ? R : ceiling-R;
                     scores[q] = Math.max(0, MATCH(a,b,c));
                     total += scores[q];
                 }
@@ -931,6 +932,7 @@
 
         function computeRuleFluxNext(rule) {
             const MATCH = getMatchFn(logicType.value);
+            const ceiling = Math.max(1, ...rule);
             const scoreMatrix = [];
             const patternTotals = new Array(8).fill(0);
             for (let i = 0; i < COLS; i++) {
@@ -943,9 +945,9 @@
                 }
                 const row = new Array(8);
                 for (let q = 0; q < 8; q++) {
-                    const a = (q&4) ? L : 1-L;
-                    const b = (q&2) ? C : 1-C;
-                    const c = (q&1) ? R : 1-R;
+                    const a = (q&4) ? L : ceiling-L;
+                    const b = (q&2) ? C : ceiling-C;
+                    const c = (q&1) ? R : ceiling-R;
                     row[q] = Math.max(0, MATCH(a,b,c));
                     patternTotals[q] += row[q];
                 }
