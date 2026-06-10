@@ -815,13 +815,13 @@
         // The state row IS the rule: rule[p] is the output for neighborhood pattern p (0–7).
         // Each MATCH(a,b,c) directly measures how well all three cell values simultaneously
         // satisfy their required state — a single symmetric 3-variable formula, no nesting.
-        function nextCellValue(L, C, R, rule) {
+        function nextCellValue(L, C, R, rule, ceiling = 1) {
             const MATCH = getMatchFn(logicType.value);
             let out = 0;
             for (let p = 0; p < 8; p++) {
-                const a = (p & 4) ? L : 1 - L;
-                const b = (p & 2) ? C : 1 - C;
-                const c = (p & 1) ? R : 1 - R;
+                const a = (p & 4) ? L : ceiling - L;
+                const b = (p & 2) ? C : ceiling - C;
+                const c = (p & 1) ? R : ceiling - R;
                 out += MATCH(a, b, c) * rule[p];
             }
             return out;
@@ -829,14 +829,15 @@
 
         function computeUnconstrainedNext(rule) {
             let next = new Array(COLS).fill(0);
+            const ceiling = Math.max(1, ...rule);
             for (let i = 0; i < COLS; i++) {
                 const p = RING[i];
                 if (topologyMode === 'q3') {
-                    next[p] = nextCellValue(rule[p ^ 4], rule[p ^ 2], rule[p ^ 1], rule);
+                    next[p] = nextCellValue(rule[p ^ 4], rule[p ^ 2], rule[p ^ 1], rule, ceiling);
                 } else {
                     const pL = RING[(i - 1 + COLS) % COLS];
                     const pR = RING[(i + 1) % COLS];
-                    next[p] = nextCellValue(rule[pL], rule[p], rule[pR], rule);
+                    next[p] = nextCellValue(rule[pL], rule[p], rule[pR], rule, ceiling);
                 }
             }
             return next;
@@ -844,14 +845,15 @@
 
         function computeLocalFluxNext(rule) {
             let next = new Array(COLS).fill(0);
+            const ceiling = Math.max(1, ...rule);
             if (topologyMode === 'q3') {
                 for (let i = 0; i < COLS; i++) {
                     const p = RING[i];
                     const n1 = p ^ 1, n2 = p ^ 2, n4 = p ^ 4;
                     const mass = rule[p];
-                    const s1 = Math.max(0, nextCellValue(rule[n1^4], rule[n1^2], rule[n1^1], rule));
-                    const s2 = Math.max(0, nextCellValue(rule[n2^4], rule[n2^2], rule[n2^1], rule));
-                    const s4 = Math.max(0, nextCellValue(rule[n4^4], rule[n4^2], rule[n4^1], rule));
+                    const s1 = Math.max(0, nextCellValue(rule[n1^4], rule[n1^2], rule[n1^1], rule, ceiling));
+                    const s2 = Math.max(0, nextCellValue(rule[n2^4], rule[n2^2], rule[n2^1], rule, ceiling));
+                    const s4 = Math.max(0, nextCellValue(rule[n4^4], rule[n4^2], rule[n4^1], rule, ceiling));
                     const total = s1 + s2 + s4;
                     if (total <= 1e-12) {
                         next[p] += mass;
@@ -874,19 +876,19 @@
                     rule[RING[(iL - 1 + COLS) % COLS]],
                     rule[pL],
                     rule[RING[(iL + 1) % COLS]],
-                    rule
+                    rule, ceiling
                 ));
                 const sC = Math.max(0, nextCellValue(
                     rule[pL],
                     rule[p],
                     rule[pR],
-                    rule
+                    rule, ceiling
                 ));
                 const sR = Math.max(0, nextCellValue(
                     rule[RING[(iR - 1 + COLS) % COLS]],
                     rule[pR],
                     rule[RING[(iR + 1) % COLS]],
-                    rule
+                    rule, ceiling
                 ));
                 const total = sL + sC + sR;
                 if (total <= 1e-12) {
@@ -964,15 +966,16 @@
 
         function computeSimilarityMatrix(state) {
             const MATCH = getMatchFn(logicType.value);
+            const ceiling = Math.max(1, ...state);
             const cost = Array.from({length: 8}, () => new Array(8).fill(0));
             for (let i = 0; i < 8; i++) {
                 const L = state[RING[(i - 1 + 8) % 8]];
                 const C = state[RING[i]];
                 const R = state[RING[(i + 1) % 8]];
                 for (let q = 0; q < 8; q++) {
-                    const a = (q & 4) ? L : 1 - L;
-                    const b = (q & 2) ? C : 1 - C;
-                    const c = (q & 1) ? R : 1 - R;
+                    const a = (q & 4) ? L : ceiling - L;
+                    const b = (q & 2) ? C : ceiling - C;
+                    const c = (q & 1) ? R : ceiling - R;
                     cost[i][q] = MATCH(a, b, c);
                 }
             }
@@ -2195,13 +2198,14 @@
                     px[base] = Math.round(cr); px[base+1] = Math.round(cg); px[base+2] = Math.round(cb); px[base+3] = 255;
                 }
                 const next = new Array(W).fill(0);
+                const ceiling = Math.max(1, ...row);
                 for (let c = 0; c < W; c++) {
                     const L = row[(c - 1 + W) % W], C = row[c], R = row[(c + 1) % W];
                     let out = 0;
                     for (let p = 0; p < 8; p++) {
-                        const a = (p & 4) ? L : 1 - L;
-                        const b = (p & 2) ? C : 1 - C;
-                        const rv = (p & 1) ? R : 1 - R;
+                        const a = (p & 4) ? L : ceiling - L;
+                        const b = (p & 2) ? C : ceiling - C;
+                        const rv = (p & 1) ? R : ceiling - R;
                         out += MATCH(a, b, rv) * rule[p];
                     }
                     next[c] = out;
