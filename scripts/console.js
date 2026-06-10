@@ -3,11 +3,11 @@ import { isMobile } from './utils.js';
 
 export const Console = {
     // --- Configuration ---
-    availablePrograms: ['help', 'gameoflife', 'evoltree', 'mandelbrot', 'boids', 'gravitysim', 'glideroflife', 'gliderpong', 'wordweaver', 'bonsai', 'eliza', 'radio', 'stream', 'fractal', 'tv', 'img', 'stats', 'read', 'txt', 'sun', 'nasa', 'ip', 'radar', 'chat', 'note', 'store'],
+    availablePrograms: ['help', 'gameoflife', 'evoltree', 'mandelbrot', 'boids', 'gravitysim', 'glideroflife', 'gliderpong', 'wordweaver', 'bonsai', 'eliza', 'radio', 'stream', 'fractal', 'tv', 'img', 'stats', 'read', 'txt', 'sun', 'nasa', 'ip', 'radar', 'chat', 'note', 'store', 'remote'],
     // Hidden from UI (dropdown, next/prev), but still discoverable via autocomplete and help.
     hiddenPrograms: ['read', 'txt', 'sun', 'nasa', 'ip', 'chat'],
     // Private programs: hidden from UI, help, AND autocomplete.
-    privatePrograms: ['note', 'store', 'radar'],
+    privatePrograms: ['note', 'store', 'remote', 'radar'],
     // Category groupings for the dropdown. Only visible (non-hidden) programs need to be listed here.
     programCategories: {
         'Simulations': ['boids', 'evoltree', 'gameoflife', 'gravitysim', 'mandelbrot'],
