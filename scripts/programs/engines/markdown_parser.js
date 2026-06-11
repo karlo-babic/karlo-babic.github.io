@@ -23,7 +23,7 @@ export function parseMarkdown(markdownText) {
 
     // --- Pass 1: Hoist Code Blocks ---
     const codeBlocks = [];
-    text = text.replace(/^```([\s\S]+?)^```/gm, (match, code) => {
+    text = text.replace(/^[ \t]*```([\s\S]+?)^[ \t]*```/gm, (match, code) => {
         const placeholder = `%%CODEBLOCK_${codeBlocks.length}%%`;
         codeBlocks.push(`<pre><code>${escapeHtml(code.trim())}</code></pre>`);
         return placeholder;
@@ -60,6 +60,9 @@ export function parseMarkdown(markdownText) {
         return line ? `<p>${line}</p>` : '';
 
     }).join('\n');
+
+    // Merge consecutive paragraph lines (no blank line between) into one <p> with <br>
+    html = html.replace(/<\/p>\n<p>/g, '<br>');
 
     // --- Pass 3: Process Lists ---
     // This regex wraps consecutive <li> items into <ul> blocks.

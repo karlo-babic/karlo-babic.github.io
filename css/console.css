@@ -226,7 +226,6 @@
     line-height: 1.3;
     height: 100%;
     overflow-y: auto;
-    white-space: pre-wrap;
     box-sizing: border-box;
     scrollbar-width: none; /* For Firefox */
     -ms-overflow-style: none;  /* For IE and Edge */
