@@ -10,8 +10,7 @@ const Sun = {
 
     init: async function(screenEl) {
         this.engine = new BaseText(screenEl);
-        this.engine.textContainer.style.height = '100%';
-    
+
         const t = Date.now();
         const imgPhotosphere = `https://sdo.gsfc.nasa.gov/assets/img/latest/latest_1024_HMIIC.jpg?t=${t}`;
         const imgCorona = `https://sdo.gsfc.nasa.gov/assets/img/latest/latest_1024_0171.jpg?t=${t}`;

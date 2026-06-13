@@ -9,8 +9,7 @@ const Img = {
 
     init: async function(screenEl, args = { positional: [], named: {} }) {
         this.engine = new BaseText(screenEl);
-        this.engine.textContainer.style.height = '100%';
-        
+
         // Get the actual available space in the console
         const rect = screenEl.getBoundingClientRect();
         const width = Math.floor(rect.width) || 640;

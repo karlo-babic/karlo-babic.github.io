@@ -58,7 +58,7 @@ const Remote = {
 <form id="remote-login-form" style="margin:0;padding:0;">
 <input type="password" id="remote-pwd" class="console-auth-input" placeholder="Enter password" autocomplete="off" autofocus>
 </form>
-<div id="remote-status" class="console-error" style="margin-top:6px;"></div>`;
+<div id="remote-status" class="console-dim" style="margin-top:6px;"></div>`;
         this.engine.render(html);
 
         setTimeout(() => {
@@ -88,7 +88,10 @@ const Remote = {
             });
         } catch (error) {
             console.error("Auth error:", error);
-            if (statusEl) statusEl.innerText = "Access Denied: Invalid password.";
+            if (statusEl) {
+                statusEl.className = 'console-error';
+                statusEl.innerText = "Access Denied: Invalid password.";
+            }
         }
     },
 

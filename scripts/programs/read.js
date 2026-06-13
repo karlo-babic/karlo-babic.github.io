@@ -57,7 +57,7 @@ const Read = {
 
         // Check if a filename was provided.
         if (!filename) {
-            htmlOutput = "Usage: read &lt;filename&gt;";
+            htmlOutput = '<span class="console-dim">Usage: read &lt;filename&gt;</span>';
             this.engine.render(htmlOutput);
             return;
         }
@@ -80,17 +80,17 @@ const Read = {
                 case 'json':
                     const data = JSON.parse(content);
                     if (Array.isArray(data)) {
-                        htmlOutput = data.join('<hr style="border-color: #444; margin: 1em 0;">');
+                        htmlOutput = data.join('<hr>');
                     } else {
                         htmlOutput = `<pre>${escapeHtml(JSON.stringify(data, null, 2))}</pre>`;
                     }
                     break;
                 default:
-                    htmlOutput = `Error: Unsupported file type '.${ext}'.`;
+                    htmlOutput = `<span class="console-error">Error: Unsupported file type '.${ext}'.</span>`;
             }
         } catch (error) {
             console.error(`Error reading file '${filename}':`, error);
-            htmlOutput = `Error: Could not read file '${filename}'.`;
+            htmlOutput = `<span class="console-error">Error: Could not read file '${filename}'.</span>`;
         }
         
         // Render the final generated HTML to the screen.
@@ -104,9 +104,7 @@ const Read = {
         }
     },
 
-    onResize: function() {
-        // Not needed for this program.
-    }
+    onResize: function() {}
 };
 
 export default Read;

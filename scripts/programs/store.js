@@ -222,7 +222,7 @@ const StoreProgram = {
 
         const statusText = document.getElementById('store-status-text');
         if (file.size > MAX_FILE_SIZE_BYTES) {
-            statusText.innerHTML = '<span style="color:red;">Error: Max 100MB</span>';
+            statusText.innerHTML = '<span class="console-error">Error: Max 100MB</span>';
             return;
         }
 
@@ -264,7 +264,9 @@ const StoreProgram = {
             this.engine.unload();
             this.engine = null;
         }
-    }
+    },
+
+    onResize: function() {}
 };
 
 export default StoreProgram;

@@ -14,7 +14,7 @@ const Txt = {
         const rawText = args.positional.slice(1).join(' ');
 
         if (!subcommand || !rawText) {
-            this.engine.render("Usage: txt &lt;stats|lower|clean|sort|title|urls&gt; &lt;text&gt;<br>Output is copied to clipboard.");
+            this.engine.render('<span class="console-dim">Usage: txt &lt;stats|lower|clean|sort|title|urls&gt; &lt;text&gt;<br>Output is copied to clipboard.</span>');
             return;
         }
 
@@ -55,7 +55,7 @@ const Txt = {
                 break;
 
             default:
-                htmlOutput = `Unknown subcommand: ${subcommand}`;
+                htmlOutput = `<span class="console-error">Unknown subcommand: ${subcommand}</span>`;
                 shouldCopy = false;
         }
 

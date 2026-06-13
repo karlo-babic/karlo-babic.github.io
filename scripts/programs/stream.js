@@ -70,7 +70,7 @@ const Stream = {
             }
             this.startRoulette();
         } catch (err) {
-            this.screenEl.innerHTML = `<p style="color:red">Broadcast Offline: Data missing.</p>`;
+            this.screenEl.innerHTML = `<p class="console-error">Broadcast Offline: Data missing.</p>`;
         }
     },
 

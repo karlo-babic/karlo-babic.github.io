@@ -9,8 +9,7 @@ const Radar = {
 
     init: async function(screenEl, args = { positional: [], named: {} }) {
         this.engine = new BaseText(screenEl);
-        this.engine.textContainer.style.height = '100%';
-    
+
         const imageRadarUrl = `https://vrijeme.hr/kompozit-stat.png`;
         const imageWeatherUrl = 'https://www.yr.no/en/content/2-3191648/meteogram.svg';
             

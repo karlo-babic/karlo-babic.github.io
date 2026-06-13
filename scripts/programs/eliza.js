@@ -267,7 +267,7 @@ const Eliza = {
         // Initialize the UI Engine
         this.engine = new InteractiveText(screenEl, (text) => this.handleInput(text));
         
-        this.engine.println("Loading Eliza...");
+        this.engine.println("Loading Eliza...", "system-msg");
 
         try {
             // Load the script file

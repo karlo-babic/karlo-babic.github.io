@@ -127,7 +127,7 @@ const WordWeaver = {
         this.container.style.display = 'flex';
         this.container.style.flexDirection = 'column';
 
-        this.container.innerHTML = `<div style="padding: 20px; color:#aaa;">Establishing Uplink to Network Data...</div>`;
+        this.container.innerHTML = `<div class="console-dim" style="padding: 20px;">Establishing Uplink to Network Data...</div>`;
 
         try {
             const response = await fetch(this.DATA_PATH);
@@ -135,7 +135,7 @@ const WordWeaver = {
             this.bindEvents();
             this.showMenu();
         } catch (err) {
-            this.container.innerHTML = `<p style="padding: 20px; color:red">Broadcast Offline: Data missing.</p>`;
+            this.container.innerHTML = `<p class="console-error" style="padding: 20px;">Broadcast Offline: Data missing.</p>`;
         }
     },
 
@@ -753,7 +753,9 @@ const WordWeaver = {
         this.data = null;
         this.history = [];
         currentTargetPath = [];
-    }
+    },
+
+    onResize: function() {}
 };
 
 export default WordWeaver;

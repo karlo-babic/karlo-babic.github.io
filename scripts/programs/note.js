@@ -219,9 +219,7 @@ const Note = {
         }
     },
 
-    onResize: function() {
-        // Handled by BaseText engine natively.
-    }
+    onResize: function() {}
 };
 
 export default Note;

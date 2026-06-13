@@ -16,7 +16,7 @@ const ChatApp = {
         this.p2p = new P2PEngine('p2p-terminal-chat-v1');
 
         this.ui.println("=== P2P Chat ===", "system-msg");
-        this.ui.println("Please enter a username.", "prompt-msg");
+        this.ui.println("Please enter a username.", "system-msg");
         this.state = 'ASK_NAME';
     },
 
