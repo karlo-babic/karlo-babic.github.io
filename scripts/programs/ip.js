@@ -9,7 +9,7 @@ const Ip = {
 
     init: async function(screenEl, args = { positional: [], named: {} }) {
         this.engine = new BaseText(screenEl);
-        this.engine.render("Fetching IP data...");
+        this.engine.render('<span class="console-dim">Fetching IP data...</span>');
 
         // Check if an IP address was provided as a positional argument
         const targetIp = args.positional[0];
@@ -21,16 +21,15 @@ const Ip = {
 
             if (data.error) throw new Error(data.reason || "Rate limit exceeded or invalid IP.");
 
-            let output = '<div style="font-family: monospace; padding: 10px; line-height: 1.4; font-size: 0.85rem;">';
+            let output = '';
             for (const [key, value] of Object.entries(data)) {
                 const label = key.replace(/_/g, ' ').toUpperCase();
-                output += `<div style="margin-bottom: 2px;"><span style="color: #888;">${label.padEnd(20)}:</span> <span>${value}</span></div>`;
+                output += `<div class="console-row"><span class="console-key">${label}:</span><span class="console-value">${value}</span></div>`;
             }
-            output += '</div>';
 
             this.engine.render(output);
         } catch (error) {
-            this.engine.render(`<div style="padding: 10px; color: #ff5555;">Error: ${error.message}</div>`);
+            this.engine.render(`<span class="console-error">Error: ${error.message}</span>`);
         }
     },
 

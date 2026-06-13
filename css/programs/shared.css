@@ -1,0 +1,39 @@
+/* css/programs/shared.css
+   OS vocabulary — semantic utility classes shared across all console programs.
+   Use these instead of hardcoded colors so the theme propagates everywhere. */
+
+/* --- Color tokens --- */
+.console-accent  { color: var(--accent-color); }
+.console-dim     { color: #888; }
+.console-warning { color: #ffaa00; }
+.console-error   { color: #ff5555; }
+
+/* --- Section header: accent color + bottom rule --- */
+.console-section {
+    color: var(--accent-color);
+    border-bottom: 1px solid #333;
+    margin-top: 0.6em;
+    margin-bottom: 0.3em;
+}
+
+/* --- Key/value row layout --- */
+.console-row {
+    display: flex;
+    margin-bottom: 2px;
+}
+
+.console-key {
+    color: #888;
+    min-width: 140px;
+    flex-shrink: 0;
+}
+
+.console-value {
+    word-break: break-all;
+}
+
+/* --- Small metadata / status line above main content --- */
+.console-status {
+    font-size: 0.9em;
+    margin-bottom: 0.8em;
+}

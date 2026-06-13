@@ -11,29 +11,14 @@ export class InteractiveText {
         // Container for the whole interface
         this.container = document.createElement('div');
         this.container.className = 'interactive-program-container';
-        this.container.style.display = 'flex';
-        this.container.style.flexDirection = 'column';
-        this.container.style.height = '100%';
-        // Terminal styling: Monospace font and tighter line height
-        this.container.style.fontFamily = '"Courier New", Courier, monospace';
-        this.container.style.fontSize = '0.8rem';
-        this.container.style.lineHeight = '1.2'; 
 
         // Output area (scrollable)
         this.outputArea = document.createElement('div');
         this.outputArea.className = 'output-area';
-        this.outputArea.style.flexGrow = '1';
-        this.outputArea.style.overflowY = 'auto';
-        this.outputArea.style.whiteSpace = 'pre-wrap'; // Preserve terminal formatting
-        this.outputArea.style.wordBreak = 'break-word';
-        this.outputArea.style.paddingBottom = '0.5em';
 
         // Input area (form)
         this.inputWrapper = document.createElement('form');
         this.inputWrapper.className = 'input-area';
-        this.inputWrapper.style.display = 'flex';
-        this.inputWrapper.style.flexShrink = '0';
-        this.inputWrapper.style.marginTop = '0'; 
 
         // The prompt symbol (e.g., ">")
         const promptLabel = document.createElement('span');
@@ -43,16 +28,6 @@ export class InteractiveText {
         // The actual text input
         this.inputField = document.createElement('input');
         this.inputField.type = 'text';
-        this.inputField.style.flexGrow = '1';
-        this.inputField.style.background = 'transparent';
-        this.inputField.style.border = 'none';
-        this.inputField.style.color = 'inherit';
-        this.inputField.style.fontFamily = 'inherit';
-        this.inputField.style.fontSize = 'inherit';
-        this.inputField.style.outline = 'none';
-        this.inputField.style.padding = '0';
-        this.inputField.style.margin = '0';
-        this.inputField.style.boxShadow = 'none';
         this.inputField.autocomplete = 'off';
         this.inputField.spellcheck = false;
 

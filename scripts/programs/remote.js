@@ -53,24 +53,23 @@ const Remote = {
     },
 
     _renderLoginUI: function() {
-        const html = `<p>Connecting to session: <strong>${this.sessionId}</strong></p>
-<label style="color: #888;">Enter Password: </label>
-<br><input type="password" id="remote-pwd" style="background: #222; color: #fff; border: 1px solid #444; padding: 2px 5px;" autofocus>
-<button id="remote-submit" style="background: #333; color: #fff; border: 1px solid #555; padding: 2px 10px; cursor: pointer;">Connect</button>
-<div id="remote-status" style="color: #ff5555; margin-top: 10px;"></div>`;
+        const html = `<div class="console-dim">Connecting to session: <b>${this.sessionId}</b></div>
+<br>
+<form id="remote-login-form" style="margin:0;padding:0;">
+<input type="password" id="remote-pwd" class="console-auth-input" placeholder="Enter password" autocomplete="off" autofocus>
+</form>
+<div id="remote-status" class="console-error" style="margin-top:6px;"></div>`;
         this.engine.render(html);
 
         setTimeout(() => {
+            const form = document.getElementById('remote-login-form');
             const pwdInput = document.getElementById('remote-pwd');
-            const submitBtn = document.getElementById('remote-submit');
 
-            if (!pwdInput || !submitBtn) return;
+            if (!form || !pwdInput) return;
 
-            const triggerLogin = () => this._authenticateAndListen(pwdInput.value);
-
-            submitBtn.addEventListener('click', triggerLogin);
-            pwdInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') triggerLogin();
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this._authenticateAndListen(pwdInput.value);
             });
             pwdInput.focus();
         }, 50);
@@ -95,7 +94,7 @@ const Remote = {
 
     _renderData: function(data) {
         if (!data) {
-            this.engine.render(`<span style="color: #888;">[Waiting for data in session '${this.sessionId}'...]</span>`);
+            this.engine.render(`<span class="console-dim">[Waiting for data in session '${this.sessionId}'...]</span>`);
             return;
         }
 
@@ -104,15 +103,17 @@ const Remote = {
 
         const secondsSinceUpdate = Math.floor(Date.now() / 1000) - last_updated;
         if (secondsSinceUpdate > 300) {
-            htmlOutput += `<div style="color: #ffaa00; font-size: 0.9em; margin-bottom: 10px;">[Last updated ${Math.floor(secondsSinceUpdate/60)} mins ago]</div>`;
+            htmlOutput += `<div class="console-status console-warning">[Last updated ${Math.floor(secondsSinceUpdate/60)} mins ago]</div>`;
         }
 
-        htmlOutput += `<div style="color: #66ccff; font-size: 0.9em; margin-bottom: 15px;">Live view: ${escapeHtml(filename)}</div>`;
+        htmlOutput += `<div class="console-status console-accent">Live view: ${escapeHtml(filename)}</div>`;
 
         const ext = filename.split('.').pop().toLowerCase();
         if (['md', 'markdown', 'mdown'].includes(ext)) {
+            this.engine.textContainer.classList.add('mode-md');
             htmlOutput += parseMarkdown(text);
         } else {
+            this.engine.textContainer.classList.remove('mode-md');
             htmlOutput += `<pre>${escapeHtml(text)}</pre>`;
         }
 

@@ -10,7 +10,7 @@ const Stats = {
 
     init: async function(screenEl) {
         this.engine = new BaseText(screenEl);
-        this.engine.render('<div style="padding: 10px; font-family: monospace; color: #888;">Scanning environment...</div>');
+        this.engine.render('<span class="console-dim">Scanning environment...</span>');
         
         // --- Refresh Rate Detection ---
         const getHz = () => new Promise(resolve => {
@@ -147,18 +147,17 @@ const Stats = {
     },
 
     _render: function(sections) {
-        let html = '<div style="font-family: monospace; padding: 0px; line-height: 1.2; font-size: 0.8rem;">';
+        let html = '';
         for (const [section, items] of Object.entries(sections)) {
-            html += `<div style="color: #50c0f0; margin-top: 2px; margin-bottom: 5px; border-bottom: 1px solid #333;">[ ${section} ]</div>`;
+            html += `<div class="console-section">[ ${section} ]</div>`;
             for (const [key, value] of Object.entries(items)) {
-                html += `<div style="display: flex; margin-bottom: 2px;">`;
-                html += `<span style="color: #888; min-width: 140px; flex-shrink: 0;">${key}:</span>`;
-                html += `<span style="word-break: break-all;">${value}</span>`;
+                html += `<div class="console-row">`;
+                html += `<span class="console-key">${key}:</span>`;
+                html += `<span class="console-value">${value}</span>`;
                 html += `</div>`;
             }
             html += `<br>`;
         }
-        html += '</div>';
         this.engine.render(html);
     },
 

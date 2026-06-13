@@ -1,11 +1,16 @@
-/* css/console.css - All styles related to the console window and its controls. */
+/* css/console.css - Console chrome: window, controls, input bar, dropdown, fullscreen.
+   Program-level styles live in css/programs/ and are imported below. */
+
+@import './programs/shared.css';
+@import './programs/text.css';
+@import './programs/interactive.css';
+@import './programs/form.css';
 
 #console-window {
     width: 95%;
     max-width: 450px;
-    margin: 0; /* Let the parent flex container handle spacing */
-    border: 0px solid #444;
-    background-color: #1a1a1c00;
+    margin: 0;
+    background-color: transparent;
     box-shadow: 0 0 15px rgba(0,0,0,0.5);
     display: flex;
     flex-direction: column;
@@ -16,7 +21,7 @@
     position: relative;
     width: 100%;
     aspect-ratio: 16 / 9;
-    background-color: rgba(26, 26, 28, 0);
+    background-color: transparent;
     overflow: hidden;
     cursor: crosshair;
 }
@@ -35,7 +40,6 @@
     display: flex;
     padding: 0.3rem 0.5rem;
     background-color: #222;
-    border-top: 0px solid #444;
     gap: 0.5rem;
     align-items: center;
 }
@@ -50,9 +54,9 @@
     padding: 0.2rem 0.4rem;
     outline: none;
     transition: border-color 0.2s;
-    position: relative; /* Ensure it's on top */
+    position: relative;
     z-index: 2;
-    width: 100%; /* Make it fill the wrapper */
+    width: 100%;
 }
 
 .console-input:focus {
@@ -71,7 +75,6 @@
     font-size: 0.8rem;
     cursor: pointer;
     transition: background-color 0.2s, border-color 0.2s;
-    /*padding: 0.2rem 0.4rem;*/
     padding: 4px;
     line-height: normal;
     box-sizing: border-box;
@@ -82,7 +85,7 @@
     height: 1.2em;
     fill: currentColor;
     vertical-align: middle;
-    pointer-events: none; /* Prevents the SVG itself from intercepting clicks */
+    pointer-events: none;
 }
 
 .console-btn:hover {
@@ -189,11 +192,10 @@
     background-color: #000;
 }
 
-
-/* --- Styles for the input wrapper and suggestion --- */
+/* --- Input wrapper and autocomplete suggestion --- */
 #console-input-wrapper {
     position: relative;
-    flex-grow: 1; /* Allows the wrapper to fill the available space */
+    flex-grow: 1;
     display: flex;
     align-items: center;
 }
@@ -202,9 +204,8 @@
     position: absolute;
     top: 0;
     left: 0;
-    color: #555; /* A faint color for the suggestion text */
-    pointer-events: none; /* Allows clicks to pass through to the real input */
-    
+    color: #555;
+    pointer-events: none;
     font-family: monospace;
     font-size: 0.8rem;
     padding: 0.2rem 0.4rem;
@@ -215,126 +216,6 @@
     display: flex;
     align-items: center;
 }
-
-/* --- Text Program Styles --- */
-.text-program-container {
-    padding: 0.8em 1em;
-    font-family: monospace;
-    font-size: 0.75rem;
-    color: #ddd;
-    background-color: #0000004a;
-    line-height: 1.3;
-    height: 100%;
-    overflow-y: auto;
-    box-sizing: border-box;
-    scrollbar-width: none; /* For Firefox */
-    -ms-overflow-style: none;  /* For IE and Edge */
-    cursor: text;
-}
-
-/* Hide scrollbar for Chrome, Safari and Opera */
-.text-program-container::-webkit-scrollbar {
-    display: none;
-}
-
-/* Apply a darker background to text programs when the console is fullscreen */
-#console-window.fullscreen .text-program-container {
-    background-color: #151515cd;
-}
-
-/* Style for links inside the text program */
-.text-program-container a {
-    color: var(--accent-color);
-    text-decoration: underline;
-}
-
-.text-program-container a:hover {
-    color: #8adeff;
-}
-
-/* Constrain images to the width of the console screen */
-.text-program-container img {
-    max-width: 100%;
-    height: auto; /* Maintain aspect ratio */
-    display: block; /* Prevents extra space below the image */
-    margin: 0.5em 0; /* Add some vertical spacing */
-}
-
-/* Style the <pre> element which acts as the code block container */
-.text-program-container pre {
-    background-color: #2b2b2bef;
-    padding: 0.8em;
-    border-radius: 4px;
-    overflow-x: auto;
-    white-space: pre;
-}
-
-/* Style the <code> element inside the <pre> block */
-.text-program-container pre code {
-    line-height: 1.3;
-    font-size: 0.9em;
-    background-color: transparent;
-    padding: 0;
-}
-
-/* Style for inline code snippets using `backticks` */
-.text-program-container code {
-    background-color: #333;
-    padding: 0.1em 0.3em;
-    border-radius: 3px;
-    font-size: 0.9em;
-}
-
-/* Style for blockquotes */
-.text-program-container blockquote {
-    border-left: 3px solid #555;
-    padding-left: 1em;
-    margin: 0.8em 0;
-    color: #aaa;
-}
-.text-program-container blockquote p {
-    margin: 0; /* Remove default paragraph margins inside a quote */
-}
-
-/* Style for horizontal rules */
-.text-program-container hr {
-    border: none;
-    border-top: 1px solid #444;
-    margin: 1em 0;
-}
-
-/* Style for checklists */
-.text-program-container input[type="checkbox"] {
-    margin-right: 0.5em;
-    vertical-align: middle; /* Align checkbox with text */
-}
-
-/* Style for lists to add visual indentation for nesting */
-.text-program-container ul {
-    list-style-type: disc; /* Use standard bullets */
-    padding-left: 1.5em; /* This creates the indentation */
-}
-.text-program-container li {
-    margin-bottom: 0.2em; /* Small space between list items */
-}
-
-/* Remove vertical margins from paragraphs to fix extra spacing between lines. */
-.text-program-container p {
-    margin-top: 0;
-    margin-bottom: 0;
-}
-
-/* Reset default margins for other block elements to ensure consistent spacing */
-.text-program-container h1,
-.text-program-container h2,
-.text-program-container h3,
-.text-program-container ul,
-.text-program-container pre,
-.text-program-container blockquote {
-    margin-top: 0.5em;
-    margin-bottom: 0.5em;
-}
-
 
 /* --- Mobile Responsive Styles --- */
 @media (max-width: 480px) {

@@ -41,21 +41,26 @@ function findSuggestion(data, topic) {
 }
 
 function getMainHelp(data) {
-    let content = data._general || '';
+    const generalText = (data._general || '').replace(/\n/g, '<br>').replace(/(<br>\s*)+$/, '');
+    let content = `<div style="margin-bottom:1.2em;">${generalText}</div>`;
     const categories = data._categories;
 
     if (categories) {
         for (const [catName, programs] of Object.entries(categories)) {
-            content += `\n<b>${catName.toUpperCase()}</b>\n`;
+            content += `<div class="console-section">${catName.toUpperCase()}</div>`;
             for (const cmd of programs) {
                 if (!data[cmd]) continue;
-                content += `\n  <b><a href="/console?start=help&topic=${cmd}">${cmd}</a></b>\n    ${data[cmd].usage}\n    ${data[cmd].description}\n`;
+                content += `<div style="margin-top:0.3em;"><b><a href="/console?start=help&topic=${cmd}">${cmd}</a></b></div>`;
+                content += `<div class="console-dim">&nbsp;&nbsp;${data[cmd].usage}</div>`;
+                content += `<div class="console-dim">&nbsp;&nbsp;${data[cmd].description}</div>`;
             }
         }
     } else {
         for (const cmd in data) {
             if (cmd.startsWith('_')) continue;
-            content += `\n<b><a href="/console?start=help&topic=${cmd}">${cmd}</a></b>\n  ${data[cmd].usage}\n  ${data[cmd].description}\n`;
+            content += `<div style="margin-top:0.3em;"><b><a href="/console?start=help&topic=${cmd}">${cmd}</a></b></div>`;
+            content += `<div class="console-dim">&nbsp;&nbsp;${data[cmd].usage}</div>`;
+            content += `<div class="console-dim">&nbsp;&nbsp;${data[cmd].description}</div>`;
         }
     }
     return content;
@@ -64,17 +69,17 @@ function getMainHelp(data) {
 function getTopicHelp(data, topic) {
     if (!data[topic] || topic.startsWith('_')) {
         const suggestion = findSuggestion(data, topic);
-        const hint = suggestion ? `\nDid you mean '<b>${suggestion}</b>'? Try: help ${suggestion}` : '';
-        return `Error: No help topic for '${topic}'.${hint}`;
+        const hint = suggestion ? `<br>Did you mean '<b>${suggestion}</b>'? Try: help ${suggestion}` : '';
+        return `<span class="console-error">Error: No help topic for '${topic}'.</span>${hint}`;
     }
     const d = data[topic];
-    let content = `<b>COMMAND</b>\n  ${topic}\n\n`;
-    content += `<b>DESCRIPTION</b>\n  ${d.description}\n\n`;
-    content += `<b>USAGE</b>\n  ${d.usage}\n\n`;
-    content += `<b>DETAILS</b>\n  ${d.details}`;
+    let content = `<div class="console-section">COMMAND</div><div>${topic}</div>`;
+    content += `<div class="console-section">DESCRIPTION</div><div>${d.description}</div>`;
+    content += `<div class="console-section">USAGE</div><div>${d.usage}</div>`;
+    content += `<div class="console-section">DETAILS</div><div>${d.details.replace(/\n/g, '<br>')}</div>`;
     if (d.see_also && d.see_also.length > 0) {
         const links = d.see_also.map(cmd => `<a href="/console?start=help&topic=${cmd}">${cmd}</a>`).join(', ');
-        content += `\n\n<b>SEE ALSO</b>\n  ${links}`;
+        content += `<div class="console-section">SEE ALSO</div><div>${links}</div>`;
     }
     return content;
 }

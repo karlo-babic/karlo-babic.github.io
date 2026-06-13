@@ -37,11 +37,10 @@ const StoreProgram = {
      * Renders a password input field. Status is shown inside the input.
      */
     renderPasswordPrompt: function() {
-        const htmlOutput = '<div style="margin:0;padding:0;">' +
-            '<form id="store-auth-form" style="margin:0;padding:0;display:block;">' +
-            '<input type="password" id="store-password-input" placeholder="Enter password" style="width:100%;box-sizing:border-box;margin:0;padding:2px 4px;background:transparent;color:inherit;border:1px solid #444;font-family:inherit;font-size:inherit;display:block;line-height:1;" autocomplete="off" autofocus>' +
-            '</form>' +
-            '</div>';
+        const htmlOutput =
+            '<form id="store-auth-form" style="margin:0;padding:0;">' +
+            '<input type="password" id="store-password-input" class="console-auth-input" placeholder="Enter password" autocomplete="off" autofocus>' +
+            '</form>';
 
         this.engine.render(htmlOutput);
 
@@ -114,33 +113,28 @@ const StoreProgram = {
      * @param {Array<Object>} files List of file objects {name, id, date}.
      */
     renderInterface: function(files) {
-        let htmlOutput = '<div class="store-program-container" style="margin:0;padding:0;font-size:0.9em;line-height:1;">' +
-            '<div id="store-upload-zone" style="width:100%;box-sizing:border-box;margin:0;padding:8px;border:1px dashed #444;text-align:center;cursor:pointer;line-height:1.2;">' +
+        let htmlOutput =
+            '<div id="store-upload-zone" class="console-upload-zone">' +
             '<span id="store-status-text">Click to upload (max 100MB)</span>' +
             '<input type="file" id="store-file-input" style="display:none;">' +
             '</div>';
-        
+
         if (!files || files.length === 0) {
-            htmlOutput += '<p style="margin:0;padding:4px 0;line-height:1.2;">The folder is empty.</p>';
+            htmlOutput += '<div class="console-dim" style="padding:4px 0;">The folder is empty.</div>';
         } else {
-            htmlOutput += '<ul id="store-file-list" style="list-style-type:none;padding:0;margin:0;">';
+            htmlOutput += '<ul id="store-file-list" class="console-list">';
             files.forEach((file) => {
                 const dateTimeStr = new Date(file.date).toLocaleString('en-GB', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
                 });
-                htmlOutput += `<li style="padding:4px 0;margin:0;border-top:1px solid #333;line-height:1.3;display:flex;justify-content:space-between;align-items:center;overflow:hidden;">
-                    <span class="store-download-link" data-id="${file.id}" data-name="${escapeHtml(file.name)}" style="text-decoration:underline;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;margin-right:12px;">${escapeHtml(file.name)}</span>
-                    <span style="color:#666;font-size:0.85em;flex-shrink:0;white-space:nowrap;">${dateTimeStr}</span>
-                </li>`;
+                htmlOutput += `<li class="console-list-row is-flex">` +
+                    `<span class="store-download-link console-list-link" data-id="${file.id}" data-name="${escapeHtml(file.name)}">${escapeHtml(file.name)}</span>` +
+                    `<span class="console-list-meta">${dateTimeStr}</span>` +
+                    `</li>`;
             });
             htmlOutput += '</ul>';
         }
-
-        htmlOutput += '</div>';
 
         this.engine.render(htmlOutput);
         this.attachEventListeners();
@@ -215,7 +209,7 @@ const StoreProgram = {
                 throw new Error(result.error);
             }
         } catch (error) {
-            statusText.innerHTML = '<span style="color:red;">Download failed: ' + escapeHtml(error.message) + '</span>';
+            statusText.innerHTML = '<span class="console-error">Download failed: ' + escapeHtml(error.message) + '</span>';
         }
     },
 
@@ -251,7 +245,7 @@ const StoreProgram = {
                     throw new Error(result.error);
                 }
             } catch (error) {
-                statusText.innerHTML = '<span style="color:red;">Failed: ' + escapeHtml(error.message) + '</span>';
+                statusText.innerHTML = '<span class="console-error">Failed: ' + escapeHtml(error.message) + '</span>';
             }
         };
         reader.readAsDataURL(file);

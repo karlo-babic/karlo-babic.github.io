@@ -33,11 +33,10 @@ const Note = {
      * Status messages are shown directly within the input's value for a compact UI.
      */
     renderPasswordPrompt: function() {
-        const htmlOutput = '<div style="margin:0;padding:0;">' +
-            '<form id="note-auth-form" style="margin:0;padding:0;display:block;">' +
-            '<input type="password" id="note-password-input" placeholder="Enter password" style="width:100%;box-sizing:border-box;margin:0;padding:2px 4px;background:transparent;color:inherit;border:1px solid #444;font-family:inherit;font-size:inherit;display:block;line-height:1;" autocomplete="off" autofocus>' +
-            '</form>' +
-            '</div>';
+        const htmlOutput =
+            '<form id="note-auth-form" style="margin:0;padding:0;">' +
+            '<input type="password" id="note-password-input" class="console-auth-input" placeholder="Enter password" autocomplete="off" autofocus>' +
+            '</form>';
 
         this.engine.render(htmlOutput);
 
@@ -107,7 +106,7 @@ const Note = {
                 authInput.value = 'Error: ' + (error.message || 'Access Denied');
                 authInput.select();
             } else {
-                this.engine.render('<span style="color:red;">Error: ' + escapeHtml(error.message) + '</span>');
+                this.engine.render('<span class="console-error">Error: ' + escapeHtml(error.message) + '</span>');
             }
         }
     },
@@ -117,24 +116,22 @@ const Note = {
      * The status message container is removed as messages now appear in the input.
      */
     renderInterface: function(rows) {
-        let htmlOutput = '<div class="note-program-container" style="margin:0;padding:0;font-size:0.9em;line-height:1;">' +
-            '<form id="note-append-form" style="margin:0;padding:0;display:block;">' +
-            '<textarea id="note-new-row-input" placeholder="Enter new record" style="width:100%;box-sizing:border-box;margin:0;padding:2px 4px;display:block;background:transparent;color:inherit;border:1px solid #444;resize:vertical;font-family:inherit;font-size:inherit;line-height:1.2;" rows="3" autocomplete="off" autofocus></textarea>' +
+        let htmlOutput =
+            '<form id="note-append-form" style="margin:0;padding:0;">' +
+            '<textarea id="note-new-row-input" class="console-form-input" placeholder="Enter new record" rows="3" autocomplete="off" autofocus></textarea>' +
             '</form>';
-        
+
         if (rows.length === 0) {
-            htmlOutput += '<p style="margin:0;padding:4px 0;line-height:1.2;">The note is currently empty.</p>';
+            htmlOutput += '<div class="console-dim" style="padding:4px 0;">The note is currently empty.</div>';
         } else {
-            htmlOutput += '<ul style="list-style-type:none;padding:0;margin:0;">';
+            htmlOutput += '<ul class="console-list">';
             const reversedRows = [...rows].reverse();
             reversedRows.forEach((row) => {
                 const rowData = row.map(cell => escapeHtml(String(cell).trim()).replace(/\n/g, '<br>')).join(' | ');
-                htmlOutput += `<li style="padding:4px 0;margin:0;border-top:1px solid #333;line-height:1.3;">${rowData}</li>`;
+                htmlOutput += `<li class="console-list-row">${rowData}</li>`;
             });
             htmlOutput += '</ul>';
         }
-
-        htmlOutput += '</div>';
 
         this.engine.render(htmlOutput);
         this.attachEventListeners();

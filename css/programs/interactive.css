@@ -1,0 +1,64 @@
+/* css/programs/interactive.css
+   Styles for the InteractiveText engine (chat.js, eliza.js). */
+
+.interactive-program-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    font-family: monospace;
+    font-size: 0.8rem;
+    line-height: 1.2;
+    color: #ddd;
+    background-color: #0000004a;
+    padding: 0.8em 1em;
+    box-sizing: border-box;
+}
+
+#console-window.fullscreen .interactive-program-container {
+    background-color: #151515cd;
+}
+
+.interactive-program-container .output-area {
+    flex-grow: 1;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    padding-bottom: 0.5em;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.interactive-program-container .output-area::-webkit-scrollbar {
+    display: none;
+}
+
+.interactive-program-container .input-area {
+    display: flex;
+    flex-shrink: 0;
+}
+
+.interactive-program-container .input-area input {
+    flex-grow: 1;
+    background: transparent;
+    border: none;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    outline: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+/* --- Message line styles --- */
+.interactive-program-container .user-input {
+    color: #aaa;
+}
+
+.interactive-program-container .system-msg {
+    color: var(--accent-color);
+}
+
+.interactive-program-container .error {
+    color: #ff5555;
+}

@@ -97,19 +97,19 @@ const Txt = {
         const topBigrams = getFreqs(getNGrams(tokens, 2)).slice(0, 5);
         const topTrigrams = getFreqs(getNGrams(tokens, 3)).slice(0, 5);
 
-        let html = `<b>TEXT ANALYSIS</b><br>`;
+        let html = `<div class="console-section">TEXT ANALYSIS</div>`;
         html += `Word Count: ${wordCount}<br><br>`;
-        
-        html += `<b>TOP WORDS</b><br>`;
+
+        html += `<div class="console-section">TOP WORDS</div>`;
         topWords.forEach(([word, count]) => html += `- ${word}: ${count}<br>`);
-        
+
         if (topBigrams.length > 0) {
-            html += `<br><b>TOP BIGRAMS</b><br>`;
+            html += `<br><div class="console-section">TOP BIGRAMS</div>`;
             topBigrams.forEach(([gram, count]) => html += `- ${gram}: ${count}<br>`);
         }
 
         if (topTrigrams.length > 0) {
-            html += `<br><b>TOP TRIGRAMS</b><br>`;
+            html += `<br><div class="console-section">TOP TRIGRAMS</div>`;
             topTrigrams.forEach(([gram, count]) => html += `- ${gram}: ${count}<br>`);
         }
 
