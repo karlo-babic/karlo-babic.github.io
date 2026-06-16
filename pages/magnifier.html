@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Magnifier</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+            --success: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+        }
+
+        header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.05em;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #60a5fa, #a7f3d0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        @media (min-width: 900px) {
+            .dashboard {
+                grid-template-columns: 350px 1fr;
+            }
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        button, label.file-label {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            text-align: center;
+        }
+
+        button:hover, label.file-label:hover {
+            background-color: var(--accent-hover);
+        }
+
+        button:active, label.file-label:active {
+            transform: scale(0.98);
+        }
+
+        button.secondary {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        button.secondary:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        button.active {
+            background-color: var(--success);
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .mode-selector {
+            display: flex;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .mode-selector input[type="radio"] {
+            display: none;
+        }
+
+        .mode-selector label {
+            flex: 1;
+            text-align: center;
+            padding: 0.75rem;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            background-color: transparent;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .mode-selector input[type="radio"]:checked + label {
+            background-color: var(--accent);
+            color: white;
+        }
+
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .slider-header span.value {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--border-color);
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            transition: background-color 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: var(--text-primary);
+        }
+
+        .viewport-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            position: relative;
+            min-height: 300px;
+        }
+
+        canvas {
+            width: 100%;
+            max-width: 640px;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            background-color: #000;
+            aspect-ratio: 4/3;
+        }
+
+        .stats-panel {
+            display: flex;
+            justify-content: space-around;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 0.75rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+
+        .stats-item span {
+            color: var(--text-primary);
+            font-weight: 600;
+            display: block;
+            text-align: center;
+            margin-bottom: 0.25rem;
+        }
+
+        video {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Video Magnifier</h1>
+        <p>Amplify invisible spatial movements or color/pulse oscillations in real-time</p>
+    </header>
+
+    <main class="dashboard">
+        <div class="card">
+            <div class="section-title">Video Feed Input</div>
+            <div class="btn-group">
+                <button id="cameraBtn">Start Camera</button>
+                <label class="file-label" for="fileInput">
+                    Upload Video
+                </label>
+                <input type="file" id="fileInput" accept="video/*">
+            </div>
+            <button id="toggleCameraBtn" class="secondary" style="display: none;">Switch Camera (Front/Back)</button>
+
+            <div class="section-title">Magnification Mode</div>
+            <div class="mode-selector">
+                <input type="radio" id="modeMovement" name="mode" value="movement" checked>
+                <label for="modeMovement">Movement</label>
+                
+                <input type="radio" id="modeColor" name="mode" value="color">
+                <label for="modeColor">Color / Pulse</label>
+            </div>
+
+            <div class="section-title">Spatial Resolution</div>
+            <div class="slider-group">
+                <div class="slider-header">
+                    <span>Processing Resolution</span>
+                    <span id="resValue" class="value">160x120</span>
+                </div>
+                <input type="range" id="resSlider" min="40" max="1080" step="40" value="160">
+            </div>
+
+            <div class="section-title">Signal Extraction Tuning</div>
+            
+            <div class="slider-group">
+                <div class="slider-header">
+                    <span>Amplification Factor (α)</span>
+                    <span id="ampValue" class="value">40</span>
+                </div>
+                <input type="range" id="ampSlider" min="1" max="150" value="40">
+            </div>
+
+            <div class="slider-group">
+                <div class="slider-header">
+                    <span>Frequency Low-Cut</span>
+                    <span id="fLowValue" class="value">0.5 Hz</span>
+                </div>
+                <input type="range" id="fLowSlider" min="0.1" max="5.0" step="0.1" value="0.5">
+            </div>
+
+            <div class="slider-group">
+                <div class="slider-header">
+                    <span>Frequency High-Cut</span>
+                    <span id="fHighValue" class="value">4.0 Hz</span>
+                </div>
+                <input type="range" id="fHighSlider" min="0.5" max="10.0" step="0.1" value="4.0">
+            </div>
+
+            <div class="stats-panel">
+                <div class="stats-item">
+                    <span id="statsFps">0</span>
+                    Frame Rate (FPS)
+                </div>
+                <div class="stats-item">
+                    <span id="statsTarget">0.5 - 4.0 Hz</span>
+                    Bandpass Targets
+                </div>
+            </div>
+        </div>
+
+        <div class="viewport-container">
+            <canvas id="outputCanvas"></canvas>
+            <video id="videoSource" playsinline></video>
+        </div>
+    </main>
+
+    <script>
+        /**
+         * Dynamic Temporal Filter Engine
+         * 
+         * Implements a dual first-order IIR (Infinite Impulse Response) bandpass filter structure.
+         * The bandpass output represents the mathematical difference between a higher-cutoff lowpass 
+         * filter state and a lower-cutoff lowpass filter state. 
+         * This operates on an independent, per-pixel channel coordinate system.
+         */
+        class TemporalFilter {
+            constructor() {
+                this.lowpass1 = null;
+                this.lowpass2 = null;
+                this.width = 0;
+                this.height = 0;
+            }
+
+            /**
+             * Resets filter buffers. Necessary when switching input dimensions or switching
+             * modes to prevent legacy transient pixel bursts (flashing).
+             */
+            reset() {
+                this.lowpass1 = null;
+                this.lowpass2 = null;
+                this.width = 0;
+                this.height = 0;
+            }
+
+            /**
+             * Applies temporal bandpass filtering to raw RGBA pixel data.
+             * 
+             * @param {Uint8ClampedArray} inputData - Canvas frame buffer.
+             * @param {number} width - Downsampled evaluation width.
+             * @param {number} height - Downsampled evaluation height.
+             * @param {number} a1 - Feedback coefficient for the higher cutoff frequency (f_high).
+             * @param {number} a2 - Feedback coefficient for the lower cutoff frequency (f_low).
+             * @returns {Float32Array} Buffer containing color bandpass difference values.
+             */
+            process(inputData, width, height, a1, a2) {
+                const numPixels = width * height;
+                const size = numPixels * 4;
+
+                if (!this.lowpass1 || this.width !== width || this.height !== height) {
+                    this.lowpass1 = new Float32Array(size);
+                    this.lowpass2 = new Float32Array(size);
+                    this.width = width;
+                    this.height = height;
+                    for (let i = 0; i < size; i++) {
+                        this.lowpass1[i] = inputData[i];
+                        this.lowpass2[i] = inputData[i];
+                    }
+                }
+
+                const diff = new Float32Array(numPixels * 3);
+
+                for (let i = 0; i < numPixels; i++) {
+                    const idx = i * 4;
+                    const dIdx = i * 3;
+
+                    for (let c = 0; c < 3; c++) {
+                        const val = inputData[idx + c];
+
+                        const lp1 = a1 * val + (1.0 - a1) * this.lowpass1[idx + c];
+                        const lp2 = a2 * val + (1.0 - a2) * this.lowpass2[idx + c];
+
+                        this.lowpass1[idx + c] = lp1;
+                        this.lowpass2[idx + c] = lp2;
+
+                        diff[dIdx + c] = lp1 - lp2;
+                    }
+                }
+                return diff;
+            }
+        }
+
+        const video = document.getElementById('videoSource');
+        const outputCanvas = document.getElementById('outputCanvas');
+        const outputCtx = outputCanvas.getContext('2d');
+
+        const cameraBtn = document.getElementById('cameraBtn');
+        const toggleCameraBtn = document.getElementById('toggleCameraBtn');
+        const fileInput = document.getElementById('fileInput');
+        const ampSlider = document.getElementById('ampSlider');
+        const fLowSlider = document.getElementById('fLowSlider');
+        const fHighSlider = document.getElementById('fHighSlider');
+        const resSlider = document.getElementById('resSlider');
+
+        const ampValue = document.getElementById('ampValue');
+        const fLowValue = document.getElementById('fLowValue');
+        const fHighValue = document.getElementById('fHighValue');
+        const resValue = document.getElementById('resValue');
+        const statsFps = document.getElementById('statsFps');
+        const statsTarget = document.getElementById('statsTarget');
+
+        let activeStream = null;
+        let facingMode = "user";
+        let lastFrameTime = performance.now();
+        let fpsEstimate = 30.0;
+        let animationFrameId = null;
+
+        // Dynamic processing resolution configuration (starts at 160x120 matched to slider default)
+        let procWidth = 160;
+        let procHeight = 120;
+
+        // Shared processing canvases
+        const canvas320 = document.createElement('canvas');
+        canvas320.width = 320;
+        canvas320.height = 240;
+        const ctx320 = canvas320.getContext('2d');
+
+        // Dynamic intermediate canvases for temporal filter processing
+        const processingCanvas = document.createElement('canvas');
+        processingCanvas.width = procWidth;
+        processingCanvas.height = procHeight;
+        const ctxProc = processingCanvas.getContext('2d');
+
+        const diffCanvas = document.createElement('canvas');
+        diffCanvas.width = procWidth;
+        diffCanvas.height = procHeight;
+        const ctxDiff = diffCanvas.getContext('2d');
+
+        const canvasDiff320 = document.createElement('canvas');
+        canvasDiff320.width = 320;
+        canvasDiff320.height = 240;
+        const ctxDiff320 = canvasDiff320.getContext('2d');
+
+        const filterProc = new TemporalFilter();
+
+        /**
+         * Applies standard presets depending on the selection mode to provide the user with immediately usable defaults.
+         */
+        function configureDefaultParameters(mode) {
+            filterProc.reset();
+
+            if (mode === 'color') {
+                ampSlider.value = 100;
+                fLowSlider.value = 0.8;
+                fHighSlider.value = 2.5;
+            } else {
+                ampSlider.value = 40;
+                fLowSlider.value = 0.5;
+                fHighSlider.value = 4.0;
+            }
+            updateSliderReadouts();
+        }
+
+        function updateSliderReadouts() {
+            ampValue.textContent = ampSlider.value;
+            fLowValue.textContent = fLowSlider.value + " Hz";
+            fHighValue.textContent = fHighSlider.value + " Hz";
+            resValue.textContent = `${procWidth}x${procHeight}`;
+            statsTarget.textContent = `${fLowSlider.value} - ${fHighSlider.value} Hz`;
+        }
+
+        async function startCamera() {
+            if (activeStream) {
+                activeStream.getTracks().forEach(track => track.stop());
+            }
+
+            fileInput.value = "";
+            video.srcObject = null;
+            video.src = "";
+
+            const constraints = {
+                video: {
+                    facingMode: facingMode,
+                    width: { ideal: 640 },
+                    height: { ideal: 480 }
+                },
+                audio: false
+            };
+
+            try {
+                activeStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = activeStream;
+                video.play();
+                cameraBtn.classList.add('active');
+                checkAvailableCameraTracks();
+            } catch (err) {
+                console.error("Camera connection failed: ", err);
+                alert("Unable to access camera. Please confirm camera permissions and check if connection is HTTPS.");
+            }
+        }
+
+        async function checkAvailableCameraTracks() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                toggleCameraBtn.style.display = videoDevices.length > 1 ? 'inline-flex' : 'none';
+            } catch (e) {
+                toggleCameraBtn.style.display = 'none';
+            }
+        }
+
+        function processFrame() {
+            if (video.paused || video.ended) {
+                animationFrameId = requestAnimationFrame(processFrame);
+                return;
+            }
+
+            const now = performance.now();
+            const elapsed = (now - lastFrameTime) / 1000.0;
+            lastFrameTime = now;
+            if (elapsed > 0) {
+                const instantFps = 1.0 / elapsed;
+                fpsEstimate = fpsEstimate * 0.95 + instantFps * 0.05;
+                fpsEstimate = Math.max(5.0, Math.min(fpsEstimate, 120.0));
+                statsFps.textContent = Math.round(fpsEstimate);
+            }
+
+            const mode = document.querySelector('input[name="mode"]:checked').value;
+            const amp = parseFloat(ampSlider.value);
+            const fLow = parseFloat(fLowSlider.value);
+            const fHigh = parseFloat(fHighSlider.value);
+
+            const w1 = 2 * Math.PI * fHigh;
+            const w2 = 2 * Math.PI * fLow;
+            const a1 = w1 / (fpsEstimate + w1);
+            const a2 = w2 / (fpsEstimate + w2);
+
+            ctx320.drawImage(video, 0, 0, 320, 240);
+            const imgData320 = ctx320.getImageData(0, 0, 320, 240);
+
+            // Downsample processing frame to the dynamic processing resolution
+            ctxProc.drawImage(canvas320, 0, 0, procWidth, procHeight);
+            const imgDataProc = ctxProc.getImageData(0, 0, procWidth, procHeight);
+
+            // Execute the temporal filter on the spatially-smoothed frame
+            const diffProc = filterProc.process(imgDataProc.data, procWidth, procHeight, a1, a2);
+
+            const diffImgData = ctxDiff.createImageData(procWidth, procHeight);
+            const numPixelsProc = procWidth * procHeight;
+
+            for (let i = 0; i < numPixelsProc; i++) {
+                const idx = i * 4;
+                const dIdx = i * 3;
+
+                for (let c = 0; c < 3; c++) {
+                    const val = 128 + (diffProc[dIdx + c] * amp);
+                    diffImgData.data[idx + c] = val < 0 ? 0 : (val > 255 ? 255 : val);
+                }
+                diffImgData.data[idx + 3] = 255;
+            }
+            ctxDiff.putImageData(diffImgData, 0, 0);
+
+            // Upscale the filtered difference changes back to 320x240 using the GPU's bilinear interpolation
+            ctxDiff320.clearRect(0, 0, 320, 240);
+            ctxDiff320.imageSmoothingEnabled = true;
+            ctxDiff320.imageSmoothingQuality = 'high';
+            ctxDiff320.drawImage(diffCanvas, 0, 0, 320, 240);
+
+            const upscaledDiffData = ctxDiff320.getImageData(0, 0, 320, 240);
+            const outData = outputCtx.createImageData(320, 240);
+            const len320 = 320 * 240;
+
+            // Combine the upscaled, smoothed signal differences back onto the original sharp frame
+            for (let i = 0; i < len320; i++) {
+                const idx = i * 4;
+
+                for (let c = 0; c < 3; c++) {
+                    const original = imgData320.data[idx + c];
+                    const signalDiff = upscaledDiffData.data[idx + c] - 128;
+                    const result = original + signalDiff;
+                    outData.data[idx + c] = result < 0 ? 0 : (result > 255 ? 255 : result);
+                }
+                outData.data[idx + 3] = 255;
+            }
+
+            outputCanvas.width = 320;
+            outputCanvas.height = 240;
+            outputCtx.putImageData(outData, 0, 0);
+
+            animationFrameId = requestAnimationFrame(processFrame);
+        }
+
+        cameraBtn.addEventListener('click', startCamera);
+
+        toggleCameraBtn.addEventListener('click', () => {
+            facingMode = facingMode === "user" ? "environment" : "user";
+            startCamera();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (activeStream) {
+                activeStream.getTracks().forEach(track => track.stop());
+                activeStream = null;
+                cameraBtn.classList.remove('active');
+            }
+
+            const objectURL = URL.createObjectURL(file);
+            video.srcObject = null;
+            video.src = objectURL;
+            video.muted = true;
+            video.loop = true;
+            video.play().catch(err => {
+                console.error("File playback failure: ", err);
+            });
+
+            filterProc.reset();
+        });
+
+        document.querySelectorAll('input[name="mode"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                configureDefaultParameters(e.target.value);
+            });
+        });
+
+        [ampSlider, fLowSlider, fHighSlider].forEach(slider => {
+            slider.addEventListener('input', () => {
+                updateSliderReadouts();
+                filterProc.reset();
+            });
+        });
+
+        fLowSlider.addEventListener('input', () => {
+            if (parseFloat(fLowSlider.value) >= parseFloat(fHighSlider.value)) {
+                fHighSlider.value = (parseFloat(fLowSlider.value) + 0.1).toFixed(1);
+            }
+            updateSliderReadouts();
+        });
+
+        fHighSlider.addEventListener('input', () => {
+            if (parseFloat(fHighSlider.value) <= parseFloat(fLowSlider.value)) {
+                fLowSlider.value = (parseFloat(fHighSlider.value) - 0.1).toFixed(1);
+            }
+            updateSliderReadouts();
+        });
+
+        resSlider.addEventListener('input', (e) => {
+            const width = parseInt(e.target.value);
+            const height = Math.round(width * 0.75); // Consistently maintain a standard 4:3 aspect ratio
+
+            procWidth = width;
+            procHeight = height;
+
+            resValue.textContent = `${procWidth}x${procHeight}`;
+
+            // Resize internal rendering targets dynamically
+            processingCanvas.width = procWidth;
+            processingCanvas.height = procHeight;
+            diffCanvas.width = procWidth;
+            diffCanvas.height = procHeight;
+
+            // Reset buffers to prevent legacy residual data transients
+            filterProc.reset();
+        });
+
+        updateSliderReadouts();
+        processFrame();
+    </script>
+</body>
+</html>
