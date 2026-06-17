@@ -30,6 +30,7 @@
             display: flex;
             flex-direction: column;
             padding: 1.5rem;
+            line-height: 1.5;
         }
 
         header {
@@ -75,6 +76,10 @@
             display: flex;
             flex-direction: column;
             gap: 1.25rem;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
         }
 
         .section-title {
@@ -216,16 +221,17 @@
             padding: 1rem;
             position: relative;
             min-height: 300px;
+            overflow: hidden;
         }
 
         canvas {
             width: 100%;
-            max-width: 640px;
+            max-width: 800px;
             height: auto;
             border-radius: 8px;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
             background-color: #000;
-            aspect-ratio: 4/3;
+            object-fit: contain;
         }
 
         .stats-panel {
@@ -250,12 +256,41 @@
         video {
             display: none;
         }
+
+        .info-card {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .info-card h2 {
+            color: var(--text-primary);
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-card p {
+            margin-bottom: 1rem;
+        }
+
+        .info-card a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .info-card a:hover {
+            text-decoration: underline;
+        }
+        
+        .info-card ul {
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>Video Magnifier</h1>
+        <h1>Subtle Signal Video Magnifier</h1>
         <p>Amplify invisible spatial movements or color/pulse oscillations in real-time</p>
     </header>
 
@@ -273,20 +308,23 @@
 
             <div class="section-title">Magnification Mode</div>
             <div class="mode-selector">
-                <input type="radio" id="modeMovement" name="mode" value="movement" checked>
+                <input type="radio" id="modeOff" name="mode" value="off" checked>
+                <label for="modeOff">Off</label>
+
+                <input type="radio" id="modeMovement" name="mode" value="movement">
                 <label for="modeMovement">Movement</label>
                 
                 <input type="radio" id="modeColor" name="mode" value="color">
-                <label for="modeColor">Color / Pulse</label>
+                <label for="modeColor">Color</label>
             </div>
 
             <div class="section-title">Spatial Resolution</div>
             <div class="slider-group">
                 <div class="slider-header">
-                    <span>Processing Resolution</span>
-                    <span id="resValue" class="value">160x120</span>
+                    <span>Processing Width</span>
+                    <span id="resValue" class="value">160px</span>
                 </div>
-                <input type="range" id="resSlider" min="40" max="1080" step="40" value="160">
+                <input type="range" id="resSlider" min="40" max="320" step="40" value="160">
             </div>
 
             <div class="section-title">Signal Extraction Tuning</div>
@@ -331,6 +369,29 @@
             <canvas id="outputCanvas"></canvas>
             <video id="videoSource" playsinline></video>
         </div>
+
+        <div class="card info-card full-width">
+            <h2>About Eulerian Video Magnification (EVM)</h2>
+            <p>
+                This tool is a browser-based approximation of Eulerian Video Magnification, a technique developed by MIT CSAIL researchers. 
+                Standard video captures subtle changes—like the micro-color fluctuations of blood pulsing through skin, or the structural vibration 
+                of a motor—that fall below the threshold of human perception. EVM acts as a "microscope for time," isolating specific temporal 
+                frequencies and amplifying them to make the invisible visible.
+            </p>
+            <p><strong>How this web implementation works:</strong></p>
+            <ul>
+                <li><strong>Spatial Downsampling:</strong> The video is downsampled to a low spatial resolution. This isolates the spatial frequencies we care about and acts as a lightweight alternative to full Gaussian/Laplacian pyramids, making real-time web processing feasible.</li>
+                <li><strong>Temporal IIR Bandpass Filtering:</strong> A dual first-order Infinite Impulse Response (IIR) filter evaluates every individual pixel over time. It dynamically adapts to the browser's varying framerate to isolate changes occurring within the chosen frequency bounds (e.g., 0.8–2.5 Hz for a human heartbeat).</li>
+                <li><strong>Recombination:</strong> The isolated, amplified temporal differences are upscaled using GPU hardware bilinear interpolation and combined with the original high-resolution frame, preserving overall visual fidelity.</li>
+                <li><strong>Luminance Normalization:</strong> Webcams rely on Auto Gain Control (AGC) which causes the entire frame brightness to "breathe". This engine measures and counteracts global luminance drift, preventing webcam auto-exposure from ruining the temporal pixel differences.</li>
+            </ul>
+            <p>
+                <em>For more information on the foundational research, see:</em><br>
+                <a href="https://people.csail.mit.edu/mrub/vidmag/" target="_blank" rel="noopener noreferrer">
+                    Hao-Yu Wu, Michael Rubinstein, Eugene Shih, John Guttag, Frédo Durand, William Freeman. "Eulerian Video Magnification for Revealing Subtle Changes in the World" (SIGGRAPH 2012).
+                </a>
+            </p>
+        </div>
     </main>
 
     <script>
@@ -340,12 +401,15 @@
          * Implements a dual first-order IIR (Infinite Impulse Response) bandpass filter structure.
          * The bandpass output represents the mathematical difference between a higher-cutoff lowpass 
          * filter state and a lower-cutoff lowpass filter state. 
-         * This operates on an independent, per-pixel channel coordinate system.
+         *
+         * Buffers are strictly pre-allocated to eliminate Garbage Collection (GC) pauses during the 
+         * real-time rendering loop.
          */
         class TemporalFilter {
             constructor() {
                 this.lowpass1 = null;
                 this.lowpass2 = null;
+                this.diff = null;
                 this.width = 0;
                 this.height = 0;
             }
@@ -357,12 +421,13 @@
             reset() {
                 this.lowpass1 = null;
                 this.lowpass2 = null;
+                this.diff = null;
                 this.width = 0;
                 this.height = 0;
             }
 
             /**
-             * Applies temporal bandpass filtering to raw RGBA pixel data.
+             * Applies temporal bandpass filtering to raw pixel channel data.
              * 
              * @param {Uint8ClampedArray} inputData - Canvas frame buffer.
              * @param {number} width - Downsampled evaluation width.
@@ -374,19 +439,22 @@
             process(inputData, width, height, a1, a2) {
                 const numPixels = width * height;
                 const size = numPixels * 4;
+                const diffSize = numPixels * 3;
 
+                // Allocate only when dimensions change to prevent memory leaks and GC lag
                 if (!this.lowpass1 || this.width !== width || this.height !== height) {
                     this.lowpass1 = new Float32Array(size);
                     this.lowpass2 = new Float32Array(size);
+                    this.diff = new Float32Array(diffSize);
                     this.width = width;
                     this.height = height;
+                    
+                    // Pre-fill states with the initial frame
                     for (let i = 0; i < size; i++) {
                         this.lowpass1[i] = inputData[i];
                         this.lowpass2[i] = inputData[i];
                     }
                 }
-
-                const diff = new Float32Array(numPixels * 3);
 
                 for (let i = 0; i < numPixels; i++) {
                     const idx = i * 4;
@@ -401,16 +469,17 @@
                         this.lowpass1[idx + c] = lp1;
                         this.lowpass2[idx + c] = lp2;
 
-                        diff[dIdx + c] = lp1 - lp2;
+                        this.diff[dIdx + c] = lp1 - lp2;
                     }
                 }
-                return diff;
+                
+                return this.diff;
             }
         }
 
         const video = document.getElementById('videoSource');
         const outputCanvas = document.getElementById('outputCanvas');
-        const outputCtx = outputCanvas.getContext('2d');
+        const outputCtx = outputCanvas.getContext('2d', { willReadFrequently: true });
 
         const cameraBtn = document.getElementById('cameraBtn');
         const toggleCameraBtn = document.getElementById('toggleCameraBtn');
@@ -433,45 +502,103 @@
         let fpsEstimate = 30.0;
         let animationFrameId = null;
 
-        // Dynamic processing resolution configuration (starts at 160x120 matched to slider default)
-        let procWidth = 160;
-        let procHeight = 120;
+        // Base resolution representing the full-fidelity feed (scaled relative to aspect ratio)
+        let baseWidth = 480; 
+        let baseHeight = 360;
+        let videoAspectRatio = 4 / 3;
 
-        // Shared processing canvases
-        const canvas320 = document.createElement('canvas');
-        canvas320.width = 320;
-        canvas320.height = 240;
-        const ctx320 = canvas320.getContext('2d');
+        // Dynamic processing resolution configuration
+        let procWidth = parseInt(resSlider.value);
+        let procHeight = Math.round(procWidth / videoAspectRatio);
 
-        // Dynamic intermediate canvases for temporal filter processing
+        // Shared canvases for rendering pipeline
+        const canvasBase = document.createElement('canvas');
+        const ctxBase = canvasBase.getContext('2d', { willReadFrequently: true });
+
         const processingCanvas = document.createElement('canvas');
-        processingCanvas.width = procWidth;
-        processingCanvas.height = procHeight;
-        const ctxProc = processingCanvas.getContext('2d');
+        const ctxProc = processingCanvas.getContext('2d', { willReadFrequently: true });
 
         const diffCanvas = document.createElement('canvas');
-        diffCanvas.width = procWidth;
-        diffCanvas.height = procHeight;
         const ctxDiff = diffCanvas.getContext('2d');
 
-        const canvasDiff320 = document.createElement('canvas');
-        canvasDiff320.width = 320;
-        canvasDiff320.height = 240;
-        const ctxDiff320 = canvasDiff320.getContext('2d');
+        const canvasDiffUpscaled = document.createElement('canvas');
+        const ctxDiffUpscaled = canvasDiffUpscaled.getContext('2d', { willReadFrequently: true });
 
         const filterProc = new TemporalFilter();
+
+        // Advanced Noise Mitigation & Rendering States
+        let smoothedDiff = null;
+        let globalLuminanceBaseline = -1.0;
+        let smoothedAvgY = -1.0;
+
+        // Pre-allocated ImageData objects
+        let diffImgData = null;
+        let finalOutData = null;
+
+        /**
+         * Adapts all canvas buffers to the current video stream's aspect ratio.
+         * Prevents horizontal squashing when alternating between webcam and wide-screen files.
+         */
+        function updateDimensions() {
+            if (video.videoWidth > 0 && video.videoHeight > 0) {
+                videoAspectRatio = video.videoWidth / video.videoHeight;
+            }
+            
+            baseHeight = Math.round(baseWidth / videoAspectRatio);
+            procHeight = Math.round(procWidth / videoAspectRatio);
+
+            canvasBase.width = baseWidth;
+            canvasBase.height = baseHeight;
+            
+            processingCanvas.width = procWidth;
+            processingCanvas.height = procHeight;
+            
+            diffCanvas.width = procWidth;
+            diffCanvas.height = procHeight;
+            
+            canvasDiffUpscaled.width = baseWidth;
+            canvasDiffUpscaled.height = baseHeight;
+
+            outputCanvas.width = baseWidth;
+            outputCanvas.height = baseHeight;
+
+            // Invalidate pre-allocated image data so it regenerates on the next frame
+            diffImgData = null;
+            finalOutData = null;
+            
+            resValue.textContent = `${procWidth}x${procHeight}`;
+            resetState();
+        }
+
+        /**
+         * Re-initializes all dynamic rendering buffers and mathematical states.
+         * Prevents visual bleeding and data leakage across parameter adjustments.
+         */
+        function resetState() {
+            filterProc.reset();
+            smoothedDiff = null;
+            globalLuminanceBaseline = -1.0;
+            smoothedAvgY = -1.0;
+        }
 
         /**
          * Applies standard presets depending on the selection mode to provide the user with immediately usable defaults.
          */
         function configureDefaultParameters(mode) {
-            filterProc.reset();
+            resetState();
+
+            if (mode === 'off') {
+                updateSliderReadouts();
+                return;
+            }
 
             if (mode === 'color') {
+                // Heartbeat / Color mode targets typical human pulse rates (48 - 150 BPM)
                 ampSlider.value = 100;
                 fLowSlider.value = 0.8;
                 fHighSlider.value = 2.5;
             } else {
+                // Movement mode captures broader structural shifts and breathing
                 ampSlider.value = 40;
                 fLowSlider.value = 0.5;
                 fHighSlider.value = 4.0;
@@ -483,7 +610,6 @@
             ampValue.textContent = ampSlider.value;
             fLowValue.textContent = fLowSlider.value + " Hz";
             fHighValue.textContent = fHighSlider.value + " Hz";
-            resValue.textContent = `${procWidth}x${procHeight}`;
             statsTarget.textContent = `${fLowSlider.value} - ${fHighSlider.value} Hz`;
         }
 
@@ -536,6 +662,7 @@
             const now = performance.now();
             const elapsed = (now - lastFrameTime) / 1000.0;
             lastFrameTime = now;
+            
             if (elapsed > 0) {
                 const instantFps = 1.0 / elapsed;
                 fpsEstimate = fpsEstimate * 0.95 + instantFps * 0.05;
@@ -548,65 +675,134 @@
             const fLow = parseFloat(fLowSlider.value);
             const fHigh = parseFloat(fHighSlider.value);
 
+            // Calculate recursive temporal filter coefficients mapping cutoff frequency to discrete-time EWMA
             const w1 = 2 * Math.PI * fHigh;
             const w2 = 2 * Math.PI * fLow;
             const a1 = w1 / (fpsEstimate + w1);
             const a2 = w2 / (fpsEstimate + w2);
 
-            ctx320.drawImage(video, 0, 0, 320, 240);
-            const imgData320 = ctx320.getImageData(0, 0, 320, 240);
+            ctxBase.drawImage(video, 0, 0, baseWidth, baseHeight);
+            const imgDataBase = ctxBase.getImageData(0, 0, baseWidth, baseHeight);
+
+            if (mode === 'off') {
+                // Bypass logic: immediately copy original un-amplified frame directly to display
+                outputCtx.putImageData(imgDataBase, 0, 0);
+                animationFrameId = requestAnimationFrame(processFrame);
+                return;
+            }
 
             // Downsample processing frame to the dynamic processing resolution
-            ctxProc.drawImage(canvas320, 0, 0, procWidth, procHeight);
+            ctxProc.drawImage(canvasBase, 0, 0, procWidth, procHeight);
             const imgDataProc = ctxProc.getImageData(0, 0, procWidth, procHeight);
-
-            // Execute the temporal filter on the spatially-smoothed frame
-            const diffProc = filterProc.process(imgDataProc.data, procWidth, procHeight, a1, a2);
-
-            const diffImgData = ctxDiff.createImageData(procWidth, procHeight);
             const numPixelsProc = procWidth * procHeight;
 
+            // --- 1. Global Luminance Normalization (Auto-Exposure Leveling) ---
+            let totalY = 0;
+            for (let i = 0; i < numPixelsProc; i++) {
+                const idx = i * 4;
+                totalY += 0.299 * imgDataProc.data[idx] + 0.587 * imgDataProc.data[idx + 1] + 0.114 * imgDataProc.data[idx + 2];
+            }
+            const currentAvgY = totalY / numPixelsProc;
+
+            if (globalLuminanceBaseline < 0) {
+                globalLuminanceBaseline = currentAvgY;
+                smoothedAvgY = currentAvgY;
+            } else {
+                // Apply slow adaptation baseline. This allows rapid periodic face pulse 
+                // oscillations (0.8 - 2.5 Hz) to pass cleanly, while suppressing slow auto-exposure drift.
+                smoothedAvgY = smoothedAvgY * 0.985 + currentAvgY * 0.015;
+            }
+
+            const exposureScale = smoothedAvgY > 0 ? (globalLuminanceBaseline / smoothedAvgY) : 1.0;
+
+            // Normalize the frame brightness levels before feeding the temporal pipeline
+            for (let i = 0; i < numPixelsProc; i++) {
+                const idx = i * 4;
+                imgDataProc.data[idx] = Math.min(255, Math.max(0, imgDataProc.data[idx] * exposureScale));
+                imgDataProc.data[idx + 1] = Math.min(255, Math.max(0, imgDataProc.data[idx + 1] * exposureScale));
+                imgDataProc.data[idx + 2] = Math.min(255, Math.max(0, imgDataProc.data[idx + 2] * exposureScale));
+            }
+
+            // --- 2. Temporal Filtering ---
+            const rawDiff = filterProc.process(imgDataProc.data, procWidth, procHeight, a1, a2);
+
+            // --- 3. Temporal Output Smoothing (Flicker Mitigation) ---
+            if (!smoothedDiff || smoothedDiff.length !== rawDiff.length) {
+                smoothedDiff = new Float32Array(rawDiff.length);
+                smoothedDiff.set(rawDiff);
+            } else {
+                // Smooth out high frequency flicker, using a slightly higher factor in color mode 
+                // to optimize skin color transitions while preserving pulse visibility.
+                const smoothFactor = mode === 'color' ? 0.72 : 0.35;
+                for (let i = 0; i < rawDiff.length; i++) {
+                    smoothedDiff[i] = smoothFactor * smoothedDiff[i] + (1.0 - smoothFactor) * rawDiff[i];
+                }
+            }
+
+            // --- 4. Hardware Upscaling via 8-bit Difference Map ---
+            // We map the differences back onto an 8-bit image clamped around 128 (gray). 
+            // This allows us to utilize the browser's hardware bilinear upscaling via drawImage, 
+            // which is far more performant than running bicubic math in pure JavaScript.
+            if (!diffImgData || diffImgData.width !== procWidth || diffImgData.height !== procHeight) {
+                diffImgData = ctxDiff.createImageData(procWidth, procHeight);
+                // Pre-fill alpha channel
+                for (let i = 0; i < numPixelsProc; i++) {
+                    diffImgData.data[i * 4 + 3] = 255;
+                }
+            }
+            
             for (let i = 0; i < numPixelsProc; i++) {
                 const idx = i * 4;
                 const dIdx = i * 3;
 
                 for (let c = 0; c < 3; c++) {
-                    const val = 128 + (diffProc[dIdx + c] * amp);
+                    const val = 128 + (smoothedDiff[dIdx + c] * amp);
+                    // Note: High amplification factors may cause hard-clipping here if values exceed ±127.
                     diffImgData.data[idx + c] = val < 0 ? 0 : (val > 255 ? 255 : val);
                 }
-                diffImgData.data[idx + 3] = 255;
             }
             ctxDiff.putImageData(diffImgData, 0, 0);
 
-            // Upscale the filtered difference changes back to 320x240 using the GPU's bilinear interpolation
-            ctxDiff320.clearRect(0, 0, 320, 240);
-            ctxDiff320.imageSmoothingEnabled = true;
-            ctxDiff320.imageSmoothingQuality = 'high';
-            ctxDiff320.drawImage(diffCanvas, 0, 0, 320, 240);
+            // Upscale the difference canvas to the base resolution using bilinear filtering.
+            ctxDiffUpscaled.clearRect(0, 0, baseWidth, baseHeight);
+            ctxDiffUpscaled.imageSmoothingEnabled = true;
+            ctxDiffUpscaled.imageSmoothingQuality = 'high';
+            ctxDiffUpscaled.drawImage(diffCanvas, 0, 0, baseWidth, baseHeight);
 
-            const upscaledDiffData = ctxDiff320.getImageData(0, 0, 320, 240);
-            const outData = outputCtx.createImageData(320, 240);
-            const len320 = 320 * 240;
+            // --- 5. Signal Recombination ---
+            const upscaledDiffData = ctxDiffUpscaled.getImageData(0, 0, baseWidth, baseHeight);
+            
+            if (!finalOutData || finalOutData.width !== baseWidth || finalOutData.height !== baseHeight) {
+                finalOutData = outputCtx.createImageData(baseWidth, baseHeight);
+                const len = baseWidth * baseHeight;
+                for (let i = 0; i < len; i++) {
+                    finalOutData.data[i * 4 + 3] = 255;
+                }
+            }
+            
+            const lenBase = baseWidth * baseHeight;
 
             // Combine the upscaled, smoothed signal differences back onto the original sharp frame
-            for (let i = 0; i < len320; i++) {
+            for (let i = 0; i < lenBase; i++) {
                 const idx = i * 4;
 
                 for (let c = 0; c < 3; c++) {
-                    const original = imgData320.data[idx + c];
+                    const original = imgDataBase.data[idx + c];
                     const signalDiff = upscaledDiffData.data[idx + c] - 128;
                     const result = original + signalDiff;
-                    outData.data[idx + c] = result < 0 ? 0 : (result > 255 ? 255 : result);
+                    finalOutData.data[idx + c] = result < 0 ? 0 : (result > 255 ? 255 : result);
                 }
-                outData.data[idx + 3] = 255;
             }
 
-            outputCanvas.width = 320;
-            outputCanvas.height = 240;
-            outputCtx.putImageData(outData, 0, 0);
-
+            outputCtx.putImageData(finalOutData, 0, 0);
             animationFrameId = requestAnimationFrame(processFrame);
         }
+
+        // --- Event Listeners ---
+
+        video.addEventListener('loadedmetadata', () => {
+            updateDimensions();
+        });
 
         cameraBtn.addEventListener('click', startCamera);
 
@@ -633,8 +829,8 @@
             video.play().catch(err => {
                 console.error("File playback failure: ", err);
             });
-
-            filterProc.reset();
+            
+            resetState();
         });
 
         document.querySelectorAll('input[name="mode"]').forEach(radio => {
@@ -646,7 +842,7 @@
         [ampSlider, fLowSlider, fHighSlider].forEach(slider => {
             slider.addEventListener('input', () => {
                 updateSliderReadouts();
-                filterProc.reset();
+                resetState();
             });
         });
 
@@ -665,24 +861,11 @@
         });
 
         resSlider.addEventListener('input', (e) => {
-            const width = parseInt(e.target.value);
-            const height = Math.round(width * 0.75); // Consistently maintain a standard 4:3 aspect ratio
-
-            procWidth = width;
-            procHeight = height;
-
-            resValue.textContent = `${procWidth}x${procHeight}`;
-
-            // Resize internal rendering targets dynamically
-            processingCanvas.width = procWidth;
-            processingCanvas.height = procHeight;
-            diffCanvas.width = procWidth;
-            diffCanvas.height = procHeight;
-
-            // Reset buffers to prevent legacy residual data transients
-            filterProc.reset();
+            procWidth = parseInt(e.target.value);
+            updateDimensions();
         });
 
+        updateDimensions();
         updateSliderReadouts();
         processFrame();
     </script>
