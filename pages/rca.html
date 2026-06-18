@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reflective Cellular Automata</title>
+    <title>Reflective Cellular Automaton</title>
     <style>
         :root {
             --bg: #0f172a;
@@ -491,7 +491,7 @@
 </head>
 <body>
 
-    <h1>Reflective Cellular Automata</h1>
+    <h1>Reflective Cellular Automaton</h1>
 
     <div class="app-wrap">
 
@@ -570,9 +570,9 @@
         <div class="side-panel" id="sidePanel">
                 <div class="side-text" id="sideText">
                     <p><em>Note: this is a work in progress. Things may be broken, incomplete, or change without notice.</em></p>
-                    <p>Elementary Cellular Automata (ECA) assign each cell a binary state updated by a fixed 3-cell neighborhood rule. There are 256 such rules; see <a href="https://en.wikipedia.org/wiki/Elementary_cellular_automaton" target="_blank" style="color:var(--cell-on)">Wikipedia</a> or <a href="https://mathworld.wolfram.com/ElementaryCellularAutomaton.html" target="_blank" style="color:var(--cell-on)">MathWorld</a> for a full survey.</p>
+                    <p>Elementary Cellular Automaton (ECA) assign each cell a binary state updated by a fixed 3-cell neighborhood rule. There are 256 such rules; see <a href="https://en.wikipedia.org/wiki/Elementary_cellular_automaton" target="_blank" style="color:var(--cell-on)">Wikipedia</a> or <a href="https://mathworld.wolfram.com/ElementaryCellularAutomaton.html" target="_blank" style="color:var(--cell-on)">MathWorld</a> for a full survey.</p>
                     <p>Fuzzy automata extend ECA by allowing continuous values on [0, 1] instead of strict binary states, producing smoother, gradient-like dynamics with the same neighborhood logic.</p>
-                    <p>This simulator (Reflective Cellular Automata) goes further: the grid encodes both state and its own transition rules (there is no separate rule table). Each cell value serves simultaneously as a state and as the output weight for a neighborhood pattern, so the automaton rewrites itself as it evolves.</p>
+                    <p>This simulator (Reflective Cellular Automaton) goes further: the grid encodes both state and its own transition rules (there is no separate rule table). Each cell value serves simultaneously as a state and as the output weight for a neighborhood pattern, so the automaton rewrites itself as it evolves.</p>
                      <p style="margin-top:auto;padding-top:1em;border-top:1px solid var(--border);">Concretely: the grid has 8 cells, each holding a real value and simultaneously serving as the output weight for one of the 8 binary neighborhood patterns (000 to 111). On each step, a cell's new value is derived from its local neighborhood via the selected fuzzy match function and topology.</p>
                     <p>The topology selector controls how the 8 cells are connected as spatial neighbors. The cells correspond to the 8 vertices of a 3-bit hypercube (Q3), so adjacency is defined by which vertices share a cube edge.</p>
                     <ul>
