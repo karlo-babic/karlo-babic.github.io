@@ -446,6 +446,21 @@
             flex-shrink: 0;
         }
 
+        .ca-stats {
+            background: var(--panel-bg);
+            padding: 4px 10px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            display: flex;
+            gap: 20px;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            flex-shrink: 0;
+            justify-content: center;
+        }
+
+        .ca-stats span { color: var(--text-main); }
+
         @media (max-width: 640px) {
             .app-wrap {
                 flex-direction: column;
@@ -487,6 +502,11 @@
                 </div>
                 <div class="input-editor" id="inputEditor"></div>
                 <div id="visualizer" class="visualizer"></div>
+            </div>
+
+            <div class="ca-stats" id="caStats">
+                <div>Energy: <span id="caStatEnergy">—</span></div>
+                <div>ECA rule: <span id="caStatRule">—</span></div>
             </div>
 
             <div class="controls">
@@ -607,7 +627,7 @@
                                 <option value="visits" selected>Visit density</option>
                                 <option value="convergence">Convergence</option>
                             </select>
-                            <span id="bifurcModeDesc" style="color:var(--text-muted);font-size:0.68rem;line-height:1.4;flex:1;margin-left:6px;">counts every state visited per trajectory (skip step 0)</span>
+                            <span id="bifurcModeDesc" style="color:var(--text-muted);font-size:0.68rem;line-height:1.4;flex:1;margin-left:6px;">counts every state visited after warm-up</span>
                         </div>
                         <div class="bifurc-ctrl-row">
                             <span class="fractal-label">X axis</span>
@@ -620,9 +640,9 @@
                             <span id="bifurcXAxisDesc" style="color:var(--text-muted);font-size:0.68rem;line-height:1.4;flex:1;margin-left:6px;">RMS spread of cell values around their mean</span>
                         </div>
                         <div class="bifurc-ctrl-row">
-                            <span class="fractal-label">Iters</span>
-                            <input type="range" id="bifurcIter" min="20" max="400" step="10" value="80">
-                            <span id="bifurcIterVal" style="color:var(--text-muted);font-size:0.7rem;width:30px;text-align:right;flex-shrink:0;">80</span>
+                            <span class="fractal-label" style="width:50px;">Warm-up</span>
+                            <input type="range" id="bifurcIter" min="0" max="400" step="10" value="200">
+                            <span id="bifurcIterVal" style="color:var(--text-muted);font-size:0.7rem;width:30px;text-align:right;flex-shrink:0;">200</span>
                         </div>
                         <div class="bifurc-ctrl-row" id="bifurcCycleRow" style="display:none;">
                             <span class="fractal-label">Cycle</span>
@@ -1125,6 +1145,17 @@
             waveCtx.stroke();
         }
 
+        function updateCaStats() {
+            const state = history[history.length - 1];
+            const energy = state.reduce((a, b) => a + b, 0);
+            let ecaRule = 0;
+            for (let p = 0; p < 8; p++) {
+                if (state[p] >= 0.5) ecaRule |= (1 << p);
+            }
+            document.getElementById('caStatEnergy').textContent = energy.toFixed(3);
+            document.getElementById('caStatRule').textContent = ecaRule;
+        }
+
         function syncUI() {
             const latest = history[history.length - 1];
             for (let i = 0; i < COLS; i++) {
@@ -1140,6 +1171,7 @@
                 barFills[i].style.background = `rgb(${Math.round(cr)},${Math.round(cg)},${Math.round(cb)})`;
                 textInputs[i].value = v.toFixed(2);
             }
+            updateCaStats();
             updateRuleDisplay();
             updateAudio();
             drawWaveform();
@@ -1762,7 +1794,8 @@
         let bifurcEventsAttached = false;
         let bifurcMaxF = 0, bifurcMaxC = 0;
         let bifurcSnapOffset = null, bifurcSnapZoom = null;  // viewport at last grid reset
-        let bifurcMaxIter = 80, bifurcMaxCycleLen = 40;
+        let bifurcWarmup = 200, bifurcMaxCycleLen = 40;
+        const BIFURC_RECORD_STEPS = 40;
         let bifurcVisMode = 'visits';
         let bifurcXAxis = 'std';
         const BIFURC_SIM_MS = 10;  // simulation time budget per frame
@@ -1917,15 +1950,15 @@
         }
 
         function bifurcRunBatch() {
-            const totalIter = bifurcMaxIter;
+            const warmup = bifurcWarmup;
             const deadline = performance.now() + BIFURC_SIM_MS;
 
             if (bifurcVisMode === 'visits') {
                 while (performance.now() < deadline) {
                     let s = bifurcRandomStart();
-                    for (let i = 0; i < totalIter; i++) {
+                    for (let i = 0; i < warmup; i++) s = simStep(s);
+                    for (let i = 0; i < BIFURC_RECORD_STEPS; i++) {
                         s = simStep(s);
-                        if (i === 0) continue; // skip first step
                         bifurcPlotState(s);
                     }
                 }
@@ -1933,7 +1966,7 @@
             }
 
             const maxCycleLen = bifurcMaxCycleLen;
-            const cycleStart = Math.max(0, totalIter - maxCycleLen);
+            const totalIter = warmup + maxCycleLen;
             while (performance.now() < deadline) {
                 let s = bifurcRandomStart();
                 let ref = null, foundAt = -1, isFixed = false;
@@ -1942,11 +1975,11 @@
                     let mx = 0;
                     for (let k = 0; k < 8; k++) if (s[k] > mx) mx = s[k];
                     if (mx < 0.005) { foundAt = i; isFixed = true; break; }
-                    if (i === cycleStart) ref = s.slice();
-                    if (i > cycleStart) {
+                    if (i === warmup) ref = s.slice();
+                    if (i > warmup) {
                         let md = 0;
                         for (let k = 0; k < 8; k++) { const d = Math.abs(s[k] - ref[k]); if (d > md) md = d; }
-                        if (md < 0.015) { foundAt = i; isFixed = (i === cycleStart + 1); break; }
+                        if (md < 0.015) { foundAt = i; isFixed = (i === warmup + 1); break; }
                     }
                 }
                 if (foundAt < 0) continue;
@@ -2089,7 +2122,7 @@
             bifurcVisMode = this.value;
             const descEl = document.getElementById('bifurcModeDesc');
             descEl.innerHTML = bifurcVisMode === 'visits'
-                ? 'counts every state visited per trajectory (skip step 0)'
+                ? 'counts every state visited after warm-up'
                 : '<span style="color:#38bdf8;">blue</span> = fixed · <span style="color:#f43f5e;">red</span> = cycle';
             const cycleRow = document.getElementById('bifurcCycleRow');
             if (cycleRow) cycleRow.style.display = bifurcVisMode === 'visits' ? 'none' : '';
@@ -2097,15 +2130,8 @@
         };
 
         document.getElementById('bifurcIter').oninput = function () {
-            bifurcMaxIter = parseInt(this.value);
-            document.getElementById('bifurcIterVal').textContent = bifurcMaxIter;
-            const cycleEl = document.getElementById('bifurcCycle');
-            cycleEl.max = bifurcMaxIter;
-            if (bifurcMaxCycleLen > bifurcMaxIter) {
-                bifurcMaxCycleLen = bifurcMaxIter;
-                cycleEl.value = bifurcMaxCycleLen;
-                document.getElementById('bifurcCycleVal').textContent = bifurcMaxCycleLen;
-            }
+            bifurcWarmup = parseInt(this.value);
+            document.getElementById('bifurcIterVal').textContent = bifurcWarmup;
             bifurcResetGrid();
         };
 
