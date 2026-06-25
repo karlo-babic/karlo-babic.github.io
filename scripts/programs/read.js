@@ -1,6 +1,8 @@
 import { BaseText } from './engines/base_text.js';
 import { parseMarkdown } from './engines/markdown_parser.js';
 
+const DRIVE_API_URL = 'https://script.google.com/macros/s/AKfycbxF-F0lXyzGHDFpziYabzSNpyEpZntcSlsFhNSu6XiSFKKG5CMEAsswHV2dYrI5bqEa/exec';
+
 /**
  * A helper function to escape HTML special characters.
  * Used for displaying .txt files safely.
@@ -11,6 +13,21 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.innerText = text;
     return div.innerHTML;
+}
+
+async function fetchDriveFile(name) {
+    const response = await fetch(DRIVE_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'read', name: name })
+    });
+
+    if (!response.ok) throw new Error('Network response failed');
+
+    const result = await response.json();
+    if (!result.success) throw new Error(result.error || 'File not found');
+
+    return { content: result.content, ext: result.ext };
 }
 
 /**
@@ -64,7 +81,11 @@ const Read = {
 
         // Fetch the file and determine its type.
         try {
-            const { content, ext } = await fetchFile(filename);
+            const isDrive = filename.startsWith('drive:');
+            const fetchPromise = isDrive
+                ? fetchDriveFile(filename.slice(6))
+                : fetchFile(filename);
+            const { content, ext } = await fetchPromise;
 
             // Route the content to the correct renderer based on its extension.
             switch (ext) {
