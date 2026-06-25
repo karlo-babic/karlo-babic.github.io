@@ -92,9 +92,12 @@ const Read = {
                 case 'md':
                     htmlOutput = parseMarkdown(content);
                     break;
-                case 'html':
-                    htmlOutput = content;
+                case 'html': {
+                    const blob = new Blob([content], { type: 'text/html' });
+                    const blobUrl = URL.createObjectURL(blob);
+                    htmlOutput = `<iframe src="${blobUrl}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"></iframe>`;
                     break;
+                }
                 case 'txt':
                     htmlOutput = `<pre>${escapeHtml(content)}</pre>`;
                     break;
