@@ -67,8 +67,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // otherwise defaulting to 'gameoflife'.
     const urlParams = new URLSearchParams(window.location.search);
     const runParam = urlParams.get('run');
-    const initialProgram = runParam || userState.get('lastProgram') || 'gameoflife';
-    const initialArgs = !runParam ? userState.get('lastProgramArgs') : null;
+
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const resumeLastSession = userState.gap !== null && userState.gap < DAY_MS;
+
+    const initialProgram = runParam || (resumeLastSession ? userState.get('lastProgram') : null) || 'gameoflife';
+    const initialArgs = (!runParam && resumeLastSession) ? userState.get('lastProgramArgs') : null;
     Console.init(initialProgram, initialArgs);
 
     setTimeout(showQuote, 100);
