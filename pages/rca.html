@@ -461,6 +461,26 @@
 
         .ca-stats span { color: var(--text-main); }
 
+        .ca-stats span.editable {
+            cursor: pointer;
+            border-bottom: 1px dotted var(--text-muted);
+        }
+        .ca-stats span.editable:hover {
+            border-bottom-color: var(--cell-on);
+        }
+
+        .stat-edit-input {
+            width: 56px;
+            background: #0a0f1a;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            font-family: inherit;
+            font-size: 0.72rem;
+            text-align: center;
+            padding: 0 2px;
+        }
+
         @media (max-width: 640px) {
             .app-wrap {
                 flex-direction: column;
@@ -1145,15 +1165,73 @@
             waveCtx.stroke();
         }
 
-        function updateCaStats() {
-            const state = history[history.length - 1];
-            const energy = state.reduce((a, b) => a + b, 0);
+        function computeEcaRule(state) {
             let ecaRule = 0;
             for (let p = 0; p < 8; p++) {
                 if (state[p] >= 0.5) ecaRule |= (1 << p);
             }
+            return ecaRule;
+        }
+
+        function updateCaStats() {
+            const state = history[history.length - 1];
+            const energy = state.reduce((a, b) => a + b, 0);
             document.getElementById('caStatEnergy').textContent = energy.toFixed(3);
-            document.getElementById('caStatRule').textContent = ecaRule;
+            document.getElementById('caStatRule').textContent = computeEcaRule(state);
+        }
+
+        function setEnergyTo(target) {
+            if (!Number.isFinite(target) || target < 0) return;
+            const state = history[history.length - 1];
+            const sum = state.reduce((a, b) => a + b, 0);
+            const next = sum <= 1e-9
+                ? new Array(COLS).fill(target / COLS)
+                : state.map(v => v * target / sum);
+            history[history.length - 1] = next;
+            syncUI(); draw();
+        }
+
+        function setEcaRuleTo(ruleNum) {
+            if (!Number.isFinite(ruleNum)) return;
+            ruleNum = Math.max(0, Math.min(255, Math.round(ruleNum)));
+            const state = history[history.length - 1].slice();
+            for (let p = 0; p < 8; p++) {
+                state[p] = ((ruleNum >> p) & 1) ? 1 : 0;
+            }
+            history[history.length - 1] = state;
+            syncUI(); draw();
+        }
+
+        function makeStatEditable(spanEl, { getValue, setValue, step, min, max }) {
+            spanEl.classList.add('editable');
+            spanEl.addEventListener('click', () => {
+                if (spanEl.querySelector('input')) return;
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.className = 'stat-edit-input';
+                input.value = getValue();
+                if (step != null) input.step = step;
+                if (min != null) input.min = min;
+                if (max != null) input.max = max;
+                spanEl.textContent = '';
+                spanEl.appendChild(input);
+                input.focus();
+                input.select();
+
+                let done = false;
+                function commit(apply) {
+                    if (done) return;
+                    done = true;
+                    const raw = parseFloat(input.value);
+                    if (apply && Number.isFinite(raw)) setValue(raw);
+                    else updateCaStats();
+                }
+                input.addEventListener('keydown', e => {
+                    if (e.key === 'Enter') { commit(true); input.blur(); }
+                    else if (e.key === 'Escape') { commit(false); input.blur(); }
+                });
+                input.addEventListener('blur', () => commit(true));
+            });
         }
 
         function syncUI() {
@@ -1334,6 +1412,18 @@
             history[history.length - 1] = new Array(COLS).fill(0);
             syncUI(); draw();
         };
+
+        makeStatEditable(document.getElementById('caStatEnergy'), {
+            getValue: () => history[history.length - 1].reduce((a, b) => a + b, 0).toFixed(3),
+            setValue: setEnergyTo,
+            step: 'any', min: 0,
+        });
+
+        makeStatEditable(document.getElementById('caStatRule'), {
+            getValue: () => computeEcaRule(history[history.length - 1]),
+            setValue: setEcaRuleTo,
+            step: 1, min: 0, max: 255,
+        });
 
         // ── Audio ──────────────────────────────────────────────────────────
         function getNoteFreqs(mode) {
