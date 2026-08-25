@@ -217,6 +217,8 @@
             min-width: 0;
         }
 
+        #visMode { background: #0c3547; border: 1px solid var(--cell-on); }
+
         input[type=range] {
             flex: 1;
             accent-color: var(--cell-on);
@@ -542,9 +544,9 @@
                     <select id="visMode" title="What to show in the right panel">
                         <option value="desc">Description</option>
                         <option value="phase">Phase space</option>
-                        <option value="fractal">Fractal</option>
                         <option value="bifurc">Bifurcation</option>
                         <option value="1dca">1D CA</option>
+                        <option value="fractal">Fractal</option>
                     </select>
                 </div>
                 <div class="control-row">
@@ -555,20 +557,20 @@
                         <option value="ring3">Ring 4</option>
                         <option value="ring4">Ring 5</option>
                         <option value="ring5">Ring 6</option>
-                        <option value="q3">Q3</option>
+                        <option value="q3" selected>Q3</option>
                         <option value="dynamic">Dynamic</option>
                     </select>
                     <select id="logicType" title="Fuzzy match function: how neighborhood patterns are measured">
+                        <option value="product">Product</option>
                         <option value="lukasiewicz">Łukasiewicz</option>
                         <option value="interference">Interference</option>
-                        <option value="product">Product</option>
                     </select>
                     <select id="btnConserve" title="Conservation mode: how total activation is preserved across steps">
                         <option value="none">No conserve</option>
-                        <option value="global_renorm" selected>Renorm</option>
+                        <option value="global_renorm">Renorm</option>
                         <option value="local_flux">Spatial flux</option>
                         <option value="rule_flux">Pattern flux</option>
-                        <option value="rule_flux_reverse">Pattern flux (inv)</option>
+                        <option value="rule_flux_reverse" selected>Pattern flux (inv)</option>
                     </select>
                     <button id="btnClamp" title="Clamp: restrict cell values to [0, 1]">Clamp</button>
                 </div>
@@ -624,8 +626,8 @@
                         <div class="phase-ctrl-row">
                             <span class="phase-label">Mode</span>
                             <select id="phaseMode" title="Phase space projection method">
+                                <option value="entropy_time" selected>Variance</option>
                                 <option value="fourier">Fourier Phase</option>
-                                <option value="entropy_time">Variance</option>
                                 <option value="pca">PCA</option>
                             </select>
                         </div>
@@ -785,8 +787,8 @@
         let isPlaying = false;
         let playInterval = null;
         let clampValues = false;
-        let conservationMode = 'global_renorm'; // 'none' | 'global_renorm' | 'local_flux' | 'rule_flux' | 'rule_flux_reverse'
-        let topologyMode = 'ring0'; // 'ring0'-'ring5' | 'q3'
+        let conservationMode = 'rule_flux_reverse'; // 'none' | 'global_renorm' | 'local_flux' | 'rule_flux' | 'rule_flux_reverse'
+        let topologyMode = 'q3'; // 'ring0'-'ring5' | 'q3'
         let dragColIndex = -1;
 
         const barFills = [];
@@ -1508,7 +1510,7 @@
 
         // ── Phase space ────────────────────────────────────────────────────
         let currentVisMode = 'desc'; // 'desc' | 'phase' | 'fractal'
-        let vizMode = 'fourier';
+        let vizMode = 'entropy_time';
         const pcaBuffer = [];
         let traceLenValue = 100;
         let showLines = true;
@@ -3091,7 +3093,7 @@
             applyState(hashState);
         } else {
             document.getElementById('topoMode').value = topologyMode;
-            logicType.value = 'lukasiewicz';
+            logicType.value = 'product';
             noteMode.value = 'pentatonic';
             visModeEl.value = currentVisMode;
         }
