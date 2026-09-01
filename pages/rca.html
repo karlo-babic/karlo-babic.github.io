@@ -2454,6 +2454,14 @@
                     document.getElementById('traceLenVal').textContent = traceLenValue;
                 }
             },
+            {
+                key: 'lines',
+                encode: () => showLines,
+                apply(v) {
+                    showLines = v;
+                    setToggleActive(btnLines, showLines);
+                }
+            },
             // ── Bifurc settings ────────────────────────────────────────────
             {
                 key: 'bifurcMode',
@@ -2630,6 +2638,8 @@
             if (phaseMode !== 'entropy_time') params.push('phaseMode=' + phaseMode);
             const traceLen = STATE_CODECS.find(c => c.key === 'traceLen').encode();
             if (traceLen !== 100) params.push('traceLen=' + traceLen);
+            const lines = STATE_CODECS.find(c => c.key === 'lines').encode();
+            if (!lines) params.push('lines=false');
             const bifurcMode = STATE_CODECS.find(c => c.key === 'bifurcMode').encode();
             if (bifurcMode !== 'visits') params.push('bifurcMode=' + bifurcMode);
             const bifurcXAxis = STATE_CODECS.find(c => c.key === 'bifurcXAxis').encode();
@@ -2673,6 +2683,7 @@
                     if (!(codec.key in params)) continue;
                     if (codec.key === 'cells') codec.apply(params.cells.split(',').map(Number));
                     else if (codec.key === 'clamp') codec.apply(params.clamp === 'true');
+                    else if (codec.key === 'lines') codec.apply(params.lines !== 'false');
                     else if (codec.key === 'ring') codec.apply(params.ring.split(',').map(Number));
                     else codec.apply(params[codec.key]);
                 }
