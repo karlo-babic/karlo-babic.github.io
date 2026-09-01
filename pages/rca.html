@@ -2667,7 +2667,7 @@
             const fractalSamples = STATE_CODECS.find(c => c.key === 'fractalSamples').encode();
             if (fractalSamples !== 4) params.push('fractalSamples=' + fractalSamples);
             const view = STATE_CODECS.find(c => c.key === 'view').encode();
-            if (view !== 'phase') params.push('view=' + view);
+            if (view !== 'desc') params.push('view=' + view);
             return params.join('&');
         }
 
