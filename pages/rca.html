@@ -448,6 +448,25 @@
             flex-shrink: 0;
         }
 
+        .side-q3cube {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+        }
+
+        .q3cube-canvas-wrap {
+            flex: 1;
+            min-height: 0;
+            background: #000;
+            position: relative;
+        }
+
+        #q3cubeCanvas {
+            display: block;
+            position: absolute;
+            top: 0; left: 0;
+        }
+
         .ca-stats {
             background: var(--panel-bg);
             padding: 4px 10px;
@@ -547,6 +566,7 @@
                         <option value="bifurc">Bifurcation</option>
                         <option value="1dca">1D CA</option>
                         <option value="fractal">Fractal</option>
+                        <option value="q3cube">Q3 cube</option>
                     </select>
                 </div>
                 <div class="control-row">
@@ -700,6 +720,14 @@
                         <div style="color:var(--text-muted);font-size:0.67rem;line-height:1.5;padding:4px 2px 0;">
                             Time flows downward — each row is one generation of a 1D fuzzy CA evolved from the initial condition. The 8 current cell values act as the rule: <em>rule[p]</em> is the output weight for neighborhood pattern <em>p</em> (000–111), evaluated with the selected fuzzy match function. Columns wrap. Values are normalized per row so contrast is preserved regardless of energy level.
                         </div>
+                    </div>
+                </div>
+                <div class="side-q3cube" id="sideQ3Cube">
+                    <div class="q3cube-canvas-wrap" id="q3cubeCanvasWrap">
+                        <canvas id="q3cubeCanvas"></canvas>
+                    </div>
+                    <div style="color:var(--text-muted);font-size:0.67rem;line-height:1.5;padding:8px;border-top:1px solid var(--border);flex-shrink:0;">
+                        The 8 cells drawn as the vertices of the Q3 hypercube (edges connect vertices differing by one bit). Each node's brightness and glow reflect its current value, regardless of the selected topology.
                     </div>
                 </div>
                 <div class="side-fractal" id="sideFractal">
@@ -1257,6 +1285,7 @@
             drawWaveform();
             if (fractalShader) fractalShader.state = [...history[history.length - 1]];
             if (currentVisMode === '1dca') draw1dCA();
+            if (currentVisMode === 'q3cube') drawQ3Cube();
             if (currentVisMode === 'phase') {
                 const prev = history.length >= 2 ? history[history.length - 2] : null;
                 phaseTrace.push(computePoint(latest, prev));
@@ -1299,6 +1328,7 @@
             if (currentVisMode === 'phase') sizeFourierCanvas();
             if (currentVisMode === 'fractal' && fractalShader) fractalShader.onResize();
             if (currentVisMode === '1dca') { size1dCACanvas(); draw1dCA(); }
+            if (currentVisMode === 'q3cube') { sizeQ3CubeCanvas(); drawQ3Cube(); }
             while (history.length < ROWS) { history.unshift(new Array(COLS).fill(0)); historyRings.unshift([...RING]); }
             if (history.length > ROWS) { history = history.slice(-ROWS); historyRings = historyRings.slice(-ROWS); }
             draw();
@@ -1739,6 +1769,7 @@
             document.getElementById('sideBifurc').style.display  = mode === 'bifurc'  ? 'flex' : 'none';
             document.getElementById('side1dca').style.display    = mode === '1dca'    ? 'flex' : 'none';
             document.getElementById('sideFractal').style.display = mode === 'fractal' ? 'flex' : 'none';
+            document.getElementById('sideQ3Cube').style.display  = mode === 'q3cube' ? 'flex' : 'none';
 
             if (mode === 'bifurc') {
                 bifurcStop();
@@ -1748,6 +1779,9 @@
             }
             if (mode === '1dca') {
                 requestAnimationFrame(() => { size1dCACanvas(); draw1dCA(); });
+            }
+            if (mode === 'q3cube') {
+                requestAnimationFrame(() => { sizeQ3CubeCanvas(); drawQ3Cube(); });
             }
             if (mode === 'phase') {
                 document.getElementById('phaseDesc').innerHTML = getDesc();
@@ -2359,6 +2393,114 @@
             ca1dInitRow = null;
             if (currentVisMode === '1dca') draw1dCA();
         };
+
+        // ── Q3 cube view ──────────────────────────────────────────────────
+        const q3cubeEl = document.getElementById('q3cubeCanvas');
+        const q3cubeCtx = q3cubeEl.getContext('2d');
+
+        // A cube rotated in 3D and viewed with orthographic projection, rather than a pure
+        // isometric view along the space diagonal — the exact-diagonal view makes the near
+        // and far corners (000 and 111) project onto the same point, hiding one behind the
+        // other. Rotating off that diagonal keeps every edge the same length (orthographic
+        // projection doesn't foreshorten) while separating all 8 vertices on screen.
+        const Q3_YAW   = 35 * Math.PI / 180;  // turn around the vertical axis
+        const Q3_PITCH = 25 * Math.PI / 180;  // tilt around the horizontal axis
+
+        function q3Project3D(x, y, z) {
+            const x1 = x * Math.cos(Q3_YAW) + z * Math.sin(Q3_YAW);
+            const z1 = -x * Math.sin(Q3_YAW) + z * Math.cos(Q3_YAW);
+            const y2 = y * Math.cos(Q3_PITCH) - z1 * Math.sin(Q3_PITCH);
+            const z2 = y * Math.sin(Q3_PITCH) + z1 * Math.cos(Q3_PITCH);
+            return { x: x1, y: -y2, z: z2 }; // canvas y grows downward
+        }
+
+        // Precompute the 8 projected corners once (fixed viewing angle) plus the bounding
+        // box needed to center and scale the cube to fit any canvas size.
+        const Q3_CORNERS = [];
+        for (let p = 0; p < 8; p++) {
+            const b0 = p & 1, b1 = (p >> 1) & 1, b2 = (p >> 2) & 1;
+            Q3_CORNERS.push(q3Project3D(b0 - 0.5, b1 - 0.5, b2 - 0.5));
+        }
+        const Q3_PROJ_MINX = Math.min(...Q3_CORNERS.map(c => c.x));
+        const Q3_PROJ_MAXX = Math.max(...Q3_CORNERS.map(c => c.x));
+        const Q3_PROJ_MINY = Math.min(...Q3_CORNERS.map(c => c.y));
+        const Q3_PROJ_MAXY = Math.max(...Q3_CORNERS.map(c => c.y));
+        const Q3_PROJ_W  = Q3_PROJ_MAXX - Q3_PROJ_MINX;
+        const Q3_PROJ_H  = Q3_PROJ_MAXY - Q3_PROJ_MINY;
+        const Q3_PROJ_CX = (Q3_PROJ_MINX + Q3_PROJ_MAXX) / 2;
+        const Q3_PROJ_CY = (Q3_PROJ_MINY + Q3_PROJ_MAXY) / 2;
+
+        const Q3_EDGES = [];
+        for (let i = 0; i < 8; i++)
+            for (let j = i + 1; j < 8; j++)
+                if (((i ^ j) & ((i ^ j) - 1)) === 0) Q3_EDGES.push([i, j]);
+
+        function sizeQ3CubeCanvas() {
+            const wrap = document.getElementById('q3cubeCanvasWrap');
+            if (!wrap) return;
+            q3cubeEl.width  = wrap.offsetWidth;
+            q3cubeEl.height = wrap.offsetHeight;
+        }
+
+        function drawQ3Cube() {
+            const w = q3cubeEl.width, h = q3cubeEl.height;
+            if (!w || !h) return;
+            const state = history[history.length - 1];
+
+            q3cubeCtx.clearRect(0, 0, w, h);
+
+            const pad = Math.min(w, h) * 0.18;
+            const scale = Math.min((w - 2 * pad) / Q3_PROJ_W, (h - 2 * pad) / Q3_PROJ_H);
+            const cx = w / 2, cy = h / 2;
+            const pts = {};
+            for (let p = 0; p < 8; p++) {
+                const c = Q3_CORNERS[p];
+                pts[p] = [cx + (c.x - Q3_PROJ_CX) * scale, cy + (c.y - Q3_PROJ_CY) * scale];
+            }
+            const drawOrder = [...Array(8).keys()].sort((a, b) => Q3_CORNERS[a].z - Q3_CORNERS[b].z);
+
+            q3cubeCtx.lineWidth = 1.4;
+            q3cubeCtx.strokeStyle = 'rgba(148,163,184,0.35)';
+            for (const [i, j] of Q3_EDGES) {
+                q3cubeCtx.beginPath();
+                q3cubeCtx.moveTo(pts[i][0], pts[i][1]);
+                q3cubeCtx.lineTo(pts[j][0], pts[j][1]);
+                q3cubeCtx.stroke();
+            }
+
+            const r = scale * 0.18;
+            for (const p of drawOrder) {
+                const v = Math.max(0, Math.min(1, state[p]));
+                const [x, y] = pts[p];
+                const cr = 15 + v * 41, cg = 23 + v * 166, cb = 42 + v * 206;
+                const color = `rgb(${Math.round(cr)},${Math.round(cg)},${Math.round(cb)})`;
+
+                if (v > 0.05) {
+                    q3cubeCtx.save();
+                    q3cubeCtx.shadowColor = color;
+                    q3cubeCtx.shadowBlur = 6 + v * 22;
+                    q3cubeCtx.beginPath();
+                    q3cubeCtx.arc(x, y, r, 0, Math.PI * 2);
+                    q3cubeCtx.fillStyle = color;
+                    q3cubeCtx.fill();
+                    q3cubeCtx.restore();
+                } else {
+                    q3cubeCtx.beginPath();
+                    q3cubeCtx.arc(x, y, r, 0, Math.PI * 2);
+                    q3cubeCtx.fillStyle = color;
+                    q3cubeCtx.fill();
+                }
+                q3cubeCtx.lineWidth = 1.5;
+                q3cubeCtx.strokeStyle = v > 0.4 ? '#f8fafc' : 'rgba(148,163,184,0.6)';
+                q3cubeCtx.stroke();
+
+                q3cubeCtx.fillStyle = v > 0.55 ? '#0f172a' : '#94a3b8';
+                q3cubeCtx.font = `${Math.max(9, r * 0.75)}px 'Courier New', monospace`;
+                q3cubeCtx.textAlign = 'center';
+                q3cubeCtx.textBaseline = 'middle';
+                q3cubeCtx.fillText(p.toString(2).padStart(3, '0'), x, y);
+            }
+        }
 
         // ── Share / URL state ──────────────────────────────────────────────
         // Each codec handles one UI setting: encode() → serializable value,
