@@ -570,7 +570,7 @@
                         <option value="global_renorm">Renorm</option>
                         <option value="local_flux">Spatial flux</option>
                         <option value="rule_flux">Pattern flux</option>
-                        <option value="rule_flux_reverse" selected>Pattern flux (inv)</option>
+                        <option value="pattern_flux_inv" selected>Pattern flux (inv)</option>
                     </select>
                     <button id="btnClamp" title="Clamp: restrict cell values to [0, 1]">Clamp</button>
                 </div>
@@ -787,7 +787,7 @@
         let isPlaying = false;
         let playInterval = null;
         let clampValues = false;
-        let conservationMode = 'rule_flux_reverse'; // 'none' | 'global_renorm' | 'local_flux' | 'rule_flux' | 'rule_flux_reverse'
+        let conservationMode = 'pattern_flux_inv'; // 'none' | 'global_renorm' | 'local_flux' | 'rule_flux' | 'pattern_flux_inv'
         let topologyMode = 'q3'; // 'ring0'-'ring5' | 'q3'
         let dragColIndex = -1;
 
@@ -1093,7 +1093,7 @@
                     const n = computeRuleFluxNext(state);
                     return clampValues ? applyClamp(n) : n;
                 }
-                case 'rule_flux_reverse': {
+                case 'pattern_flux_inv': {
                     const n = computeRuleFluxReverseNext(state);
                     return clampValues ? applyClamp(n) : n;
                 }
@@ -1319,7 +1319,7 @@
                 case 'global_renorm':    return clampValues ? 1 : 3;
                 case 'local_flux':       return clampValues ? 4 : 5;
                 case 'rule_flux':        return clampValues ? 7 : 6;
-                case 'rule_flux_reverse': return clampValues ? 9 : 8;
+                case 'pattern_flux_inv': return clampValues ? 9 : 8;
                 default:                 return clampValues ? 0 : 2;
             }
         }
@@ -2435,6 +2435,169 @@
                     NOTE_FREQS = getNoteFreqs(v);
                 }
             },
+            // ── Phase settings ─────────────────────────────────────────────
+            {
+                key: 'phaseMode',
+                encode: () => vizMode,
+                apply(v) {
+                    if (typeof v !== 'string') return;
+                    vizMode = v;
+                    document.getElementById('phaseMode').value = v;
+                }
+            },
+            {
+                key: 'traceLen',
+                encode: () => traceLenValue,
+                apply(v) {
+                    traceLenValue = Number(v);
+                    document.getElementById('traceLen').value = traceLenValue;
+                    document.getElementById('traceLenVal').textContent = traceLenValue;
+                }
+            },
+            // ── Bifurc settings ────────────────────────────────────────────
+            {
+                key: 'bifurcMode',
+                encode: () => bifurcVisMode,
+                apply(v) {
+                    if (typeof v !== 'string') return;
+                    bifurcVisMode = v;
+                    document.getElementById('bifurcMode').value = v;
+                    const descEl = document.getElementById('bifurcModeDesc');
+                    if (descEl) descEl.innerHTML = bifurcVisMode === 'visits'
+                        ? 'counts every state visited after warm-up'
+                        : '<span style="color:#38bdf8;">blue</span> = fixed · <span style="color:#f43f5e;">red</span> = cycle';
+                    const cycleRow = document.getElementById('bifurcCycleRow');
+                    if (cycleRow) cycleRow.style.display = bifurcVisMode === 'visits' ? 'none' : '';
+                }
+            },
+            {
+                key: 'bifurcXAxis',
+                encode: () => bifurcXAxis,
+                apply(v) {
+                    if (typeof v !== 'string') return;
+                    bifurcXAxis = v;
+                    document.getElementById('bifurcXAxis').value = v;
+                    const descEl = document.getElementById('bifurcXAxisDesc');
+                    if (descEl) descEl.textContent = BIFURC_XAXIS_DESC[v] || '';
+                }
+            },
+            {
+                key: 'bifurcWarmup',
+                encode: () => bifurcWarmup,
+                apply(v) {
+                    bifurcWarmup = Number(v);
+                    document.getElementById('bifurcIter').value = bifurcWarmup;
+                    document.getElementById('bifurcIterVal').textContent = bifurcWarmup;
+                }
+            },
+            {
+                key: 'bifurcCycle',
+                encode: () => bifurcMaxCycleLen,
+                apply(v) {
+                    bifurcMaxCycleLen = Number(v);
+                    document.getElementById('bifurcCycle').value = bifurcMaxCycleLen;
+                    document.getElementById('bifurcCycleVal').textContent = bifurcMaxCycleLen;
+                }
+            },
+            // ── 1D CA settings ─────────────────────────────────────────────
+            {
+                key: 'ca1dWidth',
+                encode: () => ca1dNumCols,
+                apply(v) {
+                    ca1dNumCols = Number(v);
+                    document.getElementById('ca1dWidth').value = ca1dNumCols;
+                    document.getElementById('ca1dWidthVal').textContent = ca1dNumCols;
+                    ca1dInitRow = null;
+                }
+            },
+            {
+                key: 'ca1dRows',
+                encode: () => ca1dNumRowCount,
+                apply(v) {
+                    ca1dNumRowCount = Number(v);
+                    document.getElementById('ca1dRowCount').value = ca1dNumRowCount;
+                    document.getElementById('ca1dRowCountVal').textContent = ca1dNumRowCount;
+                }
+            },
+            {
+                key: 'ca1dInit',
+                encode: () => ca1dInitMode,
+                apply(v) {
+                    if (typeof v !== 'string') return;
+                    ca1dInitMode = v;
+                    document.getElementById('ca1dInit').value = v;
+                    ca1dInitRow = null;
+                }
+            },
+            // ── Fractal settings ───────────────────────────────────────────
+            {
+                key: 'fractalMap',
+                encode: () => fractalMapMode === 0 ? 'cell' : 'ev',
+                apply(v) {
+                    if (typeof v !== 'string') return;
+                    fractalMapMode = v === 'ev' ? 1 : 0;
+                    document.getElementById('fractalMapMode').value = v;
+                    document.getElementById('fractalCellRow').style.display = fractalMapMode ? 'none' : '';
+                    document.getElementById('fractalSamplesRow').style.display = fractalMapMode ? '' : 'none';
+                    updateFractalDesc();
+                    if (fractalShader) fractalShader.mapMode = fractalMapMode;
+                }
+            },
+            {
+                key: 'fractalAxisI',
+                encode: () => fractalAxisI,
+                apply(v) {
+                    fractalAxisI = Number(v);
+                    document.getElementById('fractalAxisI').value = String(fractalAxisI);
+                    if (fractalShader) fractalShader.axisI = fractalAxisI;
+                }
+            },
+            {
+                key: 'fractalAxisJ',
+                encode: () => fractalAxisJ,
+                apply(v) {
+                    fractalAxisJ = Number(v);
+                    document.getElementById('fractalAxisJ').value = String(fractalAxisJ);
+                    if (fractalShader) fractalShader.axisJ = fractalAxisJ;
+                }
+            },
+            {
+                key: 'fractalIter',
+                encode: () => fractalMaxIter,
+                apply(v) {
+                    fractalMaxIter = Number(v);
+                    document.getElementById('fractalIter').value = fractalMaxIter;
+                    document.getElementById('fractalIterVal').textContent = fractalMaxIter;
+                    const cycleEl = document.getElementById('fractalCycle');
+                    cycleEl.max = fractalMaxIter;
+                    if (fractalMaxCycleLen > fractalMaxIter) {
+                        fractalMaxCycleLen = fractalMaxIter;
+                        cycleEl.value = fractalMaxCycleLen;
+                        document.getElementById('fractalCycleVal').textContent = fractalMaxCycleLen;
+                    }
+                    if (fractalShader) fractalShader.maxIter = fractalMaxIter;
+                }
+            },
+            {
+                key: 'fractalCycle',
+                encode: () => fractalMaxCycleLen,
+                apply(v) {
+                    fractalMaxCycleLen = Number(v);
+                    document.getElementById('fractalCycle').value = fractalMaxCycleLen;
+                    document.getElementById('fractalCycleVal').textContent = fractalMaxCycleLen;
+                    if (fractalShader) fractalShader.maxCycleLen = fractalMaxCycleLen;
+                }
+            },
+            {
+                key: 'fractalSamples',
+                encode: () => fractalNumSamples,
+                apply(v) {
+                    fractalNumSamples = Number(v);
+                    document.getElementById('fractalSamples').value = fractalNumSamples;
+                    document.getElementById('fractalSamplesVal').textContent = fractalNumSamples;
+                    if (fractalShader) fractalShader.numSamples = fractalNumSamples;
+                }
+            },
             // 'view' must be last — it may create fractalShader, which earlier codecs update
             {
                 key: 'view',
@@ -2447,21 +2610,75 @@
         ];
 
         function encodeState() {
-            const state = { v: STATE_VERSION };
-            for (const codec of STATE_CODECS) state[codec.key] = codec.encode();
-            return btoa(JSON.stringify(state));
+            const DEFAULT_RING = [0,1,3,2,6,7,5,4];
+            function fmtCell(x) { return parseFloat(x.toPrecision(4)).toString(); }
+            const cells = STATE_CODECS.find(c => c.key === 'cells').encode();
+            const params = ['cells=' + cells.map(fmtCell).join(',')];
+            const logic = STATE_CODECS.find(c => c.key === 'logic').encode();
+            if (logic !== 'product') params.push('logic=' + logic);
+            const clamp = STATE_CODECS.find(c => c.key === 'clamp').encode();
+            if (clamp) params.push('clamp=true');
+            const conservation = STATE_CODECS.find(c => c.key === 'conservation').encode();
+            if (conservation !== 'pattern_flux_inv') params.push('conservation=' + conservation);
+            const topology = STATE_CODECS.find(c => c.key === 'topology').encode();
+            if (topology !== 'q3') params.push('topology=' + topology);
+            const ring = STATE_CODECS.find(c => c.key === 'ring').encode();
+            if (topology === 'dynamic' && ring.join(',') !== DEFAULT_RING.join(',')) params.push('ring=' + ring.join(','));
+            const noteScale = STATE_CODECS.find(c => c.key === 'noteScale').encode();
+            if (noteScale !== 'pentatonic') params.push('noteScale=' + noteScale);
+            const phaseMode = STATE_CODECS.find(c => c.key === 'phaseMode').encode();
+            if (phaseMode !== 'entropy_time') params.push('phaseMode=' + phaseMode);
+            const traceLen = STATE_CODECS.find(c => c.key === 'traceLen').encode();
+            if (traceLen !== 100) params.push('traceLen=' + traceLen);
+            const bifurcMode = STATE_CODECS.find(c => c.key === 'bifurcMode').encode();
+            if (bifurcMode !== 'visits') params.push('bifurcMode=' + bifurcMode);
+            const bifurcXAxis = STATE_CODECS.find(c => c.key === 'bifurcXAxis').encode();
+            if (bifurcXAxis !== 'std') params.push('bifurcXAxis=' + bifurcXAxis);
+            const bifurcWarmup = STATE_CODECS.find(c => c.key === 'bifurcWarmup').encode();
+            if (bifurcWarmup !== 200) params.push('bifurcWarmup=' + bifurcWarmup);
+            const bifurcCycle = STATE_CODECS.find(c => c.key === 'bifurcCycle').encode();
+            if (bifurcCycle !== 40) params.push('bifurcCycle=' + bifurcCycle);
+            const ca1dWidth = STATE_CODECS.find(c => c.key === 'ca1dWidth').encode();
+            if (ca1dWidth !== 64) params.push('ca1dWidth=' + ca1dWidth);
+            const ca1dRows = STATE_CODECS.find(c => c.key === 'ca1dRows').encode();
+            if (ca1dRows !== 64) params.push('ca1dRows=' + ca1dRows);
+            const ca1dInit = STATE_CODECS.find(c => c.key === 'ca1dInit').encode();
+            if (ca1dInit !== 'center') params.push('ca1dInit=' + ca1dInit);
+            const fractalMap = STATE_CODECS.find(c => c.key === 'fractalMap').encode();
+            if (fractalMap !== 'cell') params.push('fractalMap=' + fractalMap);
+            const fractalAxisI = STATE_CODECS.find(c => c.key === 'fractalAxisI').encode();
+            if (fractalAxisI !== 0) params.push('fractalAxisI=' + fractalAxisI);
+            const fractalAxisJ = STATE_CODECS.find(c => c.key === 'fractalAxisJ').encode();
+            if (fractalAxisJ !== 1) params.push('fractalAxisJ=' + fractalAxisJ);
+            const fractalIter = STATE_CODECS.find(c => c.key === 'fractalIter').encode();
+            if (fractalIter !== 80) params.push('fractalIter=' + fractalIter);
+            const fractalCycle = STATE_CODECS.find(c => c.key === 'fractalCycle').encode();
+            if (fractalCycle !== 40) params.push('fractalCycle=' + fractalCycle);
+            const fractalSamples = STATE_CODECS.find(c => c.key === 'fractalSamples').encode();
+            if (fractalSamples !== 4) params.push('fractalSamples=' + fractalSamples);
+            const view = STATE_CODECS.find(c => c.key === 'view').encode();
+            if (view !== 'phase') params.push('view=' + view);
+            return params.join('&');
         }
 
         function applyState(encoded) {
             try {
-                const state = JSON.parse(atob(encoded));
+                const params = {};
+                for (const part of encoded.split('&')) {
+                    const idx = part.indexOf('=');
+                    if (idx !== -1) params[part.slice(0, idx)] = part.slice(idx + 1);
+                }
                 for (const codec of STATE_CODECS) {
                     if (codec.key === 'view') continue;
-                    if (codec.key in state) codec.apply(state[codec.key]);
+                    if (!(codec.key in params)) continue;
+                    if (codec.key === 'cells') codec.apply(params.cells.split(',').map(Number));
+                    else if (codec.key === 'clamp') codec.apply(params.clamp === 'true');
+                    else if (codec.key === 'ring') codec.apply(params.ring.split(',').map(Number));
+                    else codec.apply(params[codec.key]);
                 }
                 if (fractalShader) fractalShader.energyMode = getShaderEnergyMode();
                 const viewCodec = STATE_CODECS.find(c => c.key === 'view');
-                if (viewCodec && 'view' in state) viewCodec.apply(state.view);
+                if (viewCodec && 'view' in params) viewCodec.apply(params.view);
             } catch (e) {}
         }
 
@@ -2621,7 +2838,7 @@
                             return;
                         }
 
-                        // energyMode 6/7: rule_flux, 8/9: rule_flux_reverse. Odd = clamp.
+                        // energyMode 6/7: rule_flux, 8/9: pattern_flux_inv. Odd = clamp.
                         if (u_energyMode >= 6) {
                             bool doClamp   = (u_energyMode == 7 || u_energyMode == 9);
                             bool isReverse = (u_energyMode >= 8);
