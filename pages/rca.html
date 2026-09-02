@@ -2470,15 +2470,23 @@
 
             const r = scale * 0.18;
             for (const p of drawOrder) {
-                const v = Math.max(0, Math.min(1, state[p]));
+                const v = state[p];
                 const [x, y] = pts[p];
-                const cr = 15 + v * 41, cg = 23 + v * 166, cb = 42 + v * 206;
+                // Same value → color mapping as the main cell grid (draw()).
+                let cr, cg, cb;
+                if (v <= 1) {
+                    cr = 15 + v * 41; cg = 23 + v * 166; cb = 42 + v * 206;
+                } else {
+                    const e = Math.min(1, v - 1);
+                    cr = 56 + e * 199; cg = 189 * (1 - e); cb = 248 * (1 - e);
+                }
                 const color = `rgb(${Math.round(cr)},${Math.round(cg)},${Math.round(cb)})`;
+                const glow = Math.max(0, Math.min(1, v));
 
-                if (v > 0.05) {
+                if (glow > 0.05) {
                     q3cubeCtx.save();
                     q3cubeCtx.shadowColor = color;
-                    q3cubeCtx.shadowBlur = 6 + v * 22;
+                    q3cubeCtx.shadowBlur = 6 + glow * 22;
                     q3cubeCtx.beginPath();
                     q3cubeCtx.arc(x, y, r, 0, Math.PI * 2);
                     q3cubeCtx.fillStyle = color;
