@@ -74,8 +74,9 @@
             flex: 1;
             display: flex;
             justify-content: center;
-            align-items: flex-start;
+            align-items: flex-end;
             min-height: 0;
+            overflow: hidden;
             background: #000;
         }
 
@@ -1320,7 +1321,7 @@
         function updateLayout() {
             const rect = wrapper.getBoundingClientRect();
             const cellDim = rect.width / COLS;
-            ROWS = Math.floor(rect.height / cellDim);
+            ROWS = Math.ceil(rect.height / cellDim);
             canvas.width = rect.width;
             canvas.height = ROWS * cellDim;
             waveCanvas.width = waveCanvas.offsetWidth;
